@@ -14,6 +14,7 @@ Ready for Implementation
 - `docs/handoffs/v23-migration-map.md`
 - `docs/handoffs/v23-migration-verification-contract.md`
 - `docs/handoffs/v23-orphan-wip-disposition.md`
+- `docs/handoffs/TASK-008-regression-baseline-design.md`
 - TASK-006 Canonical Docs
 
 ## Scope
@@ -90,6 +91,7 @@ Tests・runner・CIは「Migrationを機械的に判定可能にする」とい�
 
 - `docs/tasks/done/TASK-004-define-migration-verification-baseline.md`
 - `docs/tasks/done/TASK-006-adopt-canonical-documentation-task-state.md`
+- `docs/handoffs/TASK-008-regression-baseline-design.md`
 - TASK-007はNot Activatedである。
 
 ## Remaining
