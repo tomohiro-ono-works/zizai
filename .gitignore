@@ -52,7 +52,6 @@ tests/
 /.codex-harness/
 /.codex/
 /.docs/
-/AGENTS.md
 
 # App-specific generated files
 .ziz

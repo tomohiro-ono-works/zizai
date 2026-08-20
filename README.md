@@ -8,10 +8,10 @@
 ## 作業ルールと正本
 
 - 常時ルール: [AGENTS.md](AGENTS.md)
-- 設計思想・規約: [.docs/architecture.md](.docs/architecture.md), [.docs/coding-rules.md](.docs/coding-rules.md), [.docs/refactor-policy.md](.docs/refactor-policy.md)
-- 作業指示: `.codex-harness/tasks/`
-- 検証項目: `.codex-harness/checks/`
-- 調査出力・過去ログ: `.codex-harness/reports/`
+- ドキュメント索引: [docs/README.md](docs/README.md)
+- 現行仕様: [architecture.md](docs/features/architecture.md), [coding-rules.md](docs/features/coding-rules.md), [refactor-policy.md](docs/features/refactor-policy.md)
+- 作業状態: `docs/tasks/active/`, `docs/tasks/done/`
+- 承認済み判断・引継ぎ: `docs/decisions/`, `docs/handoffs/`
 - 再利用手順: `.agents/skills/`
 
 ## 概要

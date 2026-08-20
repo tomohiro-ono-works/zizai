@@ -1,0 +1,56 @@
+# Architecture
+
+- Status: Current Specification
+- Last verified: 2026-08-21
+- Decision: [ADR-v23 Application Topology](../decisions/ADR-v23-application-topology.md)
+
+## Runtime topology
+
+現行Applicationは、Windowsローカルで動く単一Desktop Runtimeである。PySide6/QtWebEngineが同梱HTMLを`file://`で読み込み、FrontendとPythonはQWebChannel Bridgeで通信する。
+
+- localhost HTTP APIと独立Deploy可能なWeb Applicationは存在せず、新設しない。
+- 内蔵WebViewは同梱Frontend専用とし、外部Pageや外部配信JavaScriptをBridge到達可能なContextへ入れない。
+- 外部URLはAllowlistで検証し、許可時だけOS browserへ委譲する。
+- 同梱`dataflow.html`を表示する内部frame contractは、QWebChannel contractと分離する。
+
+## Current responsibility map
+
+| Path | Responsibility |
+|---|---|
+| `zizai.py` | 正式入口。GUI、`--debug`、`.zizd` headless実行を振り分ける |
+| `bin/ziz.bat` | Windows launcher。引数を`zizai.py`へ透過する |
+| `app/main.py` | `run_cli()`によるheadless実行入口 |
+| `app/gui/host.py` | PySide6、QtWebEngine、QWebChannel、local navigation boundary |
+| `app/gui/bridge.py` | Frontend向けApplication InterfaceとBridgeRuntime |
+| `core/` | Workflow実行、flow path、型、logging等のApplication logic |
+| `connectors/` | 外部System、file format、OS操作のAdapter |
+| `static/` | Desktop同梱Frontend |
+| `config/` | Source設定とlocal runtime state。両者を同一扱いしない |
+
+## Dependency boundaries
+
+- Desktop/CLIはCoreを利用する。
+- ConnectorはCoreが定義する実行・型contractに従う。
+- CoreへQt、Frontend、具体Connectorの責務を混在させない。
+- FrontendはPython実装を直接参照せず、Bridge contractを通じて通信する。
+- 共有領域にはConfig、型、言語中立Contractだけを置き、Business Logicを置かない。
+- Pathやpackageの物理移動は、launcher、dynamic discovery、config、asset、test、CI、active documentationの参照更新と同時に行う。
+
+## Stable contracts during migration
+
+- 正式CLI互換対象は`bin/ziz.bat`と`zizai.py`である。
+- Flow extensionは`.zizd`である。
+- Bridge Protocol `1.0`の`cmd`/`res`/`evt` envelope、31 Command、8 Event、error形式をMigration完了まで維持する。
+- Connector入口は`execute(action, params, context)`を維持する。
+- Breaking changeはRepository移行へ混在させず、専用DecisionとTaskを必要とする。
+
+## Approved target responsibilities
+
+物理移行後のTarget Treeは`apps/{desktop,cli,gui,core,connectors,common}`である。これは承認済みの移行先であり、TASK-011/012完了前にCurrent Pathとして記述しない。詳細と依存方向はADRを正とする。
+
+## Logging
+
+- `QueueHandler`/`QueueListener`による非同期loggingを使用する。
+- `logs/app_YYYYMMDD.log`、1 file 10 MiB、同日backup 3、保持14日、総量1 GiBを上限とする。
+- 通常levelは`INFO`、`ZIZ_LOG_LEVEL`で調査時だけ変更する。
+- `logs/`はruntime artifactでありSource管理しない。
