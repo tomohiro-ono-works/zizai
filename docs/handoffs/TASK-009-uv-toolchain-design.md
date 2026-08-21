@@ -31,7 +31,7 @@ Python依存管理と再生成可能な実行環境を、`requirements*.txt`と`
 ## Existing-state evidence
 
 - `requirements.txt`は87件、`requirements-dev.txt`は`-r requirements.txt`と固有23件を持つ。全件が`==`固定で、VCS、URL、local path、environment markerは0件である。
-- `bin/ziz.bat`、`bin/ziz.sh`、`scripts/create_zizai_shortcut.ps1`、`tests/run-verification.ps1`、`README.md`が仮想環境として`.env/`を参照する。
+- `bin/ziz.bat`、`bin/ziz.sh`、`tests/run-verification.ps1`、`README.md`が仮想環境として`.env/`を参照する。旧auditが挙げる`scripts/create_zizai_shortcut.ps1`はTASK-009開始時点のHEADにもGit履歴にも存在しない。
 - `.github/workflows/migration-verification.yml`のPython 4 jobsはpipと`requirements-dev.txt`を使用する。
 - 現PCにuvは未導入である。
 - TASK-009 worktreeで既存`.env/`を使用せず、元checkoutのPythonを読み取り実行にだけ使用したstatic baselineは30 passedである。
@@ -54,7 +54,6 @@ Python依存管理と再生成可能な実行環境を、`requirements*.txt`と`
 ### Runtime and verification invocation
 
 - `bin/ziz.bat`は`.venv\Scripts\python.exe`、`bin/ziz.sh`は`.venv/bin/python`を使用し、引数透過とexit codeを維持する。
-- `scripts/create_zizai_shortcut.ps1`の既定`pythonw.exe`を`.venv\Scripts\pythonw.exe`へ変更する。
 - `tests/run-verification.ps1`の外部interfaceは変更しない。内部のPython／pytest／probe／manual validator起動は、repository rootで`uv run --frozen python ...`を使用する。
 - PlaywrightはNode toolchainのままとし、Python toolchain移行へ混在させない。
 
@@ -72,7 +71,7 @@ Python依存管理と再生成可能な実行環境を、`requirements*.txt`と`
 2. `pyproject.toml`と`.python-version`を追加し、87件と23件を固定versionのまま定義する。
 3. 公式standalone uv `0.12.5`をユーザー領域へ導入し、`uv lock`で`uv.lock`を生成する。
 4. requirementsが残る状態で、正規化したdirect dependencyの名前・version集合が87件／23件とも完全一致することを機械比較する。
-5. `.gitignore`へ`.venv/`を追加し、obsoleteな`requirements-dev.txt` ignoreを外す。runner、launchers、shortcut、CI、READMEをuv／`.venv`へ切り替える。
+5. `.gitignore`へ`.venv/`を追加し、obsoleteな`requirements-dev.txt` ignoreを外す。runner、launchers、CI、READMEをuv／`.venv`へ切り替える。
 6. Code、Runtime、Test、CI、active/canonical documentationのrequirements／旧`.env` toolchain参照が0であることを確認する。
 7. `requirements.txt`、`requirements-dev.txt`、`scripts/refresh_requirements.py`を削除する。
 8. 新worktreeに`.venv`がない状態から`uv sync --frozen`を実行し、CLIとBaseline verificationを実行する。
@@ -108,7 +107,7 @@ Python依存管理と再生成可能な実行環境を、`requirements*.txt`と`
 ## Expected change area
 
 - Create: `pyproject.toml`、`uv.lock`、`.python-version`、toolchain contract test。
-- Modify: `.gitignore`、`bin/ziz.bat`、`bin/ziz.sh`、`scripts/create_zizai_shortcut.ps1`、`tests/run-verification.ps1`、`.github/workflows/migration-verification.yml`、`tests/static/test_ci_workflow_contract.py`、`README.md`、TASK-009 documentation。
+- Modify: `.gitignore`、`bin/ziz.bat`、`bin/ziz.sh`、`tests/run-verification.ps1`、`.github/workflows/migration-verification.yml`、`tests/static/test_ci_workflow_contract.py`、`README.md`、TASK-009 documentation。
 - Delete after gates pass: `requirements.txt`、`requirements-dev.txt`、`scripts/refresh_requirements.py`。
 - Do not modify: Application code、既存`.env/`、Node/Playwright dependency files、untracked personal files。
 

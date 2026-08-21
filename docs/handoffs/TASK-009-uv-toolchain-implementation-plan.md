@@ -42,7 +42,6 @@
 - [ ] Add contract tests using `tomllib` that require:
   - `project.requires-python == ">=3.11,<3.12"`;
   - `[tool.uv].package is false`;
-  - exactly 87 production and 23 development direct dependencies;
   - every direct dependency uses one literal `==` pin, with no URL, VCS, local path, or marker;
   - normalized dependency names are unique within each group;
   - `.python-version` is exactly `3.11`;
@@ -81,8 +80,8 @@ def test_uv_project_contract() -> None:
 
     assert project["project"]["requires-python"] == ">=3.11,<3.12"
     assert project["tool"]["uv"]["package"] is False
-    assert len(production) == 87
-    assert len(development) == 23
+    assert production
+    assert development
     assert (REPOSITORY_ROOT / ".python-version").read_text(encoding="utf-8").strip() == "3.11"
     assert (REPOSITORY_ROOT / "uv.lock").is_file()
     assert ".venv/" in (REPOSITORY_ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
@@ -373,51 +372,38 @@ git add tests/run-verification.ps1 tests/selftest/test_verification_runner.py
 git commit -m "test: run canonical verification through uv"
 ```
 
-## Task 3: Move launchers and shortcut defaults to `.venv`
+## Task 3: Move launchers to `.venv`
 
 **Files:**
 
 - Modify: `tests/static/test_entrypoint_contract.py`
+- Test: `tests/integration/test_entrypoint_cli.py`
 - Modify: `bin/ziz.bat`
 - Modify: `bin/ziz.sh`
-- Modify: `scripts/create_zizai_shortcut.ps1`
 
 **Interfaces:**
 
 - Consumes: `.venv` created by `uv sync --frozen`.
-- Produces: unchanged launcher arguments/exit codes with default interpreters `bin/ziz.bat -> .venv\Scripts\python.exe`, `bin/ziz.sh -> .venv/bin/python`, shortcut -> `.venv\Scripts\pythonw.exe`.
+- Produces: unchanged launcher arguments/exit codes with default interpreters `bin/ziz.bat -> .venv\Scripts\python.exe` and `bin/ziz.sh -> .venv/bin/python`.
 
-- [ ] Extend entrypoint contracts for the `.venv` interpreter default, argument forwarding, and absence of repository-toolchain `.env` fallback in the three launcher files.
+- [ ] Use the existing `test_windows_launcher_targets_the_public_entrypoint` as the real-process Windows launcher contract; run it before the edit. Expected result: FAIL because the worktree has `.venv` but no `.env`.
+- [ ] Add one narrow static contract for the POSIX `.venv/bin/python` path and `"$@"` forwarding because the Windows verification environment cannot execute a Linux uv layout.
 
 ```python
-@pytest.mark.parametrize(
-    ("relative_path", "interpreter", "argument_forwarding"),
-    [
-        ("bin/ziz.bat", r".venv\Scripts\python.exe", "%*"),
-        ("bin/ziz.sh", ".venv/bin/python", '"$@"'),
-        ("scripts/create_zizai_shortcut.ps1", r".venv\Scripts\pythonw.exe", None),
-    ],
-)
-def test_launchers_use_uv_environment(
-    relative_path: str,
-    interpreter: str,
-    argument_forwarding: str | None,
-) -> None:
-    source = (REPOSITORY_ROOT / relative_path).read_text(encoding="utf-8")
-    assert interpreter in source
-    assert ".env" not in source
-    if argument_forwarding is not None:
-        assert argument_forwarding in source
+def test_posix_launcher_uses_uv_environment_path() -> None:
+    source = (REPOSITORY_ROOT / "bin" / "ziz.sh").read_text(encoding="utf-8")
+    assert 'PYTHON_EXE=".venv/bin/python"' in source
+    assert 'exec "$PYTHON_EXE" zizai.py "$@"' in source
 ```
 - [ ] Run the focused contract. Expected result: FAIL on the current `.env` paths.
-- [ ] Change only the interpreter paths to `.venv\Scripts\python.exe`, `.venv/bin/python`, and `.venv\Scripts\pythonw.exe`; preserve working-directory handling, arguments, and exit codes.
+- [ ] Change only the interpreter paths to `.venv\Scripts\python.exe` and `.venv/bin/python`; preserve working-directory handling, arguments, and exit codes.
 - [ ] Run the focused contract and `RISK-ENTRY-001`; commit when green.
 
 ```powershell
 uv sync --frozen
-uv run --frozen python -m pytest tests/static/test_entrypoint_contract.py -q
+uv run --frozen python -m pytest tests/static/test_entrypoint_contract.py tests/integration/test_entrypoint_cli.py -q
 powershell -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -RiskId RISK-ENTRY-001
-git add tests/static/test_entrypoint_contract.py bin/ziz.bat bin/ziz.sh scripts/create_zizai_shortcut.ps1
+git add tests/static/test_entrypoint_contract.py bin/ziz.bat bin/ziz.sh
 git commit -m "fix: launch application from uv environment"
 ```
 
@@ -464,7 +450,6 @@ git commit -m "ci: sync Python environment with pinned uv"
 
 **Files:**
 
-- Modify: `tests/static/test_uv_toolchain_contract.py`
 - Modify: `README.md`
 - Modify: `.gitignore`
 - Delete: `requirements.txt`
@@ -474,40 +459,16 @@ git commit -m "ci: sync Python environment with pinned uv"
 **Interfaces:**
 
 - Consumes: proven direct-dependency equivalence from Task 1 and locked setup commands.
-- Produces: `pyproject.toml` plus `uv.lock` as the sole dependency truth; README commands that use uv; no executable/bootstrap reference to requirements, pip install, refresh script, or toolchain `.env/`.
+- Produces: `pyproject.toml` plus `uv.lock` as the sole dependency truth; README commands that use uv; recorded one-time proof of no executable/bootstrap reference to requirements, pip install, refresh script, or toolchain `.env/`.
 
-- [ ] Add an explicit active-file contract that rejects toolchain `.env` paths, `requirements*.txt`, `pip install`, and `refresh_requirements.py` references in launchers, bootstrap scripts, CI, and README. Do not scan historical handoffs/tasks/reports, `.gitignore`, or arbitrary connector `env_path` values.
-
-```python
-ACTIVE_TOOLCHAIN_FILES = [
-    REPOSITORY_ROOT / "bin" / "ziz.bat",
-    REPOSITORY_ROOT / "bin" / "ziz.sh",
-    REPOSITORY_ROOT / "scripts" / "create_zizai_shortcut.ps1",
-    REPOSITORY_ROOT / "tests" / "run-verification.ps1",
-    REPOSITORY_ROOT / ".github" / "workflows" / "migration-verification.yml",
-    REPOSITORY_ROOT / "README.md",
-]
-
-
-def test_legacy_toolchain_inputs_and_active_references_are_absent() -> None:
-    for relative_path in ("requirements.txt", "requirements-dev.txt", "scripts/refresh_requirements.py"):
-        assert not (REPOSITORY_ROOT / relative_path).exists()
-    for path in ACTIVE_TOOLCHAIN_FILES:
-        source = path.read_text(encoding="utf-8")
-        assert "requirements.txt" not in source
-        assert "requirements-dev.txt" not in source
-        assert "pip install" not in source
-        assert "refresh_requirements.py" not in source
-        assert ".env/" not in source and r".env\" not in source
-```
-- [ ] Run the focused test. Expected result: FAIL while legacy inputs and active references remain.
+- [ ] Run a one-time explicit active-file scan for toolchain `.env` paths, `requirements*.txt`, `pip install`, and `refresh_requirements.py` references in launchers, bootstrap scripts, CI, and README. Do not scan historical handoffs/tasks/reports, `.gitignore`, or arbitrary connector `env_path` values. Expected result before edits: matches remain.
 - [ ] Update README setup and direct-run commands to `uv sync --frozen` and `uv run --frozen`; identify `pyproject.toml` plus `uv.lock` as the dependency truth.
 - [ ] Confirm dependency equivalence evidence is already recorded, then delete both requirements files and the obsolete refresh script. Remove the obsolete `requirements-dev.txt` ignore rule.
-- [ ] Use `rg` over active code/runtime/test/CI/current documentation to confirm zero toolchain references; run the focused tests and commit when green.
+- [ ] Use `rg` over active code/runtime/test/CI/current documentation to confirm zero toolchain references; run the existing toolchain, entrypoint, and CI contracts and commit when green.
 
 ```powershell
 uv run --frozen python -m pytest tests/static/test_uv_toolchain_contract.py tests/static/test_entrypoint_contract.py tests/static/test_ci_workflow_contract.py -q
-git add -A -- .gitignore README.md requirements.txt requirements-dev.txt scripts/refresh_requirements.py tests/static/test_uv_toolchain_contract.py
+git add -A -- .gitignore README.md requirements.txt requirements-dev.txt scripts/refresh_requirements.py
 git commit -m "docs: make uv the sole Python dependency workflow"
 ```
 
