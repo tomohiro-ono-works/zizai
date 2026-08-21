@@ -2,7 +2,7 @@
 
 ## Status
 
-Blocked — TASK-008
+Ready for Implementation
 
 ## Goal
 
@@ -25,7 +25,7 @@ GUI、Desktop、Coreが参照するSource設定を`apps/common/config`へ移し�
 
 ## Dependencies
 
-TASK-008。TASK-007はNot Activatedのため依存しない。
+TASK-008の検証基盤実装。TASK-008から移管されたCONFIG要件は本TaskのBaselineとして使用する。FS要件はTASK-015が担当し、本TaskをBlockしない。TASK-007はNot Activatedのため依存しない。
 
 ## Expected change area
 
@@ -82,14 +82,15 @@ Config MOVEと全consumer更新は同じOutcomeを構成し、分割すると実
 ## Evidence
 
 - TASK-008が依存条件として定義され、TASK-007はNot Activatedである。
+- TASK-008の検証基盤はlocal commit `2978e2f`で確立され、CONFIGの既知Failは本Taskで解消する要件として記録された。
 
 ## Remaining
 
-- Baseline確立後、Source設定と全consumerを同一変更で移行する。
+- Source設定と全consumerを同一変更で移行する。
 
 ## Exact next action
 
-TASK-008完了後、対象設定とconsumer参照を再確認してMOVE対象を固定する。
+TASK-009と競合しないWorktreeで対象設定とconsumer参照を再確認し、MOVE対象を固定する。
 
 ## Termination condition
 

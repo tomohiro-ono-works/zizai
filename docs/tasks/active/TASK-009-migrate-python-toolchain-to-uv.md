@@ -2,7 +2,7 @@
 
 ## Status
 
-Blocked — TASK-008
+Ready for Implementation
 
 ## Goal
 
@@ -25,7 +25,7 @@ Python依存管理と再生成可能な実行環境を`pyproject.toml`、`uv.loc
 
 ## Dependencies
 
-TASK-008。TASK-007はNot Activatedのため依存しない。
+TASK-008の検証基盤実装。TASK-008から移管されたCONFIG／FS要件はTASK-012／TASK-015が担当し、本TaskをBlockしない。TASK-007はNot Activatedのため依存しない。
 
 ## Expected change area
 
@@ -84,14 +84,15 @@ Required
 ## Evidence
 
 - TASK-008が依存条件として定義され、TASK-007はNot Activatedである。
+- TASK-008の検証基盤はlocal commit `2978e2f`で確立され、既知Fail／BlockedはTASK-012／TASK-015の要件として正本へ記録された。
 
 ## Remaining
 
-- Baseline確立後、既存依存を同等のuv構成へ移行する。
+- 既存依存、launcher/bootstrap、CI参照を確認し、同等のuv構成へ移行する。
 
 ## Exact next action
 
-TASK-008完了後、requirementsと全launcher/bootstrap参照を再確認して移行差分を固定する。
+requirementsと全launcher/bootstrap参照を限定調査し、実装前の移行差分とRollback境界を提示する。
 
 ## Termination condition
 

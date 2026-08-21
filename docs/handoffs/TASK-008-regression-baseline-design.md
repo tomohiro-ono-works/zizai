@@ -1,8 +1,8 @@
 # TASK-008 Migration Regression Baseline Design
 
-- Related task: [TASK-008](../tasks/active/TASK-008-establish-migration-regression-baseline.md)
+- Related task: [TASK-008](../tasks/done/TASK-008-establish-migration-regression-baseline.md)
 - Date: 2026-08-21
-- Status: Implemented — read-only review complete; TASK-008 Blocked by baseline gaps
+- Status: Implemented — read-only review complete; deferred risks assigned
 - Contract: [v23 Migration Verification Contract](v23-migration-verification-contract.md)
 
 ## Goal
@@ -120,7 +120,7 @@ Git history `2e6ab92`はTest sourceの候補としてだけ読む。
 ## Implementation and review policy
 
 - implementationはRisk単位のTDDで進め、failing test/runner checkを確認してから最小実装を加える。
-- Application codeは変更しない。現行behaviorがApproved Contractと競合する場合はTASK-008をBlockedとして報告する。
+- Application codeは変更しない。現行behaviorがApproved Contractと競合する場合はRiskをFail／Blockedとして報告し、承認された将来Taskの完了要件へ割り当てる。
 - 各sliceのLocal Gate成功後に次のsliceへ進む。
 - Task完了前にClaude Codeをplan mode、`Read/Glob/Grep`のみで1回reviewし、Codexが各指摘を一次情報で採否判定する。
 - Completion時は全Gate、tracking manifest、artifact除外、git diff scopeをfreshに検証する。

@@ -2,7 +2,7 @@
 
 ## Status
 
-Blocked
+Completed
 
 ## Goal
 
@@ -41,11 +41,11 @@ TASK-004、TASK-006。TASK-007はNot Activatedのため依存しない。
 - Path変更前のCLI、import、connector discovery、config、Desktop/UI境界を必要範囲で検証できる。
 - Test sourceが追跡され、node_modules・reports・cache等は追跡されない。
 - LocalとCIが同じ判定コマンドを使用する。
-- Baselineが現行ApplicationでPASSする。
+- Baseline verifierが現行ApplicationのPass／Fail／Blockedを再現可能に判定し、既知Fail／BlockedをPassへ読み替えず将来Taskの完了要件へ割り当てる。
 - Test失敗時にMigrationを停止できる。
 - Risk-to-Verifier表のautomated verifierが実装され、各行の合格基準へ追跡できる。
 - repository rootの`tests/`がcanonical test sourceとしてGit追跡される。
-- Windows Primary CIで`static-analysis`、`unit`、`integration`が必須GateとしてPASSする。
+- Windows Primary CIで`static-analysis`、`unit`、`integration`を同一commandから判定でき、既知Fail／Blocked解消後に必須GateとしてPASSできる。
 - 通常の合否判定がLLM、外部AI、実資格情報、外部service、対話操作に依存しない。
 - `manual-ui`対象は事前定義した記録形式でsource管理される。
 
@@ -90,6 +90,7 @@ Tests・runner・CIは「Migrationを機械的に判定可能にする」とい�
 - Test source 54件をmanifest化し、generated/history artifactとのGit tracking境界を実装した。
 - required Gateの0件collection／skip失敗化と`static-analysis`→`unit`→`integration`の順序をrunner self-testで固定した。
 - Claude Codeのread-only reviewを1回実施し、CIで`.env`固定pathとなる指摘をTDDで`sys.executable`継承へ修正した。
+- 2026-08-21 User Decisionにより、検証基盤の実装完了と未解決Riskの実行完了を分離し、後者をTASK-012／TASK-015の要件へ移管した。
 
 ## Evidence
 
@@ -105,16 +106,20 @@ Tests・runner・CIは「Migrationを機械的に判定可能にする」とい�
 - `RISK-EXT-001`、`RISK-WEB-002`: Approved DecisionどおりTASK-012までexit `2`。
 - Application code変更、remote push、cloud repository更新は行っていない。
 
-## Remaining
+## Deferred requirements
 
 - TASK-012でallowlist適用後に`RISK-CONFIG-001`を再実行し、12 passedへする。
 - TASK-015でユーザーが管理者PowerShellから`RISK-FS-001`だけを実行する。それまではexit `2`のBlockedを維持する。
 - 上記解消後、`required`と12 Riskの最終結果をfreshに取得する。
 
+## Remaining
+
+- None
+
 ## Exact next action
 
-TASK-012のallowlist適用後、`RISK-CONFIG-001`を再実行する。`RISK-FS-001`の実行はTASK-015まで行わない。
+TASK-009で既存依存を同等のuv構成へ移行する。
 
 ## Termination condition
 
-Acceptance criteriaの全Gateが現行ApplicationでPASSし、Application behaviorを変更していないこと。
+Test/CI baseline、Risk verifier、tracking境界が実装され、既知Fail／Blockedが将来Taskへ明示的に割り当てられ、Application behaviorを変更していないこと。

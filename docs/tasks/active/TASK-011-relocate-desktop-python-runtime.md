@@ -2,7 +2,7 @@
 
 ## Status
 
-Blocked — TASK-008, TASK-009, TASK-010
+Blocked — TASK-009, TASK-010
 
 ## Goal
 
@@ -96,15 +96,15 @@ Launcher、imports、Python責務境界、dynamic connector loadingは同時に�
 
 - `docs/decisions/ADR-v23-application-topology.md`
 - `docs/handoffs/v23-application-boundary-evidence.md`
-- TASK-008、TASK-009、TASK-010が未完の依存条件として定義されている。
+- TASK-008の検証基盤は完了し、TASK-009、TASK-010が未完の依存条件として残っている。
 
 ## Remaining
 
-- TASK-008～010完了後、Approved Target TreeへPython sourceとentrypointを移行する。
+- TASK-009～010完了後、Approved Target TreeへPython sourceとentrypointを移行する。
 
 ## Exact next action
 
-TASK-008～010のEvidenceを確認後、正式CLI互換を維持した責務別MOVEを実施する。
+TASK-009～010のEvidenceを確認後、正式CLI互換を維持した責務別MOVEを実施する。
 
 ## Termination condition
 

@@ -138,6 +138,8 @@ Risk単位では各表行の`-RiskId` commandを使う。TASK-009はrunner内部
 
 2026-08-21 User Decisionにより、`RISK-FS-001`のverifier実装はTASK-008に維持し、symlink capabilityを要する実環境実行だけをTASK-015へ延期する。TASK-015まではexit `2`の`Blocked`を維持し、Codexへ管理者権限を付与せず、ユーザーが当該Risk commandだけを管理者PowerShellで実行する。
 
+同Decisionにより、TASK-008の完了判定はTest/CI基盤、Risk verifier、tracking境界の実装完了とする。現行Applicationで検出した`RISK-CONFIG-001`のFailと`RISK-FS-001`のBlockedはPassへ読み替えず、それぞれTASK-012／TASK-015の完了要件として保持し、TASK-009以降の着手をBlockしない。
+
 `RISK-EXT-001`は現行`app.openExternal`がdomain/path allowlistを適用していない既知gap、`RISK-WEB-002`は実WebEngine挙動が未確定のsecurity riskである。現行挙動を正しいbaselineとして固定せず、TASK-012の実装とGate成功を完了条件にする。
 
 ## GUI-unavailable CI alternative Gate
