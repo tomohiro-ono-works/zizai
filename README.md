@@ -84,7 +84,8 @@ static/
 template/
 workflows/
 zizai.py
-requirements.txt
+pyproject.toml
+uv.lock
 ```
 
 主な役割:
@@ -106,7 +107,13 @@ requirements.txt
 
 ## 起動方法
 
-Windows では通常 `bin\ziz.bat` から起動します。`.env` を有効化して `zizai.py` に引数を渡す launcher です。
+依存環境は `uv.lock` に固定されています。初回および lock に変更があった場合は、Repository root で次を実行してください。
+
+```powershell
+uv sync --frozen
+```
+
+Windows では通常 `bin\ziz.bat` から起動します。`.venv` の Python で `zizai.py` に引数を渡す launcher です。
 
 ```powershell
 .\bin\ziz.bat
@@ -127,10 +134,10 @@ DevTools を有効にする場合:
 直接起動する場合:
 
 ```powershell
-.\.env\Scripts\python.exe zizai.py
+uv run --frozen python zizai.py
 ```
 
-Linux では `bin/ziz.sh` から起動します。Windows 版と同じく `.env` の Python に引数を渡します。
+Linux では `bin/ziz.sh` から起動します。Windows 版と同じく `.venv` の Python に引数を渡します。
 
 ```sh
 sh bin/ziz.sh
@@ -184,7 +191,7 @@ RENAME リストから列名を一括変更するためのサンプル CSV で�
 
 ## 依存ライブラリ
 
-Python 依存は [requirements.txt](requirements.txt) を参照してください。  
+Python 依存の正本は [pyproject.toml](pyproject.toml) と lockfile [uv.lock](uv.lock) です。
 外部ライブラリと JS ベンダーの簡易一覧は [THIRD_PARTY_INVENTORY.md](THIRD_PARTY_INVENTORY.md) にまとめています。
 
 ## ライセンス補足

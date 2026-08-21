@@ -46,7 +46,6 @@ config/recent_roots.json
 # Local-only personal files
 memo.md
 slack_client.py
-requirements-dev.txt
 
 # Project docs / Codex assets are part of the local repository structure.
 .codex/cache/
