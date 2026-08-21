@@ -88,6 +88,11 @@ Required
 
 - TASK-008が依存条件として定義され、TASK-007はNot Activatedである。
 - TASK-008の検証基盤はlocal commit `2978e2f`で確立され、既知Fail／BlockedはTASK-012／TASK-015の要件として正本へ記録された。
+- Task 6 clean regeneration (2026-08-21): deletion target was resolved as `C:\Users\tomoh\Documents\Sandbox\zizai\.worktrees\task-009-uv-toolchain\.venv`; it equaled the expected worktree-local path, was nested under the worktree root, and was absent before regeneration. Only this ignored artifact was removed. The repository-root `C:\Users\tomoh\Documents\Sandbox\zizai\.env` existed and was not deleted or modified.
+- With `UV_CACHE_DIR=$PWD\.uv-cache`, `uv sync --frozen` completed with `Checked 134 packages in 16ms` (exit 0); `uv lock --check` resolved 165 packages (exit 0); and `uv run --frozen python -m pytest tests/static tests/selftest -q` completed `44 passed` (exit 0).
+- Direct dependency parity remains production/development `87/23`, with additions/removals/version differences `0/0/0`.
+- Assigned migration Risks all passed: `RISK-ENTRY-001` 14 selected tests (exit 0), `RISK-PATH-001` 4 (exit 0), `RISK-CI-001` 23 (exit 0), and `RISK-WEB-001` 2 Python tests plus 3 Playwright tests (exit 0). Canonical commands were `powershell -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -RiskId <RiskId>` with the worktree-local `UV_CACHE_DIR`.
+- `RISK-WEB-001` environment recovery: the ignored worktree Playwright `node_modules` was missing; after confirming the worktree and main-checkout `tests/playwright/package-lock.json` files were identical, the main checkout's existing ignored `node_modules` (7 entries) was copied into this worktree. This is a local test prerequisite, not a source change. `RISK-CONFIG-001` remains TASK-012, and real symlink execution / `RISK-FS-001` remains TASK-015; neither is a TASK-009 failure.
 
 ## Remaining
 
