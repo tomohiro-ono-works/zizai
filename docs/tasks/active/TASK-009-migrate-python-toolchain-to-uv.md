@@ -82,6 +82,7 @@ Required
 
 - Task Decompositionが承認され、本Task定義を作成した。
 - uv `0.12.5`、Python `>=3.11,<3.12`、依存version完全保持、requirements／refresh script削除、既存`.env/`非変更の設計が会話で承認された。
+- 設計書のwritten reviewが承認され、TDD実装計画を`docs/handoffs/TASK-009-uv-toolchain-implementation-plan.md`へ記録した。
 
 ## Evidence
 
@@ -90,11 +91,11 @@ Required
 
 ## Remaining
 
-- 既存依存、launcher/bootstrap、CI参照を確認し、同等のuv構成へ移行する。
+- 承認済み実装計画をTDD単位で実行し、clean frozen syncとassigned Riskを検証する。
 
 ## Exact next action
 
-`docs/handoffs/TASK-009-uv-toolchain-design.md`のwritten review後、TDD単位の実装計画を作成する。
+実装計画Task 1のuv project contract testを追加し、現状で期待どおりFailすることを確認する。
 
 ## Termination condition
 

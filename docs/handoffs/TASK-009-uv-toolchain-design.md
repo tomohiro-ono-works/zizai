@@ -2,7 +2,7 @@
 
 - Related task: [TASK-009](../tasks/active/TASK-009-migrate-python-toolchain-to-uv.md)
 - Date: 2026-08-21
-- Status: Proposed — design approved in chat; written review pending
+- Status: Approved — design and written scope approved in chat
 - Toolchain target: uv `0.12.5`, Python `>=3.11,<3.12`
 
 ## Goal
