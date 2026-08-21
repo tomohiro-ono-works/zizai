@@ -51,45 +51,53 @@ function Complete-Verification {
     exit $ExitCode
 }
 
-function Resolve-PythonCommand {
-    $candidates = @(
-        (Join-Path $repositoryRoot ".env\Scripts\python.exe"),
-        (Join-Path $repositoryRoot ".venv\Scripts\python.exe")
-    )
-
-    foreach ($candidate in $candidates) {
-        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
-            return $candidate
-        }
+function Resolve-UvCommand {
+    $command = Get-Command "uv.exe" -ErrorAction SilentlyContinue
+    if ($null -eq $command) {
+        $command = Get-Command "uv" -ErrorAction SilentlyContinue
     }
-
-    $python = Get-Command "python.exe" -ErrorAction SilentlyContinue
-    if ($null -ne $python) {
-        return $python.Source
+    if ($null -eq $command) {
+        return $null
     }
+    return $command.Source
+}
 
-    return $null
+function Test-UvToolchain {
+    param([string]$UvCommand)
+
+    $version = (& $UvCommand --version 2>$null | Select-Object -First 1)
+    if ($LASTEXITCODE -ne 0 -or $version -notmatch "^uv\s+(\S+)") {
+        return $false
+    }
+    return $Matches[1] -eq "0.12.5"
+}
+
+function Invoke-UvPython {
+    param([string[]]$Arguments)
+
+    Push-Location $repositoryRoot
+    try {
+        & $script:uvCommand run --frozen python @Arguments | Out-Host
+        return $LASTEXITCODE
+    }
+    finally {
+        Pop-Location
+    }
 }
 
 function Invoke-PytestSelection {
     param([string]$MarkerExpression)
 
-    $python = Resolve-PythonCommand
-    if ($null -eq $python) {
+    if ((Invoke-UvPython -Arguments @("-c", "import pytest")) -ne 0) {
         return 2
     }
 
-    & $python -c "import pytest" 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        return 2
-    }
-
-    Push-Location $repositoryRoot
     $previousFailOnSkip = $env:ZIZAI_FAIL_ON_REQUIRED_SKIP
     try {
         $env:ZIZAI_FAIL_ON_REQUIRED_SKIP = "1"
-        & $python -m pytest --strict-markers -m $MarkerExpression tests | Out-Host
-        $pytestExitCode = $LASTEXITCODE
+        $pytestExitCode = Invoke-UvPython -Arguments @(
+            "-m", "pytest", "--strict-markers", "-m", $MarkerExpression, "tests"
+        )
     }
     finally {
         if ($null -eq $previousFailOnSkip) {
@@ -98,7 +106,6 @@ function Invoke-PytestSelection {
         else {
             $env:ZIZAI_FAIL_ON_REQUIRED_SKIP = $previousFailOnSkip
         }
-        Pop-Location
     }
 
     if ($pytestExitCode -eq 0) {
@@ -112,23 +119,13 @@ function Test-SymlinkCapability {
         return $false
     }
 
-    $python = Resolve-PythonCommand
-    if ($null -eq $python) {
-        return $false
-    }
     $probe = Join-Path $repositoryRoot "tests\support\check_symlink_capability.py"
-    & $python $probe
-    return $LASTEXITCODE -eq 0
+    return (Invoke-UvPython -Arguments @($probe)) -eq 0
 }
 
 function Test-WebEngineCapability {
-    $python = Resolve-PythonCommand
-    if ($null -eq $python) {
-        return $false
-    }
     $probe = Join-Path $repositoryRoot "tests\support\check_webengine_capability.py"
-    & $python $probe
-    return $LASTEXITCODE -eq 0
+    return (Invoke-UvPython -Arguments @($probe)) -eq 0
 }
 
 function Invoke-PlaywrightVerification {
@@ -183,6 +180,11 @@ if ($RiskId -in $deferredRisks) {
     Complete-Verification -ExitCode 2 -Message "$RiskId is Blocked until TASK-012."
 }
 
+$script:uvCommand = Resolve-UvCommand
+if ($null -eq $script:uvCommand -or -not (Test-UvToolchain -UvCommand $script:uvCommand)) {
+    Complete-Verification -ExitCode 2 -Message "uv 0.12.5 is required for canonical verification."
+}
+
 if (($RiskId -eq "RISK-FS-001" -or $Gate -eq "unit") -and -not (Test-SymlinkCapability)) {
     Complete-Verification -ExitCode 2 -Message "Symlink capability is required by RISK-FS-001."
 }
@@ -201,13 +203,8 @@ if ($Gate -eq "manual-ui" -or $RiskId -eq "RISK-UI-001") {
         Complete-Verification -ExitCode 2 -Message "Manual UI validator is missing: $validator"
     }
 
-    $python = Resolve-PythonCommand
-    if ($null -eq $python) {
-        Complete-Verification -ExitCode 2 -Message "Python is required for manual-ui verification."
-    }
-
-    & $python $validator $EvidencePath
-    Complete-Verification -ExitCode $LASTEXITCODE -Message "manual-ui verification passed."
+    $manualValidatorExitCode = Invoke-UvPython -Arguments @($validator, $EvidencePath)
+    Complete-Verification -ExitCode $manualValidatorExitCode -Message "manual-ui verification passed."
 }
 
 if ($Gate -eq "required") {
