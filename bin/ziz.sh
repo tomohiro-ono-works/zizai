@@ -4,7 +4,7 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd "$(dirname "$0")" && pwd)
 cd "$SCRIPT_DIR/.."
 
-PYTHON_EXE=".env/bin/python"
+PYTHON_EXE=".venv/bin/python"
 
 if [ ! -x "$PYTHON_EXE" ]; then
     echo "Python virtual environment not found: $PYTHON_EXE"

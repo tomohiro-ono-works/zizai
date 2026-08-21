@@ -29,3 +29,10 @@ def test_import_zizai_does_not_start_the_application() -> None:
     source = (REPOSITORY_ROOT / "zizai.py").read_text(encoding="utf-8")
 
     assert 'if __name__ == "__main__":' in source
+
+
+def test_posix_launcher_uses_uv_environment_path() -> None:
+    source = (REPOSITORY_ROOT / "bin" / "ziz.sh").read_text(encoding="utf-8")
+
+    assert 'PYTHON_EXE=".venv/bin/python"' in source
+    assert 'exec "$PYTHON_EXE" zizai.py "$@"' in source
