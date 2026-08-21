@@ -45,7 +45,8 @@ def test_python_jobs_use_pinned_uv_and_frozen_sync() -> None:
         commands = run_commands(workflow["jobs"][job_name])
 
         assert str(setup_python["with"]["python-version"]) == "3.11"
-        assert str(setup_uv["with"]["uv-version"]) == "0.12.5"
+        assert str(setup_uv["with"]["version"]) == "0.12.5"
+        assert "cache" not in setup_python.get("with", {})
         assert "uv sync --frozen" in commands
         assert all("pip install" not in command and "requirements" not in command for command in commands)
 

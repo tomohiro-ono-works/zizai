@@ -11,7 +11,6 @@ permissions:
 
 env:
   PYTHONUTF8: "1"
-  PIP_DISABLE_PIP_VERSION_CHECK: "1"
 
 jobs:
   static-analysis:
@@ -23,7 +22,7 @@ jobs:
           python-version: "3.11"
       - uses: astral-sh/setup-uv@v7
         with:
-          uv-version: "0.12.5"
+          version: "0.12.5"
       - name: Sync Python dependencies
         run: uv sync --frozen
       - name: Run static analysis gate
@@ -39,7 +38,7 @@ jobs:
           python-version: "3.11"
       - uses: astral-sh/setup-uv@v7
         with:
-          uv-version: "0.12.5"
+          version: "0.12.5"
       - name: Sync Python dependencies
         run: uv sync --frozen
       - name: Run unit gate
@@ -55,7 +54,7 @@ jobs:
           python-version: "3.11"
       - uses: astral-sh/setup-uv@v7
         with:
-          uv-version: "0.12.5"
+          version: "0.12.5"
       - name: Sync Python dependencies
         run: uv sync --frozen
       - name: Run integration gate
@@ -95,7 +94,7 @@ jobs:
           cache-dependency-path: tests/playwright/package-lock.json
       - uses: astral-sh/setup-uv@v7
         with:
-          uv-version: "0.12.5"
+          version: "0.12.5"
       - name: Sync Python dependencies
         run: uv sync --frozen
       - name: Install browser test dependencies
