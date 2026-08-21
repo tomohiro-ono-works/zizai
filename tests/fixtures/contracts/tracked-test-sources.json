@@ -46,6 +46,7 @@
     "tests/static/test_required_skip_probe.py",
     "tests/static/test_source_boundary.py",
     "tests/static/test_tracked_source_manifest.py",
+    "tests/static/test_uv_toolchain_contract.py",
     "tests/support/check_symlink_capability.py",
     "tests/support/check_webengine_capability.py",
     "tests/unit/test_bridge_contract.py",
