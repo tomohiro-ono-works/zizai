@@ -2,7 +2,7 @@
 
 ## Status
 
-Ready for Implementation
+Completed
 
 ## Goal
 
@@ -83,6 +83,10 @@ Required
 - Task Decompositionが承認され、本Task定義を作成した。
 - uv `0.12.5`、Python `>=3.11,<3.12`、依存version完全保持、requirements／refresh script削除、既存`.env/`非変更の設計が会話で承認された。
 - 設計書のwritten reviewが承認され、TDD実装計画を`docs/handoffs/TASK-009-uv-toolchain-implementation-plan.md`へ記録した。
+- `pyproject.toml`、`uv.lock`、`.python-version`を追加し、flat non-package Applicationとしてuv toolchainを確立した。
+- canonical verification、Windows/POSIX launcher、Windows CI、READMEをuv／`.venv`へ移行した。
+- direct dependency同値性とactive参照0を確認後、`requirements.txt`、`requirements-dev.txt`、`scripts/refresh_requirements.py`を削除した。
+- Claude Code read-only reviewを1回実施し、Codexが公式一次情報で採否を確認した。確認済みsetup-uv input修正とobsolete pip環境変数削除をTDDで反映した。
 
 ## Evidence
 
@@ -93,15 +97,20 @@ Required
 - Direct dependency parity remains production/development `87/23`, with additions/removals/version differences `0/0/0`.
 - Assigned migration Risks all passed: `RISK-ENTRY-001` 14 selected tests (exit 0), `RISK-PATH-001` 4 (exit 0), `RISK-CI-001` 23 (exit 0), and `RISK-WEB-001` 2 Python tests plus 3 Playwright tests (exit 0). Canonical commands were `powershell -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -RiskId <RiskId>` with the worktree-local `UV_CACHE_DIR`.
 - `RISK-WEB-001` environment recovery: the ignored worktree Playwright `node_modules` was missing; after confirming the worktree and main-checkout `tests/playwright/package-lock.json` files were identical, the main checkout's existing ignored `node_modules` (7 entries) was copied into this worktree. This is a local test prerequisite, not a source change. `RISK-CONFIG-001` remains TASK-012, and real symlink execution / `RISK-FS-001` remains TASK-015; neither is a TASK-009 failure.
+- Claude Code 2.1.233 read-only review (plan mode; Read/Glob/Grep only; exit 0) found three items. `setup-uv` input mismatch and dead `PIP_DISABLE_PIP_VERSION_CHECK` were adopted; optional cache-policy explicitness was rejected as outside the approved correctness scope. Official uv／setup-uv documentation confirmed the required input is `version`, while `uv-version` is an output.
+- Claude fix TDD: the corrected CI contract failed with `KeyError: 'version'` before workflow implementation, then passed `6 passed`; `RISK-CI-001` passed `23 selected` (exit 0).
+- Final fresh verification (2026-08-22): `uv lock --check` resolved 165 packages; static+selftest `44 passed`; `RISK-ENTRY-001` 14、`RISK-PATH-001` 4、`RISK-CI-001` 23、`RISK-WEB-001` Python 2 + Playwright 3 all passed with exit 0.
+- Active README／launcher／runner／CI scan returned no requirements、pip install、refresh script、toolchain `.env/`、obsolete pip environment matches (`rg` exit 1 = zero matches). Existing repository-root `.env/` was not deleted, renamed, written, or modified.
+- All changes remain local on `codex/task-009-uv-toolchain`; no push or merge was performed.
 
 ## Remaining
 
-- 承認済み実装計画をTDD単位で実行し、clean frozen syncとassigned Riskを検証する。
+None.
 
 ## Exact next action
 
-実装計画Task 1のuv project contract testを追加し、現状で期待どおりFailすることを確認する。
+None — TASK-009はlocal branch上で完了。統合判断はユーザー確認後に行う。
 
 ## Termination condition
 
-Acceptance criteriaと全VerificationがPASSし、既存`.env/`を物理削除していないこと。
+Satisfied — Acceptance criteriaとTASK-009 assigned VerificationがPASSし、既存`.env/`を物理削除していない。
