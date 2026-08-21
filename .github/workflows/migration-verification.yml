@@ -21,9 +21,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: pip
-      - name: Install Python dependencies
-        run: python -m pip install -r requirements-dev.txt
+      - uses: astral-sh/setup-uv@v7
+        with:
+          uv-version: "0.12.5"
+      - name: Sync Python dependencies
+        run: uv sync --frozen
       - name: Run static analysis gate
         shell: powershell
         run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -Gate static-analysis
@@ -35,9 +37,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: pip
-      - name: Install Python dependencies
-        run: python -m pip install -r requirements-dev.txt
+      - uses: astral-sh/setup-uv@v7
+        with:
+          uv-version: "0.12.5"
+      - name: Sync Python dependencies
+        run: uv sync --frozen
       - name: Run unit gate
         shell: powershell
         run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -Gate unit
@@ -49,9 +53,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: pip
-      - name: Install Python dependencies
-        run: python -m pip install -r requirements-dev.txt
+      - uses: astral-sh/setup-uv@v7
+        with:
+          uv-version: "0.12.5"
+      - name: Sync Python dependencies
+        run: uv sync --frozen
       - name: Run integration gate
         shell: powershell
         run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -Gate integration
@@ -82,14 +88,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: pip
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: npm
           cache-dependency-path: tests/playwright/package-lock.json
-      - name: Install Python dependencies
-        run: python -m pip install -r requirements-dev.txt
+      - uses: astral-sh/setup-uv@v7
+        with:
+          uv-version: "0.12.5"
+      - name: Sync Python dependencies
+        run: uv sync --frozen
       - name: Install browser test dependencies
         working-directory: tests/playwright
         run: npm ci

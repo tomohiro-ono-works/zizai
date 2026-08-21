@@ -32,6 +32,24 @@ def test_windows_ci_uses_canonical_runner_for_required_gates() -> None:
         assert command in run_commands(jobs[job_name])
 
 
+def test_python_jobs_use_pinned_uv_and_frozen_sync() -> None:
+    workflow = yaml.safe_load(WORKFLOW_PATH.read_text(encoding="utf-8"))
+    for job_name in ("static-analysis", "unit", "integration", "webengine"):
+        steps = workflow["jobs"][job_name]["steps"]
+        setup_python = next(
+            step for step in steps if str(step.get("uses", "")).startswith("actions/setup-python@")
+        )
+        setup_uv = next(
+            step for step in steps if str(step.get("uses", "")).startswith("astral-sh/setup-uv@")
+        )
+        commands = run_commands(workflow["jobs"][job_name])
+
+        assert str(setup_python["with"]["python-version"]) == "3.11"
+        assert str(setup_uv["with"]["uv-version"]) == "0.12.5"
+        assert "uv sync --frozen" in commands
+        assert all("pip install" not in command and "requirements" not in command for command in commands)
+
+
 def test_browser_and_webengine_jobs_are_deterministic_and_local_only() -> None:
     source = WORKFLOW_PATH.read_text(encoding="utf-8")
     workflow = yaml.safe_load(source)
