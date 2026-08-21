@@ -1,0 +1,14 @@
+version: 1
+apis:
+  profiles:
+    example_api:
+      base_url: "https://api.example.com/v1"
+      timeout_sec: 30
+web:
+  allowlist:
+    - domain: "example.com"
+      path_prefixes:
+        - /allowed/
+    - domain: "sub.example.com"
+      path_prefixes:
+        - /

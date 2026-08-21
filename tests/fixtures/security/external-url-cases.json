@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "risk_id": "RISK-EXT-001",
+  "status": "Blocked until TASK-012",
+  "cases": [
+    {"url": "file:///C:/outside.html", "accepted": false, "launcher_calls": 0},
+    {"url": "ftp://example.com/allowed/file", "accepted": false, "launcher_calls": 0},
+    {"url": "https://example.net/allowed/page", "accepted": false, "launcher_calls": 0},
+    {"url": "https://example.com/outside/page", "accepted": false, "launcher_calls": 0},
+    {"url": "https://example.com/allowed/page", "accepted": true, "launcher_calls": 1}
+  ]
+}

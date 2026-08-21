@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "connectors": [
+    {"module": "bigquery_connector", "class": "BQConnector"},
+    {"module": "chrome_connector", "class": "ChromeConnector"},
+    {"module": "csv_connector", "class": "CSVConnector"},
+    {"module": "dataintegration_connector", "class": "DataintegrationConnector"},
+    {"module": "duckdb_connector", "class": "DuckConnector"},
+    {"module": "excel_connector", "class": "ExcelConnector"},
+    {"module": "plotly_connector", "class": "PlotlyConnector"},
+    {"module": "python_connector", "class": "PythonConnector"},
+    {"module": "selenium_connector", "class": "SeleniumConnector"},
+    {"module": "shell_connector", "class": "ShellConnector"},
+    {"module": "vector_connector", "class": "VectorConnector"},
+    {"module": "windows_connector", "class": "WindowsConnector"}
+  ]
+}

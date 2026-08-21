@@ -15,6 +15,7 @@ Thumbs.db
 *.ps1
 !.codex-harness/scripts/*.ps1
 !.agents/skills/**/scripts/*.ps1
+!/tests/run-verification.ps1
 # Python test / cache artifacts
 .pytest_cache/
 .mypy_cache/
@@ -27,7 +28,7 @@ logs/
 scripts/
 !.codex-harness/scripts/
 !.agents/skills/**/scripts/
-workflows/
+/workflows/
 static/old/
 *.log
 *.tmp
@@ -43,9 +44,8 @@ memo.md
 slack_client.py
 requirements-dev.txt
 
-# Project docs / Codex assets are part of the repo structure.
+# Project docs / Codex assets are part of the local repository structure.
 .codex/cache/
-tests/
 
 # Local Codex workspace instructions and artifacts
 /.agents/
@@ -60,5 +60,15 @@ tests/
 tests/playwright/node_modules/
 tests/playwright/reports/
 tests/playwright/results/
+tests/playwright/test-results/
+tests/playwright/artifacts/
 tests/playwright/.cache/
 tests/playwright/.auth/
+tests/playwright/.static-server.runtime.json
+/tests/ui_analysis/
+/tests/results/
+/tests/preview.html
+/results/
+
+# Historical local verification assets retained outside the canonical baseline.
+/.github/workflows/playwright.yml

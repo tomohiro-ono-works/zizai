@@ -2,7 +2,7 @@
 
 - Related task: [TASK-008](../tasks/active/TASK-008-establish-migration-regression-baseline.md)
 - Date: 2026-08-21
-- Status: Proposed — section design approved; written review pending
+- Status: Implemented — read-only review complete; TASK-008 Blocked by baseline gaps
 - Contract: [v23 Migration Verification Contract](v23-migration-verification-contract.md)
 
 ## Goal
@@ -114,7 +114,7 @@ Git history `2e6ab92`はTest sourceの候補としてだけ読む。
 - required testの0件collection、skip、platform不足は成功扱いにしない。
 - dependency不足はassertion failureと区別してexit `2`にする。
 - subprocess failureはcommand、exit code、対象Riskを表示し、秘密情報やfixture全内容をlogへ出さない。
-- symlink作成不能は`RISK-FS-001`をBlockedにし、専用Windows環境で再実行する。
+- symlink作成不能は`RISK-FS-001`をBlockedにする。2026-08-21 User Decisionにより実環境実行はTASK-015まで延期し、ユーザーが管理者PowerShellから当該Riskだけを実行する。
 - manual recordはschema一致だけでなく、全case`Pass`、evidence path、SHA-256の非空を検証する。
 
 ## Implementation and review policy
@@ -131,3 +131,13 @@ Git history `2e6ab92`はTest sourceの候補としてだけ読む。
 - 旧資産、未追跡personal file、Application codeを削除・上書きしない。
 - 外部serviceや実OS操作caseは通常Gateへ含めない。
 - 長いraw source inventoryは会話へ貼らず、機械索引から必要symbolだけ読む。
+
+## Implementation evidence
+
+- canonical Test source 54件を`tests/fixtures/contracts/tracked-test-sources.json`へ固定し、Git indexと完全一致させた。
+- `static-analysis` 30件、`integration` 18件、WebEngine 1件、Playwright 3件、manual UI validatorの正常系がPassした。
+- runner self-test 7件がPassし、unknown Gate=`1`、deferred Risk／manual evidence不足=`2`、required skip=`1`、required順序を確認した。
+- Claude Code read-only reviewのCI interpreter指摘を採用し、subprocess test 3 filesを`.env`固定から`sys.executable`継承へ変更した。修正後の関連15 testsはPassした。
+- `RISK-CONFIG-001`はnon-http(s) 2件が現行Application gapとしてFailし、`RISK-FS-001`はlocal symlink privilege不足でBlockedした。Application codeは変更していない。
+- `RISK-FS-001`はTASK-015までBlockedを維持し、Codexへ管理者権限を付与せずユーザー実行とすることを2026-08-21に承認した。
+- `RISK-EXT-001`と`RISK-WEB-002`はApproved DecisionどおりTASK-012までBlockedを維持した。

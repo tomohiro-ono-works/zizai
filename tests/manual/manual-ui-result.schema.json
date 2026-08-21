@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zizai.local/schemas/manual-ui-result.schema.json",
+  "title": "Zizai manual UI verification result",
+  "type": "object",
+  "required": [
+    "risk_id",
+    "executed_at",
+    "executor",
+    "environment",
+    "prerequisites",
+    "cases",
+    "overall_result"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "risk_id": {"const": "RISK-UI-001"},
+    "executed_at": {"type": "string", "format": "date-time", "minLength": 1},
+    "executor": {"type": "string", "minLength": 1},
+    "environment": {
+      "type": "object",
+      "required": ["os_name", "os_version", "architecture", "display", "python", "pyside6", "qtwebengine"],
+      "additionalProperties": false,
+      "properties": {
+        "os_name": {"const": "Windows"},
+        "os_version": {"type": "string", "minLength": 1},
+        "architecture": {"type": "string", "minLength": 1},
+        "display": {"type": "string", "minLength": 1},
+        "python": {"type": "string", "minLength": 1},
+        "pyside6": {"type": "string", "minLength": 1},
+        "qtwebengine": {"type": "string", "minLength": 1}
+      }
+    },
+    "prerequisites": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "cases": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {
+        "type": "object",
+        "required": ["test_id", "target_feature", "steps", "result", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "test_id": {
+            "enum": [
+              "UI-WINDOW-DRAG",
+              "UI-WINDOW-RESIZE",
+              "UI-WINDOW-MINIMIZE",
+              "UI-WINDOW-MAXIMIZE",
+              "UI-WINDOW-CLOSE",
+              "UI-FILE-DIALOG",
+              "UI-FOLDER-DIALOG",
+              "UI-COORDINATE-CAPTURE",
+              "UI-RETRY-OVERLAY"
+            ]
+          },
+          "target_feature": {"type": "string", "minLength": 1},
+          "steps": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["number", "action", "expected", "actual", "result"],
+              "additionalProperties": false,
+              "properties": {
+                "number": {"type": "integer", "minimum": 1},
+                "action": {"type": "string", "minLength": 1},
+                "expected": {"type": "string", "minLength": 1},
+                "actual": {"type": "string", "minLength": 1},
+                "result": {"const": "Pass"}
+              }
+            }
+          },
+          "result": {"const": "Pass"},
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["path", "sha256"],
+              "additionalProperties": false,
+              "properties": {
+                "path": {"type": "string", "minLength": 1},
+                "sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "overall_result": {"const": "Pass"}
+  }
+}

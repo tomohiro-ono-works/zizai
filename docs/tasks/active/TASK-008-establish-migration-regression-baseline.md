@@ -2,7 +2,7 @@
 
 ## Status
 
-Ready for Implementation
+Blocked
 
 ## Goal
 
@@ -86,6 +86,10 @@ Tests・runner・CIは「Migrationを機械的に判定可能にする」とい�
 - Task Decompositionが承認され、本Task定義を作成した。
 - TASK-004でVerification Contractが確定した。
 - TASK-006でcanonical documentationとGit trackingが確立した。
+- canonical runner、Risk marker、deterministic fixture、Windows CI、Playwright/WebEngine smoke、manual UI record validatorを実装した。
+- Test source 54件をmanifest化し、generated/history artifactとのGit tracking境界を実装した。
+- required Gateの0件collection／skip失敗化と`static-analysis`→`unit`→`integration`の順序をrunner self-testで固定した。
+- Claude Codeのread-only reviewを1回実施し、CIで`.env`固定pathとなる指摘をTDDで`sys.executable`継承へ修正した。
 
 ## Evidence
 
@@ -93,14 +97,23 @@ Tests・runner・CIは「Migrationを機械的に判定可能にする」とい�
 - `docs/tasks/done/TASK-006-adopt-canonical-documentation-task-state.md`
 - `docs/handoffs/TASK-008-regression-baseline-design.md`
 - TASK-007はNot Activatedである。
+- `static-analysis`: 30 passed、`integration`: 18 passed、`e2e`: pytest 1 passed + Playwright 3 passed、`manual-ui`: passed。
+- `RISK-ENTRY-001`: 13 passed、`RISK-PATH-001`: 4 passed、`RISK-CONN-001`: 1 passed、`RISK-CONN-002`: 11 passed、`RISK-BRIDGE-001`: 8 passed、`RISK-CI-001`: 22 passed。
+- `RISK-CONFIG-001`: 10 passed / 2 failed。`ftp://`と`file://`が現行Applicationで許可され、Approved Contractのnon-http(s)拒否と競合する。
+- `RISK-FS-001`: Windows symlink privilege不足によりexit `2`。`required`もstatic-analysis成功後、unit開始時にexit `2`。
+- 2026-08-21 User Decision: `RISK-FS-001`の実環境実行はTASK-015まで延期し、ユーザーが管理者PowerShellから当該Riskだけを実行する。Codexへ管理者権限は付与しない。
+- `RISK-EXT-001`、`RISK-WEB-002`: Approved DecisionどおりTASK-012までexit `2`。
+- Application code変更、remote push、cloud repository更新は行っていない。
 
 ## Remaining
 
-- Verification ContractとTASK-003のINTEGRATE対象に従ってTest/CI基盤を実装する。
+- TASK-012でallowlist適用後に`RISK-CONFIG-001`を再実行し、12 passedへする。
+- TASK-015でユーザーが管理者PowerShellから`RISK-FS-001`だけを実行する。それまではexit `2`のBlockedを維持する。
+- 上記解消後、`required`と12 Riskの最終結果をfreshに取得する。
 
 ## Exact next action
 
-Verification ContractのRisk IDをTest file／CI Gateへ対応づけ、最初のfailing baseline testから実装する。
+TASK-012のallowlist適用後、`RISK-CONFIG-001`を再実行する。`RISK-FS-001`の実行はTASK-015まで行わない。
 
 ## Termination condition
 

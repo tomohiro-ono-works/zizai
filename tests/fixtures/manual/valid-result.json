@@ -1,0 +1,27 @@
+{
+  "risk_id": "RISK-UI-001",
+  "executed_at": "2026-08-21T00:00:00+09:00",
+  "executor": "synthetic-validator-fixture",
+  "environment": {
+    "os_name": "Windows",
+    "os_version": "11",
+    "architecture": "x64",
+    "display": "1920x1080",
+    "python": "3.11",
+    "pyside6": "6.11",
+    "qtwebengine": "6.11"
+  },
+  "prerequisites": ["synthetic validator fixture only"],
+  "cases": [
+    {"test_id": "UI-WINDOW-DRAG", "target_feature": "window drag", "steps": [{"number": 1, "action": "drag", "expected": "moves", "actual": "moves", "result": "Pass"}], "result": "Pass", "evidence": [{"path": "fixture/window-drag.png", "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}]},
+    {"test_id": "UI-WINDOW-RESIZE", "target_feature": "window resize", "steps": [{"number": 1, "action": "resize", "expected": "resizes", "actual": "resizes", "result": "Pass"}], "result": "Pass", "evidence": [{"path": "fixture/window-resize.png", "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}]},
+    {"test_id": "UI-WINDOW-MINIMIZE", "target_feature": "window minimize", "steps": [{"number": 1, "action": "minimize", "expected": "minimized", "actual": "minimized", "result": "Pass"}], "result": "Pass", "evidence": [{"path": "fixture/window-minimize.png", "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"}]},
+    {"test_id": "UI-WINDOW-MAXIMIZE", "target_feature": "window maximize", "steps": [{"number": 1, "action": "maximize", "expected": "maximized", "actual": "maximized", "result": "Pass"}], "result": "Pass", "evidence": [{"path": "fixture/window-maximize.png", "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"}]},
+    {"test_id": "UI-WINDOW-CLOSE", "target_feature": "window close", "steps": [{"number": 1, "action": "close", "expected": "closed", "actual": "closed", "result": "Pass"}], "result": "Pass", "evidence": [{"path": "fixture/window-close.png", "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"}]},
+    {"test_id": "UI-FILE-DIALOG", "target_feature": "file dialog", "steps": [{"number": 1, "action": "pick file", "expected": "selected", "actual": "selected", "result": "Pass"}], "result": "Pass", "evidence": [{"path": "fixture/file-dialog.png", "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}]},
+    {"test_id": "UI-FOLDER-DIALOG", "target_feature": "folder dialog", "steps": [{"number": 1, "action": "pick folder", "expected": "selected", "actual": "selected", "result": "Pass"}], "result": "Pass", "evidence": [{"path": "fixture/folder-dialog.png", "sha256": "1111111111111111111111111111111111111111111111111111111111111111"}]},
+    {"test_id": "UI-COORDINATE-CAPTURE", "target_feature": "coordinate capture", "steps": [{"number": 1, "action": "capture", "expected": "selected", "actual": "selected", "result": "Pass"}], "result": "Pass", "evidence": [{"path": "fixture/coordinate-capture.png", "sha256": "2222222222222222222222222222222222222222222222222222222222222222"}]},
+    {"test_id": "UI-RETRY-OVERLAY", "target_feature": "retry overlay", "steps": [{"number": 1, "action": "retry", "expected": "recovered", "actual": "recovered", "result": "Pass"}], "result": "Pass", "evidence": [{"path": "fixture/retry-overlay.png", "sha256": "3333333333333333333333333333333333333333333333333333333333333333"}]}
+  ],
+  "overall_result": "Pass"
+}

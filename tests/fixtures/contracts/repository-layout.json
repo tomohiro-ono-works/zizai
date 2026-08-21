@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "repository_root": ".",
+  "config_root": "config",
+  "workflow_root": "workflows",
+  "log_root": "logs",
+  "gui_root": "static",
+  "entrypoints": [
+    "zizai.py",
+    "bin/ziz.bat"
+  ],
+  "web_entries": [
+    "static/home.html",
+    "static/dataflow.html",
+    "static/settings.html"
+  ],
+  "required_files": [
+    "zizai.py",
+    "bin/ziz.bat",
+    "app/main.py",
+    "app/gui/host.py",
+    "app/gui/bridge.py",
+    "config/security_policies.yml",
+    "static/home.html",
+    "static/dataflow.html",
+    "static/settings.html"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "risk_id": "RISK-WEB-002",
+  "status": "Blocked until TASK-012",
+  "cases": [
+    {"kind": "remote-http", "url": "http://example.invalid/", "expected": "blocked"},
+    {"kind": "remote-https", "url": "https://example.invalid/", "expected": "blocked"},
+    {"kind": "outside-file", "url": "file:///C:/outside.html", "expected": "blocked"},
+    {"kind": "data", "url": "data:text/html,untrusted", "expected": "blocked"},
+    {"kind": "blob", "url": "blob:null/untrusted", "expected": "blocked"},
+    {"kind": "popup", "url": "about:blank", "expected": "blocked"}
+  ]
+}

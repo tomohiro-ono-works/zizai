@@ -1,0 +1,7 @@
+entries:
+  - index: customer_id
+    suggest_word: 顧客ID
+  - index: amount
+    suggest_word:
+      - 金額
+      - 売上
