@@ -13,6 +13,7 @@ Python依存管理と再生成可能な実行環境を`pyproject.toml`、`uv.loc
 - `docs/handoffs/v23-repository-audit.md`
 - `docs/handoffs/v23-migration-map.md`
 - `docs/codex_development_guide_2026-08-15_v24/05_repo-worktree-folder-structure.md`
+- `docs/handoffs/TASK-009-uv-toolchain-design.md`
 - TASK-008 Regression Baseline
 
 ## Scope
@@ -80,6 +81,7 @@ Required
 ## Completed
 
 - Task Decompositionが承認され、本Task定義を作成した。
+- uv `0.12.5`、Python `>=3.11,<3.12`、依存version完全保持、requirements／refresh script削除、既存`.env/`非変更の設計が会話で承認された。
 
 ## Evidence
 
@@ -92,7 +94,7 @@ Required
 
 ## Exact next action
 
-requirementsと全launcher/bootstrap参照を限定調査し、実装前の移行差分とRollback境界を提示する。
+`docs/handoffs/TASK-009-uv-toolchain-design.md`のwritten review後、TDD単位の実装計画を作成する。
 
 ## Termination condition
 
