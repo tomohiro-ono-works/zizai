@@ -114,7 +114,7 @@ steps:
   action: replace_fields_forrenamelist
   params:
     input_data: step1
-    rename_list_path: config\rename.csv
+    rename_list_path: apps\common\config\rename.csv
   output_variable: step15
   description: データ加工 / フィールド名をRENAMEリストから変更
   ui_position:
@@ -125,7 +125,7 @@ steps:
   action: replace_fields_forrenamelist
   params:
     input_data: step10
-    rename_list_path: config\rename.csv
+    rename_list_path: apps\common\config\rename.csv
   output_variable: step16
   description: データ加工 / フィールド名をRENAMEリストから変更
   ui_position:
@@ -136,7 +136,7 @@ steps:
   action: replace_fields_forrenamelist
   params:
     input_data: step12
-    rename_list_path: config\rename.csv
+    rename_list_path: apps\common\config\rename.csv
   output_variable: step17
   description: データ加工 / フィールド名をRENAMEリストから変更
   ui_position:

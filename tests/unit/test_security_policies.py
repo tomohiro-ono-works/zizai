@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,8 @@ from core.security_policies import is_web_target_allowed, load_security_policies
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_ROOT = REPOSITORY_ROOT / "tests" / "fixtures" / "config"
+EXTERNAL_URL_CASES_PATH = REPOSITORY_ROOT / "tests" / "fixtures" / "security" / "external-url-cases.json"
+EXTERNAL_URL_CASES = json.loads(EXTERNAL_URL_CASES_PATH.read_text(encoding="utf-8"))["cases"]
 
 pytestmark = [pytest.mark.unit, pytest.mark.risk_config_001]
 
@@ -44,7 +47,16 @@ def test_missing_policy_has_empty_safe_defaults(tmp_path: Path) -> None:
         ("https://example.com/other", False),
         ("ftp://example.com/allowed/orders", False),
         ("file://example.com/allowed/orders", False),
+        ("data:text/html,example.com/allowed/orders", False),
+        ("blob:https://example.com/allowed/orders", False),
+        ("example.com/allowed/orders", False),
     ],
 )
 def test_web_allowlist_requires_http_scheme_domain_and_path(url: str, expected: bool) -> None:
     assert is_web_target_allowed(url, FIXTURE_ROOT / "valid") is expected
+
+
+@pytest.mark.risk_ext_001
+@pytest.mark.parametrize("case", EXTERNAL_URL_CASES, ids=[case["url"] for case in EXTERNAL_URL_CASES])
+def test_external_url_fixture_cases_match_policy_decision(case: dict) -> None:
+    assert is_web_target_allowed(case["url"], FIXTURE_ROOT / "valid") is bool(case["accepted"])

@@ -25,14 +25,12 @@ $riskMarkers = @{
     "RISK-CONFIG-001" = "risk_config_001"
     "RISK-BRIDGE-001" = "risk_bridge_001"
     "RISK-FS-001" = "risk_fs_001"
-    "RISK-EXT-001" = $null
+    "RISK-EXT-001" = "risk_ext_001"
     "RISK-WEB-001" = "risk_web_001"
-    "RISK-WEB-002" = $null
+    "RISK-WEB-002" = "risk_web_002"
     "RISK-UI-001" = "risk_ui_001"
     "RISK-CI-001" = "risk_ci_001"
 }
-$deferredRisks = @("RISK-EXT-001", "RISK-WEB-002")
-
 function Complete-Verification {
     param(
         [int]$ExitCode,
@@ -176,10 +174,6 @@ if (-not [string]::IsNullOrWhiteSpace($RiskId) -and -not $riskMarkers.ContainsKe
     Complete-Verification -ExitCode 1 -Message "Unsupported RiskId: $RiskId"
 }
 
-if ($RiskId -in $deferredRisks) {
-    Complete-Verification -ExitCode 2 -Message "$RiskId is Blocked until TASK-012."
-}
-
 $script:uvCommand = Resolve-UvCommand
 if ($null -eq $script:uvCommand -or -not (Test-UvToolchain -UvCommand $script:uvCommand)) {
     Complete-Verification -ExitCode 2 -Message "uv 0.12.5 is required for canonical verification."
@@ -189,8 +183,8 @@ if (($RiskId -eq "RISK-FS-001" -or $Gate -eq "unit") -and -not (Test-SymlinkCapa
     Complete-Verification -ExitCode 2 -Message "Symlink capability is required by RISK-FS-001."
 }
 
-if (($RiskId -eq "RISK-WEB-001" -or $Gate -eq "e2e") -and -not (Test-WebEngineCapability)) {
-    Complete-Verification -ExitCode 2 -Message "QtWebEngine capability is required by RISK-WEB-001."
+if (($RiskId -in @("RISK-WEB-001", "RISK-WEB-002") -or $Gate -eq "e2e") -and -not (Test-WebEngineCapability)) {
+    Complete-Verification -ExitCode 2 -Message "QtWebEngine capability is required by RISK-WEB-001/002."
 }
 
 if ($Gate -eq "manual-ui" -or $RiskId -eq "RISK-UI-001") {

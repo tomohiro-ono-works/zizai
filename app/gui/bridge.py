@@ -14,6 +14,7 @@ import uuid
 import webbrowser
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 import yaml
 import pandas as pd
@@ -23,7 +24,12 @@ from connectors.excel_connector import ExcelConnector
 from core.type_registry import build_dataframe_schema
 from core.workflow_engine import WorkflowEngine
 from core.flow_locator import has_flow_extension, list_flows_local, list_templates_local, register_recent_flow
-from core.security_policies import load_security_policies
+from core.repository_layout import resolve_repository_layout
+from core.security_policies import (
+    WEB_TARGET_ALLOWED_SCHEMES,
+    is_web_target_allowed,
+    load_security_policies,
+)
 
 logger = logging.getLogger("ziz.gui_bridge")
 
@@ -104,7 +110,12 @@ class BridgeRuntime:
         window_control_callback=None,
         coordinate_capture_callback=None,
     ):
-        self.base_dir = Path(base_dir).resolve()
+        self.layout = resolve_repository_layout(base_dir)
+        self.repository_root = self.layout.repository_root
+        self.source_config_root = self.layout.source_config_root
+        self.runtime_state_root = self.layout.runtime_state_root
+        self.workspace_default_root = self.layout.workspace_default_root
+        self.base_dir = self.repository_root
         self.debug = bool(debug)
         self.pick_file_callback = pick_file_callback
         self.pick_folder_callback = pick_folder_callback
@@ -129,7 +140,7 @@ class BridgeRuntime:
         self._execution_log_path = (self.base_dir / "logs" / "execution.log").resolve()
         self._execution_log_path.parent.mkdir(parents=True, exist_ok=True)
         self.workspace_root = None
-        self.config_root = (self.base_dir / "config").resolve()
+        self.config_root = self.runtime_state_root
 
     def set_event_sink(self, callback):
         self._event_sink = callback
@@ -266,7 +277,7 @@ class BridgeRuntime:
         return self._error_response(message_id, message_type, "E_ACCESS_DENIED", "未許可の API です。")
 
     def _handle_app_get_status(self):
-        policies = load_security_policies(self.base_dir)
+        policies = load_security_policies(self.repository_root)
         return {
             "app": "zizai",
             "host": "pyside6-qtwebengine",
@@ -314,12 +325,36 @@ class BridgeRuntime:
             ],
             "security_policies": {
                 "loaded": bool(policies.get("loaded")),
-                "path": str(policies.get("path") or ""),
+                "path": "",
                 "api_profile_count": len(policies.get("apis", {}).get("profiles", {})),
                 "web_allowlist_count": len(policies.get("web", {}).get("allowlist", [])),
             },
+            "file_icon_map": self._load_file_icon_map(),
             "runtime_context_defaults": self._build_runtime_context_defaults(),
         }
+
+    def _load_file_icon_map(self):
+        icon_map_path = self.source_config_root / "file_icon_map.json"
+        if not icon_map_path.exists():
+            return {}
+        try:
+            raw = json.loads(icon_map_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, json.JSONDecodeError):
+            logger.warning("[bridge] invalid file icon map: %s", icon_map_path)
+            return {}
+        if not isinstance(raw, dict):
+            return {}
+        normalized = {}
+        for raw_key, raw_value in raw.items():
+            key = _safe_text(raw_key).lower().lstrip(".")
+            value = _safe_text(raw_value).replace("\\", "/")
+            parsed = urlparse(value)
+            if not key or not value or parsed.scheme or value.startswith("/") or ".." in Path(value).parts:
+                continue
+            normalized[key] = value
+        if not normalized.get("default"):
+            return {}
+        return normalized
 
     def _handle_app_get_suggest_index(self, payload):
         connector_name = _safe_text((payload or {}).get("connector"))
@@ -328,13 +363,13 @@ class BridgeRuntime:
         if not re.fullmatch(r"[A-Za-z0-9_]+", connector_name):
             raise ValueError("connector は英数字と _ のみ使用できます。")
 
-        suggest_dir = self.base_dir / "config" / "suggest_index"
+        suggest_dir = self.source_config_root / "suggest_index"
         suggest_path = suggest_dir / f"suggest_index_{connector_name}.yml"
         if not suggest_path.exists():
             return {
                 "connector": connector_name,
                 "entries": [],
-                "path": str(suggest_path),
+                "path": "",
                 "loaded": False,
             }
 
@@ -366,7 +401,7 @@ class BridgeRuntime:
         return {
             "connector": connector_name,
             "entries": entries,
-            "path": str(suggest_path),
+            "path": "",
             "loaded": True,
         }
 
@@ -478,11 +513,21 @@ class BridgeRuntime:
                 return text
         return None
 
+    def _is_external_target_allowed(self, url):
+        # OS browser へ渡す直前に scheme を parse し直し、allowlist と併せて再検証する
+        parsed = urlparse(str(url or ""))
+        if (parsed.scheme or "").lower() not in WEB_TARGET_ALLOWED_SCHEMES:
+            return False
+        if not parsed.hostname:
+            return False
+        return is_web_target_allowed(url, self.base_dir)
+
     def _handle_app_open_external(self, payload):
         url = _safe_text((payload or {}).get("url"))
         prefer = _safe_text((payload or {}).get("prefer")).lower() or "chrome"
-        if not re.match(r"^https?://", url):
-            raise ValueError("url は http/https 形式で指定してください。")
+        if not self._is_external_target_allowed(url):
+            logger.warning("[bridge] app.openExternal denied url=%s prefer=%s", url, prefer)
+            raise BridgeApiError("E_ACCESS_DENIED", "許可されていない外部 URL です。")
 
         opened_via = ""
         try:
@@ -599,7 +644,11 @@ class BridgeRuntime:
             raise ValueError("kind が不正です。")
 
         items = []
-        source_items = list_templates_local() if kind == "template" else list_flows_local()
+        source_items = (
+            list_templates_local()
+            if kind == "template"
+            else list_flows_local(self.runtime_state_root / "recent_flows.json")
+        )
         for item in source_items:
             path = str(item.get("path") or "")
             token = self._register_flow_token(path)
@@ -664,7 +713,11 @@ class BridgeRuntime:
             self._clear_hidden_session(workspace_tab_id)
             web_flow = self._hide_sensitive_values(config, workspace_tab_id=workspace_tab_id)
             hidden_meta = self._get_hidden_meta(workspace_tab_id)
-        register_recent_flow(str(resolved_path), opened_at_iso=_iso_now())
+        register_recent_flow(
+            str(resolved_path),
+            opened_at_iso=_iso_now(),
+            recent_flows_file=self.runtime_state_root / "recent_flows.json",
+        )
 
         response = {
             "selected": True,
@@ -737,7 +790,11 @@ class BridgeRuntime:
             self.current_mode = mode
         saved_flow_key = self._build_flow_key(mode, str(resolved_path))
         self._migrate_flow_state(previous_flow_key, saved_flow_key)
-        register_recent_flow(str(resolved_path), opened_at_iso=_iso_now())
+        register_recent_flow(
+            str(resolved_path),
+            opened_at_iso=_iso_now(),
+            recent_flows_file=self.runtime_state_root / "recent_flows.json",
+        )
 
         response = {
             "saved": True,
@@ -776,6 +833,7 @@ class BridgeRuntime:
             seed_context = copy.copy(seed_context)
         seed_context["__run_id"] = run_id
         seed_context["__workspace_tab_id"] = workspace_tab_id
+        seed_context["__repository_root"] = str(self.repository_root)
         if self.workspace_root:
             seed_context["__workspace_root"] = str(self.workspace_root)
         if self.current_flow_path and self.current_flow_path != "<unsaved>":
@@ -1081,7 +1139,7 @@ class BridgeRuntime:
             return {
                 "selected": False,
                 "root_path": str(self.workspace_root or ""),
-                "config_path": str(self.config_root),
+                "config_path": "",
             }
         raw = Path(str(selected_path))
         if raw.is_symlink():
@@ -1105,34 +1163,35 @@ class BridgeRuntime:
         return {
             "selected": True,
             "root_path": str(resolved),
-            "config_path": str(self.config_root),
+            "config_path": "",
         }
 
     def _handle_workspace_get_root(self, payload):
         if self.workspace_root is None:
-            default_root = (self.base_dir / "workflows").resolve()
+            default_root = self.workspace_default_root
             if default_root.exists() and default_root.is_dir():
                 applied = self._handle_workspace_set_root({"root_path": str(default_root)})
                 return {
                     "has_root": bool(applied.get("has_root")),
                     "root_path": str(applied.get("root_path") or ""),
-                    "config_path": str(applied.get("config_path") or self.config_root),
+                    "config_path": "",
                 }
-            picked = self._handle_workspace_pick_root({
-                "title": "プロジェクトルートを選択",
-                "current_value": "",
-            })
-            if picked.get("selected"):
-                applied = self._handle_workspace_set_root({"root_path": str(picked.get("root_path") or "")})
-                return {
-                    "has_root": bool(applied.get("has_root")),
-                    "root_path": str(applied.get("root_path") or ""),
-                    "config_path": str(applied.get("config_path") or self.config_root),
-                }
+            if self.pick_folder_callback or self.edit_folder_callback:
+                picked = self._handle_workspace_pick_root({
+                    "title": "プロジェクトルートを選択",
+                    "current_value": str(default_root),
+                })
+                if picked.get("selected"):
+                    applied = self._handle_workspace_set_root({"root_path": str(picked.get("root_path") or "")})
+                    return {
+                        "has_root": bool(applied.get("has_root")),
+                        "root_path": str(applied.get("root_path") or ""),
+                        "config_path": "",
+                    }
         return {
             "has_root": self.workspace_root is not None,
             "root_path": str(self.workspace_root or ""),
-            "config_path": str(self.config_root),
+            "config_path": "",
         }
 
     def _handle_workspace_set_root(self, payload):
@@ -1142,7 +1201,7 @@ class BridgeRuntime:
             return {
                 "has_root": False,
                 "root_path": "",
-                "config_path": str(self.config_root),
+                "config_path": "",
             }
         raw = Path(root_path)
         if raw.is_symlink():
@@ -1166,7 +1225,7 @@ class BridgeRuntime:
         return {
             "has_root": True,
             "root_path": str(resolved),
-            "config_path": str(self.config_root),
+            "config_path": "",
         }
 
     def _handle_workspace_list(self, payload):
@@ -1354,8 +1413,8 @@ class BridgeRuntime:
             if self.workspace_root is None:
                 raise ValueError("ワークスペースルートが未選択です。")
             return self.workspace_root
-        if normalized == "config":
-            return self.config_root
+        if normalized in {"runtime", "config"}:
+            return self.runtime_state_root
         raise ValueError("scope が不正です。")
 
     def _resolve_workspace_path(

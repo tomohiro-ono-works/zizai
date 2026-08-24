@@ -1,7 +1,8 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "repository_root": ".",
-  "config_root": "config",
+  "source_config_root": "apps/common/config",
+  "runtime_state_root": "config",
   "workflow_root": "workflows",
   "log_root": "logs",
   "gui_root": "static",
@@ -20,7 +21,11 @@
     "app/main.py",
     "app/gui/host.py",
     "app/gui/bridge.py",
-    "config/security_policies.yml",
+    "apps/common/config/security_policies.yml",
+    "apps/common/config/rename.csv",
+    "apps/common/config/file_icon_map.json",
+    "apps/common/config/suggest_index/suggest_index_BQConnector.yml",
+    "apps/common/config/suggest_index/suggest_index_PythonConnector.yml",
     "static/home.html",
     "static/dataflow.html",
     "static/settings.html"

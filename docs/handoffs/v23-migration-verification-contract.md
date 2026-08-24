@@ -2,7 +2,7 @@
 
 - Related task: TASK-004
 - Date: 2026-08-19
-- Last updated: 2026-08-21
+- Last updated: 2026-08-23
 - Status: Approved — Executable baseline defined
 
 ## Approved baseline policy
@@ -95,12 +95,12 @@ Risk単位では各表行の`-RiskId` commandを使う。TASK-009はrunner内部
 | `RISK-PATH-001` | asset/config/workflow/log rootが移動後に別rootへ解決され、missing時に静かにfallbackする | 高 | `unit` + `integration` | `tests/fixtures/contracts/repository-layout.json`、`tmp_path`へ作る`config/workflows/logs/gui`最小tree | pure caseはWindows Primary CI。Windows path separator/drive caseを必須化。networkなし | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -RiskId RISK-PATH-001` | resolverごとの正規化済み絶対pathがlayout contractの`config_root`、`workflow_root`、`log_root`、`gui_root`と完全一致し、required fileの存在判定が全件`true`。base外pathは全件拒否。旧pathは担当Migration Task完了時に有効参照`0` | Verifier: TASK-008。Regression: TASK-009、TASK-010、TASK-011、TASK-012、TASK-015 | `Defined` |
 | `RISK-CONN-001` | `connectors`移動でdynamic discoveryが静かに失敗、または別classを選ぶ | 中 | `integration` | `tests/fixtures/contracts/connector-inventory.json`にStage 02確定の12 module/class pairを固定 | Windows Primary CI。optional dependencyはfake moduleで隔離し、`.execute()`・network・資格情報を禁止 | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -RiskId RISK-CONN-001` | inventory 12件すべてで解決module basenameとclass名がfixtureに完全一致し、各moduleの`BaseConnector`派生class数は`1`。未登録名の解決結果は`None`。connector constructor/`.execute()`呼出回数は`0` | Verifier: TASK-008。Regression: TASK-011、TASK-015 | `Defined` |
 | `RISK-CONN-002` | local connectorのshape、dtype、filter/error、progress、workbook load契約が移行で変わる | 中 | `unit` + `integration` | TASK-003でINTEGRATE承認済み`test_csv_connector.py`、`test_dataintegration_connector.py`、`test_excel_connector.py`、`test_schema_apply_common.py`と、そのtest内factory/`tmp_path` data | Windows Primary CI。local filesystemのみ。cloud、browser、shell、model、資格情報、networkは禁止 | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -RiskId RISK-CONN-002` | 承認済み4 fileの11 caseをcurrent contractへ再作成し、`11 passed / 0 failed / 0 skipped`。外部connectorの実行回数とnetwork callは`0` | Verifier: TASK-008。Regression: TASK-011、TASK-015 | `Defined` |
-| `RISK-CONFIG-001` | security policy/config pathまたはschema破損を空値fallbackで見逃す | 高 | `unit` + `integration` | valid policyはversion `1`、API profile `1`件、allowlist `example.com:/allowed/`と`sub.example.com:/`の2件。invalid policyはYAML list。missing pathとsuggest-index valid 2 entries/invalid rows/missingも固定 | Windows Primary CI。network・資格情報なし | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -RiskId RISK-CONFIG-001` | valid policyは`loaded=true`、version `1`、profile `1`、allowlist `2`。invalid policyは`ValueError`、missing policyは`loaded=false`・profile/allowlist `0`。allow URL 2件だけ`true`、別domain・prefix外・non-http(s)は`false`。suggest-indexはvalid=`loaded:true/entries:2`、invalid=`E_VALIDATION`、missing=`loaded:false/entries:[]` | Verifier: TASK-008。Regression: TASK-010、TASK-012、TASK-015 | `Defined` |
+| `RISK-CONFIG-001` | security policy/config pathまたはschema破損を空値fallbackで見逃す | 高 | `unit` + `integration` | valid policyはversion `1`、API profile `1`件、allowlist `example.com:/allowed/`と`sub.example.com:/`の2件。invalid policyはYAML list。missing pathとsuggest-index valid 2 entries/invalid rows/missingも固定 | Windows Primary CI。network・資格情報なし | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -RiskId RISK-CONFIG-001` | valid policyは`loaded=true`、version `1`、profile `1`件、allowlist `2`。invalid policyは`ValueError`、missing policyは`loaded=false`・profile/allowlist `0`。allow URL 2件だけ`true`、別domain・prefix外・non-http(s)は`false`。suggest-indexはvalid=`loaded:true/entries:2`、invalid=`E_VALIDATION`、missing=`loaded:false/entries:[]` | Verifier: TASK-008。Scheme fix: TASK-019。Path regression: TASK-010。Final regression: TASK-015 | `Passing (TASK-019, 2026-08-24)` |
 | `RISK-BRIDGE-001` | Python/JSのProtocol v1.0 envelope、相関ID、capabilities、error mappingがdriftする | 高 | `unit` + `integration` | `tests/fixtures/bridge/protocol-v1.json`に31 Command、8 Event、`cmd/res/evt` schema、error caseを固定 | Windows Primary CI。PySide6導入済み。QApplication不要なcaseはpure、signal caseは最小event loop。subprocess/network禁止 | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -RiskId RISK-BRIDGE-001` | `v`は`1.0`、request/responseの`id`と`type`が完全一致、capabilitiesはfixtureの31件と集合一致、Eventは8件のschema一致。error codeはversion=`E_CONTRACT_VERSION_MISMATCH`、kind/validation=`E_VALIDATION`、outside=`E_ACCESS_DENIED`、missing=`E_NOT_FOUND`、mtime/run競合=`E_CONFLICT`、unexpected=`E_INTERNAL`と完全一致し、未応答requestは`0` | Verifier: TASK-008。Regression: TASK-011、TASK-012、TASK-015 | `Defined` |
 | `RISK-FS-001` | Bridge workspaceのtraversal、outside-root、symlink、delete境界が破れる | 高 | `unit` | `tmp_path`内のworkspace、outside file、regular file、symlink target、symlink componentをtest factoryで生成 | Windows Primary CI。symlink capability必須。作成不能時はexit `2`で`Blocked`、TASK-015でユーザーが管理者PowerShellから当該Riskだけを実行しskip禁止 | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -RiskId RISK-FS-001` | regular read/write/deleteは期待content/statusと一致。`..`、absolute outside、symlink root/target/componentは全件`E_ACCESS_DENIED`、outside fileのhashは前後一致、regular delete後の存在は`false` | Verifier実装: TASK-008。実環境実行・Final regression: TASK-015 | `Defined` |
-| `RISK-EXT-001` | 外部URLがallowlistを迂回する、または内蔵WebViewへ到達する | 高 | `unit` + `integration` | `tests/fixtures/security/external-url-cases.json`にnon-http(s)、非許可domain/path、許可domain/pathを固定。OS browser launcherはmock | Windows Primary CI。real browser/process/networkは禁止 | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -RiskId RISK-EXT-001` | non-http(s)と非allowlistは`accepted=false`または`E_ACCESS_DENIED`でlauncher call `0`。許可URLだけ`accepted=true`でlauncher call `1`、引数URL完全一致。WebView navigation callは全case `0` | Verifier/production gap fix: TASK-012。Final regression: TASK-015 | `Defined` |
+| `RISK-EXT-001` | 外部URLがallowlistを迂回する、または内蔵WebViewへ到達する | 高 | `unit` + `integration` | `tests/fixtures/security/external-url-cases.json`にnon-http(s)、非許可domain/path、許可domain/pathを固定。OS browser launcherはmock | Windows Primary CI。real browser/process/networkは禁止 | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -RiskId RISK-EXT-001` | non-http(s)と非allowlistは`accepted=false`または`E_ACCESS_DENIED`でlauncher call `0`。許可URLだけ`accepted=true`でlauncher call `1`、引数URL完全一致。WebView navigation callは全case `0` | Verifier: TASK-008。Production gap fix: TASK-019。Move regression: TASK-012。Final regression: TASK-015 | `Passing (TASK-019, 2026-08-24)` |
 | `RISK-WEB-001` | `file://` page/asset/QWebChannelがfolder move後に読み込めない | 高 | `e2e` | production entry一覧を`tests/fixtures/contracts/repository-layout.json`から取得し、Bridge requestは`app.getStatus`を使用 | Windows 11 x64、interactiveまたは検証済みoffscreen session、PySide6/QtWebEngine。networkなし | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -RiskId RISK-WEB-001` | home/dataflow/settingsの`loadFinished`が全件`true`、local asset failure `0`、asset URLはlayout contractの`gui_root`配下、`backendBridge`存在、`app.getStatus` responseは`v=1.0`・相関ID一致・errorなし | Verifier: TASK-008。Regression: TASK-011、TASK-012、TASK-015 | `Defined` |
-| `RISK-WEB-002` | remote/data/blob/popupまたはbase外fileがBridge到達可能なmain frame/navigationを作る | 高 | `e2e` | `tests/fixtures/webengine/navigation-cases.json`にhttp/https、base外file、data、blob、popup caseと期待拒否理由を固定 | Windows 11 x64 + QtWebEngine dedicated runner。real networkは禁止。platform不足は`Blocked` | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -RiskId RISK-WEB-002` | 全caseでnavigation commit `0`、new window生成`0`、許可root外resource load `0`、network送信`0`。試行後もcurrent main-frame URLは許可`file/qrc` scope内で、untrusted documentから`backendBridge`参照不可 | Verifier/security fix: TASK-012。Final regression: TASK-015 | `Defined` |
+| `RISK-WEB-002` | remote/data/blob/popupまたはbase外fileがBridge到達可能なmain frame/navigationを作る | 高 | `e2e` | `tests/fixtures/webengine/navigation-cases.json`にhttp/https、base外file、data、blob、popup caseと期待拒否理由を固定 | Windows 11 x64 + QtWebEngine dedicated runner。real networkは禁止。platform不足は`Blocked` | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -RiskId RISK-WEB-002` | 全caseでnavigation commit `0`、new window生成`0`、許可root外resource load `0`、network送信`0`。試行後もcurrent main-frame URLは許可`file/qrc` scope内で、untrusted documentから`backendBridge`参照不可 | Verifier: TASK-008。Security fix: TASK-019。Move regression: TASK-012。Final regression: TASK-015 | `Passing (TASK-019, 2026-08-24)` |
 | `RISK-UI-001` | native window/dialog/coordinate/retryの利用者操作が壊れる | 中 | `manual-ui` | tracked source `tests/manual/windows-ui-checklist.md`と`tests/manual/manual-ui-result.schema.json`。実行recordは`results/manual/RISK-UI-001.json` | Windows 11 interactive desktop、実display、PySide6/QtWebEngine。実施者と証跡が必要 | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -Gate manual-ui -RiskId RISK-UI-001 -EvidencePath results/manual/RISK-UI-001.json` | checklistのwindow drag/resize/minimize/maximize/close、file/folder dialog、coordinate capture、retry overlayが全件`Pass`。record schema validation exit `0`、未実施/Fail/Blocked `0`、各caseのevidence pathとfile hashが空でない | Checklist/validator: TASK-008。Execution: TASK-011、TASK-012、TASK-015 | `Defined` |
 | `RISK-CI-001` | untracked test/CI残骸または生成物混入によりclean checkoutとlocal判定が乖離する | 高 | `static-analysis` + `integration` | `tests/fixtures/contracts/tracked-test-sources.json`、clean checkout | Windows Primary CI、Git checkout、network/資格情報/対話操作なし。dependency取得はlock/manifestだけを使用 | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/run-verification.ps1 -RiskId RISK-CI-001` | canonical source/config/workflowの`git ls-files`件数がmanifestと一致し必須file欠落`0`。`.pyc`、cache、node_modules、reports/results/screenshots/videos/traces/logsのtracked件数`0`。clean checkoutのrequired Gateはexit `0`、failed/skipped/blocked `0` | Verifier/CI: TASK-008。Regression: TASK-009～015 | `Defined` |
 
@@ -129,18 +129,20 @@ Risk単位では各表行の`-RiskId` commandを使う。TASK-009はrunner内部
 |---|---|
 | TASK-008 | `ENTRY`、`PATH`、`CONN-001/002`、`CONFIG`、`BRIDGE`、`FS`、`WEB-001`、`UI`、`CI`のverifier/fixture/runnerを実装する。`EXT`と`WEB-002`はcontract fixture/runner slotだけを予約し、未実装をPass扱いしない |
 | TASK-009 | `ENTRY`、`PATH`、`CI`をuv/`.venv`移行後に再実行し、canonical runner commandを維持する |
-| TASK-010 | `PATH`、`CONFIG`、`CI`をconfig move後に再実行し、layout contractを承認済みnew pathへ更新する |
+| TASK-010 | `PATH`、`CONFIG`、`CI`をconfig move後に再実行し、Source configとRuntime stateを分離したlayout contractへ更新する |
 | TASK-011 | `ENTRY`、`PATH`、`CONN-001/002`、`BRIDGE`、`WEB-001`、`UI`、`CI`をPython責務移動後に再実行する。`FS`はUser DecisionによりTASK-015までBlockedを維持する |
-| TASK-012 | `PATH`、`CONFIG`、`BRIDGE`、`EXT`、`WEB-001/002`、`UI`、`CI`を実装・再実行する。既知gapのallowlist適用とWebEngine navigation securityはこのTaskでPassさせる |
+| TASK-012 | `PATH`、`BRIDGE`、`WEB-001`、`UI`、`CI`をFrontend物理移動後に再実行する。TASK-019で解消済みの`CONFIG`、`EXT`、`WEB-002`を回帰確認し、behavior変更を物理MOVEへ混在させない |
 | TASK-013 | 移動したscript/assetがある場合に`PATH`と`CI`を再実行する |
 | TASK-014 | 生成物cleanup後に`CI`とrequired Gate全体を再実行する |
 | TASK-015 | 12 Riskすべてを再実行し、`Passing`または証跡付き`Blocked/Fail`を最終Evidenceへ記録する |
+| TASK-016 | `BRIDGE`、`EXT`、`WEB-001/002`、`UI`、`CI`を各library移管後に回帰し、library固有のAdapter／lifecycle／重複削除TestをTASK-015の最終suiteへ引き渡す |
+| TASK-019 | FrontendとPython backendの両方でexternal URLを`http(s)`へ限定し、`CONFIG`、`EXT`、`WEB-002`の既知scheme/navigation gapをPassさせる |
 
 2026-08-21 User Decisionにより、`RISK-FS-001`のverifier実装はTASK-008に維持し、symlink capabilityを要する実環境実行だけをTASK-015へ延期する。TASK-015まではexit `2`の`Blocked`を維持し、Codexへ管理者権限を付与せず、ユーザーが当該Risk commandだけを管理者PowerShellで実行する。
 
-同Decisionにより、TASK-008の完了判定はTest/CI基盤、Risk verifier、tracking境界の実装完了とする。現行Applicationで検出した`RISK-CONFIG-001`のFailと`RISK-FS-001`のBlockedはPassへ読み替えず、それぞれTASK-012／TASK-015の完了要件として保持し、TASK-009以降の着手をBlockしない。
+同Decisionにより、TASK-008の完了判定はTest/CI基盤、Risk verifier、tracking境界の実装完了とする。`RISK-CONFIG-001`の既知FailはTASK-019で解消済みである。`RISK-FS-001`のBlockedはPassへ読み替えず、TASK-015の完了要件として保持し、TASK-009以降をBlockしない。
 
-`RISK-EXT-001`は現行`app.openExternal`がdomain/path allowlistを適用していない既知gap、`RISK-WEB-002`は実WebEngine挙動が未確定のsecurity riskである。現行挙動を正しいbaselineとして固定せず、TASK-012の実装とGate成功を完了条件にする。
+`RISK-EXT-001`のallowlist gapと`RISK-WEB-002`のnavigation gapはTASK-019で解消・実機確認済みである。Frontend物理移動後の回帰はTASK-012、最終回帰はTASK-015の完了条件にする。
 
 ## GUI-unavailable CI alternative Gate
 
@@ -150,7 +152,7 @@ Windows Primary CIでQtWebEngineを決定的に実行できない場合、次を
 2. test専用localhost static server上で、Playwrightの`ui-shell`、`detail-panel-left-gap`、`ui-fields-reference-warning`再作成caseが`3 spec / 0 failed / 0 skipped`でPassする。Python backend/APIと外部networkは起動しない。
 3. HTML/JS/CSSと相対assetの全参照が解決し、外部script、外部iframe、Web Componentが`0`であるStatic checkがPassする。同梱`dataflow.html`の内部iframeはlayout contract記載の許可例外とする。
 4. `RISK-WEB-001/002`はPrimary CI上でskipしてPassにせず、Windows dedicated runnerまたはrelease環境で実行するまで`Blocked`を維持する。
-5. TASK-012とTASK-015の完了には、dedicated/release環境で`RISK-WEB-001/002`がexit `0`となったEvidenceが必要である。
+5. TASK-019、TASK-012、TASK-015の完了には、各Taskの担当範囲に応じてdedicated/release環境で`RISK-WEB-001/002`がexit `0`となったEvidenceが必要である。
 
 ## Manual UI test record template
 
@@ -189,20 +191,20 @@ Gitで追跡しないgenerated artifact:
 | Playwright manifest/configとtest専用localhost server | TASK-008 |
 | Windows Primary CI workflow | TASK-008 |
 | frozen `uv`/`.venv` environment | TASK-009 |
-| external URL allowlistのproduction適用 | TASK-012 |
-| QtWebEngine security behaviorの実機確定と必要修正 | TASK-012 |
+| external URL allowlistのproduction適用 | TASK-019 |
+| QtWebEngine security behaviorの実機確定と必要修正 | TASK-019 |
 
 ## Verification task decomposition
 
 - 原則として1 Taskを1 Risk ID、または同じ成果物・検証codeを共有する関連少数Risk ID群に対応させる。
 - automated verifierを持つTaskの完了条件は、該当行の合格基準を満たすtest codeが指定実行環境で成功することとする。
 - `manual-ui`だけを検証手段とするTaskの完了条件は、事前定義した記録形式により、証跡付きで`Pass`と判定されることとする。
-- TASK-008は現行Application behaviorを変更しない。現行gapの修正を必要とする`RISK-EXT-001`と、実機挙動確定後にsecurity修正を要し得る`RISK-WEB-002`はTASK-012へ割り当てる。
+- TASK-008は現行Application behaviorを変更しない。現行gapの修正を必要とする`RISK-EXT-001`と、実機挙動確定後にsecurity修正を要し得る`RISK-WEB-002`はTASK-019へ割り当て、TASK-012では物理移動後の回帰だけを確認する。
 
 ## Completion state
 
 - 暫定12 Riskを承認済み`RISK-{AREA}-{NNN}`形式へ変換した。
-- 全Riskにfixture、Platform条件、copy-and-paste command、機械判定可能な合格基準、担当Task、`Defined` statusを設定した。
+- 全Riskにfixture、Platform条件、copy-and-paste command、機械判定可能な合格基準、担当Task、statusを設定し、TASK-019担当の3 Riskを`Passing`へ更新した。
 - TASK-009～012の各Migrationで再実行するRiskを割り当てた。
 - GUIをPrimary CIで実行できない場合の代替Gateと、WebEngine release Gateを分離した。
 - Test sourceとgenerated/manual evidenceのtracking境界を確定した。

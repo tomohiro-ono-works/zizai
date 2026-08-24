@@ -5,6 +5,7 @@
   const MAX_QUEUE_SIZE = 256;
   const USER_INTERACTION_TYPES = new Set(["file.pickFile", "file.pickFolder"]);
   const PREVIEW_TYPES = new Set(["preview.readExcel", "preview.readCsv"]);
+  const EXTERNAL_URL_ALLOWED_SCHEMES = new Set(["http:", "https:"]);
 
   const state = {
     version: "1.0",
@@ -22,6 +23,18 @@
 
   function buildError(code, message) {
     return { code, message };
+  }
+
+  function isAllowedExternalUrl(value) {
+    const text = String(value || "").trim();
+    if (!text) return false;
+    try {
+      const parsed = new URL(text);
+      return EXTERNAL_URL_ALLOWED_SCHEMES.has(String(parsed.protocol || "").toLowerCase())
+        && !!parsed.hostname;
+    } catch (_) {
+      return false;
+    }
   }
 
   function settlePending(id, result) {
@@ -132,7 +145,7 @@
   }
 
   function createBridgeApi() {
-    return {
+    const api = {
       available() {
         return !!state.ready && !!state.backend;
       },
@@ -144,6 +157,17 @@
       },
       unavailableMessage() {
         return getBridgeUnavailableMessage();
+      },
+      isAllowedExternalUrl,
+      openExternal(url, options = {}) {
+        const href = String(url || "").trim();
+        if (!isAllowedExternalUrl(href)) {
+          return Promise.reject(buildError("E_ACCESS_DENIED", "http または https のリンクだけを開けます。"));
+        }
+        return api.call("app.openExternal", {
+          url: href,
+          prefer: String(options.prefer || "chrome"),
+        });
       },
       call(type, payload = {}) {
         const id = nextId();
@@ -182,6 +206,7 @@
         });
       },
     };
+    return api;
   }
 
   function installBridge(channel) {

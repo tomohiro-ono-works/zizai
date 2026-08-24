@@ -1,12 +1,17 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "risk_id": "RISK-EXT-001",
-  "status": "Blocked until TASK-012",
+  "status": "Enforced by TASK-019",
+  "policy_fixture": "tests/fixtures/config/valid",
   "cases": [
-    {"url": "file:///C:/outside.html", "accepted": false, "launcher_calls": 0},
-    {"url": "ftp://example.com/allowed/file", "accepted": false, "launcher_calls": 0},
-    {"url": "https://example.net/allowed/page", "accepted": false, "launcher_calls": 0},
-    {"url": "https://example.com/outside/page", "accepted": false, "launcher_calls": 0},
-    {"url": "https://example.com/allowed/page", "accepted": true, "launcher_calls": 1}
+    {"url": "file:///C:/outside.html", "frontend_accepted": false, "accepted": false, "launcher_calls": 0, "error_code": "E_ACCESS_DENIED"},
+    {"url": "ftp://example.com/allowed/file", "frontend_accepted": false, "accepted": false, "launcher_calls": 0, "error_code": "E_ACCESS_DENIED"},
+    {"url": "data:text/html,untrusted", "frontend_accepted": false, "accepted": false, "launcher_calls": 0, "error_code": "E_ACCESS_DENIED"},
+    {"url": "blob:null/untrusted", "frontend_accepted": false, "accepted": false, "launcher_calls": 0, "error_code": "E_ACCESS_DENIED"},
+    {"url": "example.com/allowed/page", "frontend_accepted": false, "accepted": false, "launcher_calls": 0, "error_code": "E_ACCESS_DENIED"},
+    {"url": "https://example.net/allowed/page", "frontend_accepted": true, "accepted": false, "launcher_calls": 0, "error_code": "E_ACCESS_DENIED"},
+    {"url": "https://example.com/outside/page", "frontend_accepted": true, "accepted": false, "launcher_calls": 0, "error_code": "E_ACCESS_DENIED"},
+    {"url": "http://sub.example.com/anything", "frontend_accepted": true, "accepted": true, "launcher_calls": 1, "error_code": null},
+    {"url": "https://example.com/allowed/page", "frontend_accepted": true, "accepted": true, "launcher_calls": 1, "error_code": null}
   ]
 }

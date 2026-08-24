@@ -2,7 +2,7 @@
 
 ## Status
 
-Blocked — TASK-005, TASK-008～013
+Blocked — TASK-013, TASK-016（その他のMigration Taskは両Taskの依存として完了する）
 
 ## Goal
 
@@ -12,20 +12,21 @@ Migration完了後、承認済みのLegacy sourceとSource管理上の生成物�
 
 - `docs/handoffs/v23-repository-audit.md`
 - `docs/handoffs/v23-migration-map.md`
-- TASK-003/005のDisposition
-- TASK-006～013の最終状態
+- TASK-003のDisposition
+- `docs/handoffs/v23-unmapped-assets-disposition.md`
+- TASK-006～013、TASK-016、TASK-018、TASK-019の最終状態
 
 ## Scope
 
-承認済みの`ui.node.js`、`styles.css`、空notebook、Playwright生成物、legacy docs/harness container、obsolete path/shimを最終Gate後に除去する。
+TASK-016の対象外である承認済みdead asset、空notebook、Playwright生成物、legacy docs/harness container、obsolete path/shimを最終Gate後に除去する。
 
 ## Out of scope
 
-判断保留項目、個人local cacheの物理削除、WIP統合、機能変更。
+判断保留項目、個人local cacheの物理削除、WIP統合、機能変更、8 libraryと重複するApplication UI責務の削除（TASK-016の各Work Package）。
 
 ## Dependencies
 
-TASK-003、TASK-006～013、およびInvestigationから追加された全Migration Task。
+TASK-003、TASK-005、TASK-006～013、TASK-016、TASK-018、TASK-019、およびInvestigationから追加された全Migration Task。TASK-016の全space移行と重複UI削除が完了するまで本Taskを開始しない。
 
 ## Expected change area
 
@@ -88,6 +89,8 @@ Not required
 ## Evidence
 
 - Investigationと全Migration Taskが依存条件として定義されている。
+- TASK-017の監査により、Frontend重複UI削除をTASK-016へ閉じ、本Taskをその他の承認済みlegacy/generated residueへ限定した。
+- TASK-005が完了した。`D14`〜`D16`のtracked 4 fileはProject ownerが先行削除済みのため、TASK-014では不在を理由にGateを省略せず、削除前のGit tree/historyと現行treeを用いて5分類Reference `0`と承認済み差分を検証する。
 
 ## Remaining
 

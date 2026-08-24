@@ -7,9 +7,8 @@
   if (!bridge || !shell) return;
 
   const STORAGE_KEY_PENDING_SIDEBAR_ACTION = 'ziz.workspace.pendingSidebarAction.v1';
-  const RECENT_ROOTS_CONFIG_SCOPE = 'config';
+  const RECENT_ROOTS_CONFIG_SCOPE = 'runtime';
   const RECENT_ROOTS_CONFIG_PATH = 'recent_roots.json';
-  const FILE_ICON_MAP_CONFIG_PATH = 'file_icon_map.json';
   const MAX_OPEN_TABS = 4;
   const MAX_RECENT_ROOTS = 10;
   const TEXT_EXTENSIONS = new Set(['.md', '.sql', '.py', '.json', '.zizd']);
@@ -45,6 +44,7 @@
   let lockOverlayEl = null;
   let lockWatchdogTimer = 0;
   let fileIconMap = { ...DEFAULT_FILE_ICON_MAP };
+  let fileIconMapLoaded = false;
   let runningFlowTabId = '';
   let draggedTabId = '';
 
@@ -484,26 +484,22 @@
   }
 
   async function loadFileIconMapFromConfig() {
+    if (fileIconMapLoaded) return;
     if (!bridge?.available?.()) {
       fileIconMap = { ...DEFAULT_FILE_ICON_MAP };
       return;
     }
     try {
-      const payload = await bridge.call('workspace.readText', {
-        scope: RECENT_ROOTS_CONFIG_SCOPE,
-        rel_path: FILE_ICON_MAP_CONFIG_PATH,
-      });
-      const raw = String(payload?.content || '').trim();
-      if (!raw) {
+      const status = await bridge.call('app.getStatus', {});
+      const iconMap = status?.file_icon_map;
+      if (!iconMap || typeof iconMap !== 'object') {
         fileIconMap = { ...DEFAULT_FILE_ICON_MAP };
         return;
       }
-      fileIconMap = normalizeFileIconMap(JSON.parse(raw));
+      fileIconMap = normalizeFileIconMap(iconMap);
+      fileIconMapLoaded = true;
     } catch (error) {
-      const normalized = normalizeError(error);
-      if (normalized.code !== 'E_NOT_FOUND') {
-        logInfo('loadFileIconMapFromConfig failed', normalized);
-      }
+      logInfo('loadFileIconMapFromConfig failed', normalizeError(error));
       fileIconMap = { ...DEFAULT_FILE_ICON_MAP };
     }
   }
@@ -2000,11 +1996,9 @@
         ? `Workspace (${state.globalStore.workspaceRoot})`
         : 'Workspace (未選択)';
       const workspaceNode = await buildTreeDetails('root', '', rootLabel, true);
-      const configNode = await buildTreeDetails('config', '', 'Config', false);
 
       wrapper.innerHTML = '';
       wrapper.appendChild(workspaceNode);
-      wrapper.appendChild(configNode);
     } catch (error) {
       const normalized = normalizeError(error);
       wrapper.innerHTML = `<div class="workspace-tree-error">${normalized.message}</div>`;

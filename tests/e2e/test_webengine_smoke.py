@@ -21,8 +21,23 @@ from app.gui.bridge import BridgeRuntime, WebViewBridge
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 LAYOUT_PATH = REPOSITORY_ROOT / "tests" / "fixtures" / "contracts" / "repository-layout.json"
+NAVIGATION_CASES_PATH = REPOSITORY_ROOT / "tests" / "fixtures" / "webengine" / "navigation-cases.json"
 
 pytestmark = [pytest.mark.e2e, pytest.mark.risk_web_001, pytest.mark.timeout(45)]
+
+
+class RequestProbe:
+    """QWebEngineUrlRequestInterceptor へ渡す最小の request info スタブ。"""
+
+    def __init__(self, url: QUrl) -> None:
+        self._url = url
+        self.blocked = False
+
+    def requestUrl(self) -> QUrl:
+        return self._url
+
+    def block(self, value: bool) -> None:
+        self.blocked = bool(value)
 
 
 def wait_for_load(view: QWebEngineView, url: QUrl, timeout_ms: int = 15000) -> bool:
@@ -92,6 +107,52 @@ def wait_for_bridge_response(view: QWebEngineView, timeout_ms: int = 10000) -> d
         QTimer.singleShot(100, loop.quit)
         loop.exec()
     raise AssertionError("Bridge response timed out")
+
+
+@pytest.mark.risk_web_002
+def test_locked_down_page_blocks_untrusted_navigation_and_popups() -> None:
+    from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile
+
+    from app.gui.host import build_locked_down_web_types
+
+    QApplication.instance() or QApplication([])
+    layout = json.loads(LAYOUT_PATH.read_text(encoding="utf-8"))
+    entry = (REPOSITORY_ROOT / layout["web_entries"][0]).resolve()
+    interceptor_type, page_type = build_locked_down_web_types()
+    interceptor = interceptor_type(entry.parent, entry)
+    profile = QWebEngineProfile("zizai-navigation-cases")
+    page = page_type(profile, entry.parent, entry)
+
+    violations: list[str] = []
+    for case in json.loads(NAVIGATION_CASES_PATH.read_text(encoding="utf-8"))["cases"]:
+        url = QUrl(case["url"])
+        committed = bool(
+            page.acceptNavigationRequest(
+                url, QWebEnginePage.NavigationType.NavigationTypeLinkClicked, True
+            )
+        )
+        probe = RequestProbe(url)
+        interceptor.interceptRequest(probe)
+        allowed = case["expected"] == "allowed"
+        if committed is not allowed or probe.blocked is allowed:
+            violations.append(f"{case['kind']}: navigation={committed} blocked={probe.blocked}")
+
+    bundled = QUrl.fromLocalFile(str(entry))
+    bundled_probe = RequestProbe(bundled)
+    interceptor.interceptRequest(bundled_probe)
+
+    assert violations == []
+    assert page.createWindow(QWebEnginePage.WebWindowType.WebBrowserTab) is None
+    assert (
+        page.acceptNavigationRequest(
+            bundled, QWebEnginePage.NavigationType.NavigationTypeTyped, True
+        )
+        is True
+    )
+    assert bundled_probe.blocked is False
+
+    page.deleteLater()
+    profile.deleteLater()
 
 
 def test_production_pages_load_local_assets_and_bridge_round_trip() -> None:

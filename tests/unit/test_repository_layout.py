@@ -26,10 +26,13 @@ def test_current_path_resolvers_match_the_layout_contract(layout: dict) -> None:
     runtime = BridgeRuntime(REPOSITORY_ROOT)
 
     assert flow_locator.BASE_DIR.resolve() == REPOSITORY_ROOT
-    assert flow_locator.CONFIG_DIR.resolve() == REPOSITORY_ROOT / layout["config_root"]
+    assert flow_locator.CONFIG_DIR.resolve() == REPOSITORY_ROOT / layout["runtime_state_root"]
     assert flow_locator.WORKFLOW_DIR.resolve() == REPOSITORY_ROOT / layout["workflow_root"]
     assert (REPOSITORY_ROOT / app_logger.LOG_DIR).resolve() == REPOSITORY_ROOT / layout["log_root"]
-    assert runtime.config_root == REPOSITORY_ROOT / layout["config_root"]
+    assert runtime.source_config_root == REPOSITORY_ROOT / layout["source_config_root"]
+    assert runtime.runtime_state_root == REPOSITORY_ROOT / layout["runtime_state_root"]
+    assert runtime.config_root == runtime.runtime_state_root
+    assert runtime.workspace_default_root == REPOSITORY_ROOT / layout["workflow_root"]
     assert runtime._execution_log_path.parent == REPOSITORY_ROOT / layout["log_root"]
 
 

@@ -58,7 +58,7 @@ def main():
     if args.flow_path:
         return run_headless(args.flow_path)
 
-    run_webview_app(HOME_HTML_PATH, debug=bool(args.debug))
+    run_webview_app(HOME_HTML_PATH, repository_root=BASE_DIR, debug=bool(args.debug))
     return 0
 
 

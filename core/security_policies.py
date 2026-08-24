@@ -5,17 +5,21 @@ from urllib.parse import urlparse
 
 import yaml
 
+from core.repository_layout import resolve_repository_layout
+
 
 BASE_DIR = Path(__file__).resolve().parents[1]
+
+WEB_TARGET_ALLOWED_SCHEMES = frozenset({"http", "https"})
 
 
 def load_security_policies(base_dir: str | Path | None = None):
     root = Path(base_dir).resolve() if base_dir else BASE_DIR
-    policy_path = root / "config" / "security_policies.yml"
+    policy_path = resolve_repository_layout(root).source_config_root / "security_policies.yml"
     if not policy_path.exists():
         return {
             "loaded": False,
-            "path": str(policy_path),
+            "path": "",
             "version": 1,
             "apis": {"profiles": {}},
             "web": {"allowlist": []},
@@ -29,7 +33,7 @@ def load_security_policies(base_dir: str | Path | None = None):
 
     return {
         "loaded": True,
-        "path": str(policy_path),
+        "path": "",
         "version": int(raw.get("version") or 1),
         "apis": _normalize_apis(raw.get("apis")),
         "web": _normalize_allowlist(raw.get("web")),
@@ -94,10 +98,17 @@ def get_api_profile(profile_name: str, base_dir: str | Path | None = None):
 
 
 def is_web_target_allowed(url: str, base_dir: str | Path | None = None):
-    policies = load_security_policies(base_dir=base_dir)
+    try:
+        policies = load_security_policies(base_dir=base_dir)
+    except (OSError, ValueError, yaml.YAMLError):
+        return False
     allowlist = policies.get("web", {}).get("allowlist", [])
     parsed = urlparse(str(url or ""))
+    if (parsed.scheme or "").lower() not in WEB_TARGET_ALLOWED_SCHEMES:
+        return False
     domain = (parsed.hostname or "").lower()
+    if not domain:
+        return False
     path = parsed.path or "/"
     for rule in allowlist:
         if domain != rule.get("domain"):

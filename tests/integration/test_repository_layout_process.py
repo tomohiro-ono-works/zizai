@@ -26,8 +26,9 @@ root = Path.cwd().resolve()
 runtime = BridgeRuntime(root)
 print(json.dumps({
     "repository_root": str(flow_locator.BASE_DIR.resolve()),
-    "config_root": str(runtime.config_root),
-    "workflow_root": str(flow_locator.WORKFLOW_DIR.resolve()),
+    "source_config_root": str(runtime.source_config_root),
+    "runtime_state_root": str(runtime.runtime_state_root),
+    "workspace_default_root": str(runtime.workspace_default_root),
     "log_root": str(runtime._execution_log_path.parent),
     "gui_root": str((root / "static").resolve()),
 }))
@@ -48,8 +49,9 @@ print(json.dumps({
     assert result.returncode == 0
     assert actual == {
         "repository_root": str(REPOSITORY_ROOT),
-        "config_root": str(REPOSITORY_ROOT / layout["config_root"]),
-        "workflow_root": str(REPOSITORY_ROOT / layout["workflow_root"]),
+        "source_config_root": str(REPOSITORY_ROOT / layout["source_config_root"]),
+        "runtime_state_root": str(REPOSITORY_ROOT / layout["runtime_state_root"]),
+        "workspace_default_root": str(REPOSITORY_ROOT / layout["workflow_root"]),
         "log_root": str(REPOSITORY_ROOT / layout["log_root"]),
         "gui_root": str(REPOSITORY_ROOT / layout["gui_root"]),
     }

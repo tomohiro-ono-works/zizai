@@ -9,6 +9,11 @@ logger = logging.getLogger("ziz.gui_host")
 
 WINDOW_FRAME_COLOR = "#292941"
 
+# 内蔵 WebView が到達してよいのは同梱 file:// と Qt リソースだけとする。
+LOCKED_DOWN_ALLOWED_SCHEMES = frozenset({"file", "qrc"})
+
+_locked_down_web_types = None
+
 
 def _is_within_path(path, base_dir):
     try:
@@ -16,6 +21,74 @@ def _is_within_path(path, base_dir):
         return True
     except ValueError:
         return False
+
+
+def build_locked_down_web_types():
+    """QtWebEngine 型を遅延 import して locked-down な interceptor/page クラスを返す。"""
+    global _locked_down_web_types
+    if _locked_down_web_types is not None:
+        return _locked_down_web_types
+
+    try:
+        from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineUrlRequestInterceptor
+    except ImportError as error:
+        raise RuntimeError("PySide6 と Qt WebEngine がインストールされていません。") from error
+
+    class LockedDownRequestInterceptor(QWebEngineUrlRequestInterceptor):
+        def __init__(self, base_dir, html_file):
+            super().__init__()
+            self._base_dir = Path(base_dir).resolve()
+            self._html_file = Path(html_file).resolve()
+
+        def interceptRequest(self, info):
+            url = info.requestUrl()
+            scheme = str(url.scheme() or "").lower()
+            if scheme not in LOCKED_DOWN_ALLOWED_SCHEMES:
+                info.block(True)
+                return
+            if scheme != "file":
+                return
+            local_file = Path(url.toLocalFile() or "").resolve()
+            if local_file == self._html_file or _is_within_path(local_file, self._base_dir):
+                return
+            info.block(True)
+
+    class LockedDownPage(QWebEnginePage):
+        def __init__(self, profile, base_dir, html_file, parent=None):
+            super().__init__(profile, parent)
+            self._base_dir = Path(base_dir).resolve()
+            self._html_file = Path(html_file).resolve()
+
+        def acceptNavigationRequest(self, url, navigation_type, is_main_frame):
+            scheme = str(url.scheme() or "").lower()
+            if scheme not in LOCKED_DOWN_ALLOWED_SCHEMES:
+                logger.warning("[webview] blocked navigation: url=%s main_frame=%s", url.toString(), is_main_frame)
+                return False
+            if scheme != "file":
+                return True
+            local_file = Path(url.toLocalFile() or "").resolve()
+            if local_file == self._html_file or _is_within_path(local_file, self._base_dir):
+                return True
+            logger.warning("[webview] blocked navigation outside base: url=%s", url.toString())
+            return False
+
+        def createWindow(self, window_type):
+            # popup / target=_blank から Bridge 到達可能な新規 WebView を作らせない
+            logger.warning("[webview] blocked popup window: type=%s", window_type)
+            return None
+
+        def javaScriptConsoleMessage(self, level, message, line_number, source_id):
+            logger.info(
+                "[js-console] level=%s source=%s line=%s message=%s",
+                level,
+                source_id or "",
+                line_number,
+                message,
+            )
+            super().javaScriptConsoleMessage(level, message, line_number, source_id)
+
+    _locked_down_web_types = (LockedDownRequestInterceptor, LockedDownPage)
+    return _locked_down_web_types
 
 
 def _configure_qtwebengine_environment():
@@ -42,7 +115,7 @@ def _set_windows_app_user_model_id():
         logger.debug("AppUserModelID の設定に失敗しました。", exc_info=True)
 
 
-def run_webview_app(form_html_path, debug=False):
+def run_webview_app(form_html_path, *, repository_root, debug=False):
     startup_started = time.perf_counter()
     logger.info("[gui-startup] phase=begin debug=%s", bool(debug))
     _configure_qtwebengine_environment()
@@ -69,7 +142,6 @@ def run_webview_app(form_html_path, debug=False):
             QWebEnginePage,
             QWebEngineProfile,
             QWebEngineSettings,
-            QWebEngineUrlRequestInterceptor,
         )
         from PySide6.QtWebEngineWidgets import QWebEngineView
     except ImportError as error:
@@ -79,54 +151,11 @@ def run_webview_app(form_html_path, debug=False):
     from .bridge import BridgeRuntime, WebViewBridge
 
     html_path = Path(form_html_path).resolve()
+    resolved_repository_root = Path(repository_root).resolve()
     if not html_path.exists():
         raise FileNotFoundError(f"GUI ファイルが見つかりません: {html_path}")
 
-    class LockedDownRequestInterceptor(QWebEngineUrlRequestInterceptor):
-        def __init__(self, base_dir, html_file):
-            super().__init__()
-            self._base_dir = Path(base_dir).resolve()
-            self._html_file = Path(html_file).resolve()
-            self._allowed_schemes = {"file", "qrc", "data", "blob", "about"}
-
-        def interceptRequest(self, info):
-            url = info.requestUrl()
-            scheme = str(url.scheme() or "").lower()
-            if scheme not in self._allowed_schemes:
-                info.block(True)
-                return
-            if scheme != "file":
-                return
-            local_file = Path(url.toLocalFile() or "").resolve()
-            if local_file == self._html_file or _is_within_path(local_file, self._base_dir):
-                return
-            info.block(True)
-
-    class LockedDownPage(QWebEnginePage):
-        def __init__(self, profile, base_dir, html_file, parent=None):
-            super().__init__(profile, parent)
-            self._base_dir = Path(base_dir).resolve()
-            self._html_file = Path(html_file).resolve()
-            self._allowed_schemes = {"file", "qrc", "data", "blob", "about"}
-
-        def acceptNavigationRequest(self, url, navigation_type, is_main_frame):
-            scheme = str(url.scheme() or "").lower()
-            if scheme not in self._allowed_schemes:
-                return False
-            if scheme != "file":
-                return True
-            local_file = Path(url.toLocalFile() or "").resolve()
-            return local_file == self._html_file or _is_within_path(local_file, self._base_dir)
-
-        def javaScriptConsoleMessage(self, level, message, line_number, source_id):
-            logger.info(
-                "[js-console] level=%s source=%s line=%s message=%s",
-                level,
-                source_id or "",
-                line_number,
-                message,
-            )
-            super().javaScriptConsoleMessage(level, message, line_number, source_id)
+    LockedDownRequestInterceptor, LockedDownPage = build_locked_down_web_types()
 
     class ResizeHandle(QWidget):
         def __init__(self, parent, edges, cursor_shape):
@@ -664,7 +693,7 @@ def run_webview_app(form_html_path, debug=False):
         return coordinate_capture_overlay.begin(capture_id)
 
     runtime = BridgeRuntime(
-        base_dir=html_path.parent.parent,
+        base_dir=resolved_repository_root,
         debug=bool(debug),
         pick_file_callback=pick_file_dialog,
         pick_folder_callback=pick_folder_dialog,

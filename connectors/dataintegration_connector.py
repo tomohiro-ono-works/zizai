@@ -55,7 +55,7 @@ class DataintegrationConnector(BaseConnector):
         if not rename_list_path:
             raise ValueError("rename_list_path は必須です。")
 
-        rename_mappings = self._load_rename_mappings(rename_list_path)
+        rename_mappings = self._load_rename_mappings(rename_list_path, context)
         if not rename_mappings:
             self.log_execution("RENAME リストに有効な定義が無いため入力データをそのまま返します。", level="warning")
             return self.attach_dataframe_schema(dataframe)
@@ -196,8 +196,17 @@ class DataintegrationConnector(BaseConnector):
         normalized = series.fillna("").astype(str)
         return normalized.between(str(start_value), str(end_value), inclusive="both")
 
-    def _load_rename_mappings(self, rename_list_path: str) -> list[dict[str, str]]:
-        normalized_path = os.path.abspath(str(rename_list_path))
+    def _resolve_rename_list_path(self, rename_list_path: str, context: dict[str, Any]) -> str:
+        text = str(rename_list_path or "")
+        if os.path.isabs(text):
+            return os.path.normpath(text)
+        repository_root = str(context.get("__repository_root") or "").strip()
+        if not repository_root:
+            raise ValueError("相対 rename_list_path の解決には repository_root が必要です。")
+        return os.path.normpath(os.path.join(repository_root, text))
+
+    def _load_rename_mappings(self, rename_list_path: str, context: dict[str, Any]) -> list[dict[str, str]]:
+        normalized_path = self._resolve_rename_list_path(rename_list_path, context)
         if not os.path.exists(normalized_path):
             raise ValueError(f"RENAME リストファイルが見つかりません: {rename_list_path}")
 

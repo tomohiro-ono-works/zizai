@@ -27,7 +27,7 @@ steps:
   action: replace_fields_forrenamelist
   params:
     input_data: step1
-    rename_list_path: config\rename.csv
+    rename_list_path: apps\common\config\rename.csv
   output_variable: step2
   description: フィールド名を変更する
   ui_position:

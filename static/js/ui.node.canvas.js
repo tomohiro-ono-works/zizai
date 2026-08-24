@@ -158,12 +158,23 @@
     return null;
   }
 
+  function notifyExternalLinkFailure(message) {
+    if (dialogApi?.show) dialogApi.show(message, { kind: "warning", title: "外部リンク" });
+    else alert(message);
+  }
+
   function openStickyLinkInExternalBrowser(url) {
     const href = String(url || "").trim();
     if (!href) return;
     const bridge = resolveBridgeApi();
-    if (bridge?.available?.()) {
-      bridge.call("app.openExternal", { url: href, prefer: "chrome" }).catch(async (error) => {
+    // http/https 以外はBridgeへ送らず、ここで拒否する
+    if (!bridge?.isAllowedExternalUrl?.(href)) {
+      try { console.warn("[sticky-link] rejected external url scheme"); } catch (_) {}
+      notifyExternalLinkFailure("http または https のリンクだけを開けます。");
+      return;
+    }
+    if (bridge?.available?.() && typeof bridge.openExternal === "function") {
+      bridge.openExternal(href, { prefer: "chrome" }).catch(async (error) => {
         try { console.warn("[sticky-link] app.openExternal failed", error); } catch (_) {}
         let restartHint = "";
         try {
@@ -173,24 +184,14 @@
             restartHint = "\nアプリを再起動してください（bridge機能が古い可能性があります）。";
           }
         } catch (_) {}
-        const message = `外部ブラウザ起動に失敗しました。${error?.message ? `\n${error.message}` : ""}${restartHint}`;
-        if (dialogApi?.show) dialogApi.show(message, { kind: "warning", title: "外部リンク" });
-        else alert(message);
-        try {
-          window.open(href, "_blank", "noopener,noreferrer");
-        } catch (_) {}
+        notifyExternalLinkFailure(`外部ブラウザ起動に失敗しました。${error?.message ? `\n${error.message}` : ""}${restartHint}`);
       });
       return;
     }
     if (bridge) {
       try { console.warn("[sticky-link] bridge resolved but not available", bridge.status?.()); } catch (_) {}
-      const message = "外部ブラウザ起動に失敗しました。\nネイティブブリッジ未接続です。";
-      if (dialogApi?.show) dialogApi.show(message, { kind: "warning", title: "外部リンク" });
-      else alert(message);
     }
-    try {
-      window.open(href, "_blank", "noopener,noreferrer");
-    } catch (_) {}
+    notifyExternalLinkFailure("外部ブラウザ起動に失敗しました。\nネイティブブリッジ未接続です。");
   }
 
   function toGridCoordinate(value, origin, gridSize) {

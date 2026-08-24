@@ -2,7 +2,7 @@
 
 ## Status
 
-Blocked — TASK-009, TASK-010
+Blocked — TASK-010（TASK-010経由でTASK-005、TASK-018、TASK-019を含む）
 
 ## Goal
 
@@ -27,7 +27,7 @@ Blocked — TASK-009, TASK-010
 
 ## Dependencies
 
-TASK-001、TASK-008、TASK-009、TASK-010。TASK-001はCompletedであり、単一Desktop Runtime経路がActivated済みである。
+TASK-001、TASK-008、TASK-009、TASK-010。TASK-010の完了はTASK-005、TASK-018、TASK-019およびconfig互換Decisionの完了を含む。TASK-001はCompletedであり、単一Desktop Runtime経路がActivated済みである。
 
 ## Expected change area
 

@@ -2,7 +2,7 @@
 
 - Status: Current Specification
 - Last verified: 2026-08-21
-- Decision: [ADR-v23 Application Topology](../decisions/ADR-v23-application-topology.md)
+- Decisions: [ADR-v23 Application Topology](../decisions/ADR-v23-application-topology.md)、[ADR Source, Runtime, and Workspace Boundary](../decisions/ADR-source-runtime-workspace-boundary.md)
 
 ## Runtime topology
 
@@ -47,6 +47,15 @@
 ## Approved target responsibilities
 
 物理移行後のTarget Treeは`apps/{desktop,cli,gui,core,connectors,common}`である。これは承認済みの移行先であり、TASK-011/012完了前にCurrent Pathとして記述しない。詳細と依存方向はADRを正とする。
+
+## Approved configuration boundary
+
+- Source設定は`apps/common/config/`、Runtime/User stateは既存root `config/`、Workspace既定はroot `workflows/`へ分離する。
+- Production entrypointが明示的なrepository rootを共通Path Resolverへ渡し、HTML位置やmodule階層から各rootを個別に逆算しない。
+- Source設定はPython/Application Adapterが用途別に取得し、Source pathまたは汎用scopeをFrontend libraryへ渡さない。
+- Runtime stateはRuntime専用scope、利用者が選択したWorkspaceはWorkspace専用scopeで扱う。Source設定とRuntime内部fileをExplorerの汎用操作対象にしない。
+- Bridge Protocol `1.0`のCommand/Event数と既存payload fieldを維持し、追加payloadまたはscope値だけで境界を拡張する。
+- 詳細な取得、cache、deprecated field、failure contractは`ADR-source-runtime-workspace-boundary.md`を正とする。
 
 ## Logging
 

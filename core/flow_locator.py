@@ -5,11 +5,14 @@ import os
 import subprocess
 from pathlib import Path
 
+from core.repository_layout import resolve_repository_layout
+
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-WORKFLOW_DIR = BASE_DIR / "workflows"
+_LAYOUT = resolve_repository_layout(BASE_DIR)
+WORKFLOW_DIR = _LAYOUT.workspace_default_root
 TEMPLATE_DIR = BASE_DIR / "template"
-CONFIG_DIR = BASE_DIR / "config"
+CONFIG_DIR = _LAYOUT.runtime_state_root
 RECENT_FLOWS_FILE = CONFIG_DIR / "recent_flows.json"
 FLOW_EXTENSIONS = (".zizd",)
 
@@ -18,9 +21,9 @@ def has_flow_extension(path: str) -> bool:
     return str(path or "").lower().endswith(FLOW_EXTENSIONS)
 
 
-def list_flows_local():
+def list_flows_local(recent_flows_file: Path | None = None):
     items = []
-    for entry in load_recent_flows():
+    for entry in load_recent_flows(recent_flows_file):
         path = str(entry.get("path") or "").strip()
         if not path:
             continue
@@ -57,15 +60,16 @@ def list_templates_local():
     )
 
 
-def list_workflows_local():
-    return list_flows_local()
+def list_workflows_local(recent_flows_file: Path | None = None):
+    return list_flows_local(recent_flows_file)
 
 
-def load_recent_flows():
-    if not RECENT_FLOWS_FILE.exists():
+def load_recent_flows(recent_flows_file: Path | None = None):
+    target_file = Path(recent_flows_file) if recent_flows_file is not None else RECENT_FLOWS_FILE
+    if not target_file.exists():
         return []
     try:
-        data = json.loads(RECENT_FLOWS_FILE.read_text(encoding="utf-8"))
+        data = json.loads(target_file.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return []
     items = data.get("items") if isinstance(data, dict) else []
@@ -86,20 +90,31 @@ def load_recent_flows():
     return normalized_items
 
 
-def save_recent_flows(items):
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+def save_recent_flows(items, recent_flows_file: Path | None = None):
+    target_file = Path(recent_flows_file) if recent_flows_file is not None else RECENT_FLOWS_FILE
+    target_file.parent.mkdir(parents=True, exist_ok=True)
     payload = {"items": items}
-    RECENT_FLOWS_FILE.write_text(
+    target_file.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 
 
-def register_recent_flow(path: str, *, opened_at_iso: str | None = None, max_items: int = 10):
+def register_recent_flow(
+    path: str,
+    *,
+    opened_at_iso: str | None = None,
+    max_items: int = 10,
+    recent_flows_file: Path | None = None,
+):
     normalized = os.path.abspath(str(path or "").strip())
     if not normalized:
         return
-    existing = [item for item in load_recent_flows() if os.path.abspath(str(item.get("path") or "")) != normalized]
+    existing = [
+        item
+        for item in load_recent_flows(recent_flows_file)
+        if os.path.abspath(str(item.get("path") or "")) != normalized
+    ]
     opened_at = str(opened_at_iso or "")
     timestamp = 0.0
     if opened_at:
@@ -113,7 +128,7 @@ def register_recent_flow(path: str, *, opened_at_iso: str | None = None, max_ite
         "opened_at": opened_at,
         "opened_at_ts": timestamp,
     })
-    save_recent_flows(existing[: max(1, int(max_items or 10))])
+    save_recent_flows(existing[: max(1, int(max_items or 10))], recent_flows_file)
 
 
 def discover_flow_paths():

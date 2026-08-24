@@ -2,7 +2,7 @@
 
 ## Status
 
-Blocked — TASK-005, TASK-009, TASK-011
+Blocked — TASK-011
 
 ## Goal
 
@@ -12,7 +12,8 @@ Target外資産をTASK-005で承認された場所・tracking状態へ整理す�
 
 - `docs/handoffs/v23-repository-audit.md`
 - `docs/handoffs/v23-migration-map.md`
-- TASK-005 Disposition
+- `docs/handoffs/TASK-017-migration-goal-backward-audit.md`
+- `docs/handoffs/v23-unmapped-assets-disposition.md`
 - TASK-009、TASK-011の最終Path
 
 ## Scope
@@ -26,6 +27,10 @@ Target外資産をTASK-005で承認された場所・tracking状態へ整理す�
 ## Dependencies
 
 TASK-005、TASK-009、TASK-011。
+
+## Task Graph Position
+
+TASK-011完了後、TASK-012／TASK-016系統と変更Pathが重ならない範囲で並行可能。TASK-013とTASK-016の双方が完了した後にTASK-014へ合流する。
 
 ## Expected change area
 
@@ -72,18 +77,19 @@ Required
 ## Completed
 
 - Task Decompositionが承認され、本Task定義を作成した。
+- TASK-005が完了し、全Dispositionと所有Taskが確定した。
 
 ## Evidence
 
-- TASK-005、TASK-009、TASK-011が未完の依存条件として定義されている。
+- TASK-005とTASK-009は完了済みであり、TASK-011が残る依存条件である。
 
 ## Remaining
 
-- 依存Task完了後、承認済みDispositionだけを適用する。
+- TASK-011完了後、承認済みDispositionだけを適用する。
 
 ## Exact next action
 
-TASK-005のDispositionと最終Application/toolchain Pathを照合し、実行対象を固定する。
+TASK-011の最終Application Pathと承認済みDispositionを照合し、実行対象を固定する。
 
 ## Termination condition
 

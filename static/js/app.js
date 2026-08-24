@@ -80,9 +80,8 @@
     modeStates: "ziz.modeStates.v1",
     pendingFlow: "ziz.pendingFlow.v1",
   };
-  const RECENT_ROOTS_CONFIG_SCOPE = "config";
+  const RECENT_ROOTS_CONFIG_SCOPE = "runtime";
   const RECENT_ROOTS_CONFIG_PATH = "recent_roots.json";
-  const WORKFLOWS_DIR_NAME = "workflows";
   const modeStates = {};
   let persistTimer = 0;
   const HISTORY_MAX_DIFFS_PER_SNAPSHOT = 30;
@@ -1229,42 +1228,14 @@
     }
   }
 
-  function getParentDir(pathValue) {
-    const text = String(pathValue || "").trim();
-    if (!text) return "";
-    const normalized = text.replace(/[\\/]+$/, "");
-    const slash = Math.max(normalized.lastIndexOf("/"), normalized.lastIndexOf("\\"));
-    if (slash <= 0) return "";
-    return normalized.slice(0, slash);
-  }
-
-  function joinPath(baseDir, childName) {
-    const base = String(baseDir || "").trim().replace(/[\\/]+$/, "");
-    const child = String(childName || "").trim().replace(/^[\\/]+/, "");
-    if (!base) return child;
-    const sep = base.includes("\\") ? "\\" : "/";
-    return `${base}${sep}${child}`;
-  }
-
   async function ensureWorkflowsRoot() {
     if (!bridgeApi?.available?.()) return "";
     const rootStatus = await bridgeApi.call("workspace.getRoot", {});
-    const configRoot = String(rootStatus?.config_path || "").trim();
-    const baseDir = getParentDir(configRoot);
-    const workflowsPath = joinPath(baseDir, WORKFLOWS_DIR_NAME);
-    if (workflowsPath) {
-      try {
-        const applied = await bridgeApi.call("workspace.setRoot", { root_path: workflowsPath });
-        return String(applied?.root_path || workflowsPath);
-      } catch (error) {
-        if (String(error?.code || "") !== "E_NOT_FOUND") {
-          throw error;
-        }
-      }
-    }
+    const rootPath = String(rootStatus?.root_path || "").trim();
+    if (rootPath) return rootPath;
     const picked = await bridgeApi.call("workspace.pickRoot", {
       title: "プロジェクトルートを選択",
-      current_value: workflowsPath || String(rootStatus?.root_path || ""),
+      current_value: "",
     });
     if (!picked?.selected) return "";
     const applied = await bridgeApi.call("workspace.setRoot", { root_path: String(picked.root_path || "") });

@@ -60,12 +60,32 @@ def test_unknown_gate_is_a_verification_failure() -> None:
     assert "Unsupported Gate" in combined_output(result)
 
 
-@pytest.mark.parametrize("risk_id", ["RISK-EXT-001", "RISK-WEB-002"])
-def test_deferred_risk_is_blocked_in_task_008(risk_id: str) -> None:
-    result = run_runner("-RiskId", risk_id)
+@pytest.mark.parametrize(
+    ("risk_id", "marker"),
+    [
+        ("RISK-EXT-001", "risk_ext_001"),
+        ("RISK-WEB-002", "risk_web_002"),
+    ],
+)
+def test_task_019_risk_is_dispatched(
+    tmp_path: Path,
+    risk_id: str,
+    marker: str,
+) -> None:
+    log = tmp_path / "uv.log"
+    write_fake_uv(tmp_path)
 
-    assert result.returncode == 2
-    assert "Blocked" in combined_output(result)
+    result = run_runner(
+        "-RiskId",
+        risk_id,
+        environment={"PATH": str(tmp_path), "ZIZAI_TEST_UV_LOG": str(log)},
+    )
+
+    assert result.returncode == 0
+    assert "Verification passed" in combined_output(result)
+    assert f"-m pytest --strict-markers -m {marker} tests" in log.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_manual_ui_without_evidence_is_blocked() -> None:
@@ -123,11 +143,11 @@ def test_missing_uv_is_blocked() -> None:
     assert "uv 0.12.5" in combined_output(result)
 
 
-def test_deferred_risk_does_not_require_uv() -> None:
+def test_task_019_risk_requires_canonical_uv() -> None:
     result = run_runner("-RiskId", "RISK-EXT-001", environment={"PATH": ""})
 
     assert result.returncode == 2
-    assert "RISK-EXT-001 is Blocked" in combined_output(result)
+    assert "uv 0.12.5 is required" in combined_output(result)
 
 
 def test_required_gate_rejects_a_skipped_test() -> None:

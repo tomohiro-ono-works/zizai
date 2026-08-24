@@ -1,8 +1,8 @@
 # Embedded Frontend Contract
 
 - Status: Current Specification
-- Last verified: 2026-08-21
-- Target migration: TASK-012
+- Last verified: 2026-08-23
+- Target migration: TASK-012、TASK-016、TASK-018、TASK-019
 
 ## Current pages and runtime
 
@@ -32,6 +32,27 @@
 - External script、external iframe、Web Component、CDN assetをBridge到達可能なlocal pageへ導入しない。
 - 同梱`dataflow.html`のinternal iframeだけを許可例外とし、`postMessage`/`CustomEvent` contractをBridge contractと混同しない。
 - Popup、main-frame navigation、base外file、data/blob等の挙動はVerification ContractのWindows WebEngine Gateで判定する。
+- 利用者またはFrontend componentからexternal URLとして入力される値は、Frontend AdapterとPython backendの両方で`http:`／`https:`だけを許可する。`file:`を含むその他schemeは拒否する。この入力検証は、Desktopが同梱UIを`file://`で読み込むRuntime contractとは別である。
+
+## Approved Frontend library requirement
+
+次の8 libraryをすべてexact revisionのlocal assetとして利用し、Application側へ同一UI責務を重複実装しない。
+
+配置、責務境界、導入判断、検証条件の詳細正本は`docs/features/frontend-libraries.md`とする。
+
+1. `zizai-app-shell`
+2. `zizai-catalog-panel`
+3. `zizai-data-viewer`
+4. `zizai-editor-markdown`
+5. `zizai-form`
+6. `zizai-highlighter-sql`
+7. `zizai-sqlflow-designer`
+8. `zizai-workflow-designer`
+
+- 各libraryを利用するFrontend spaceは事前に一括決定しない。各spaceの移行Work Package開始前にProject ownerが決定する。
+- Agentはrepository名、sample、既存画面名から配置を推測しない。
+- Bridge、Source/Runtime config、persistence、execution、navigation、external URL、OS window/dialog/clipboard等はApplication Adapterの責務とし、libraryから直接扱わない。
+- pinning、配布許諾、theme、lifecycle、Document contract等の共通導入条件はTASK-018、物理移動はTASK-012、space単位の導入と重複削除はTASK-016で扱う。
 
 ## Verification
 
@@ -42,4 +63,4 @@
 
 ## Approved target
 
-TASK-012で`static/`を`apps/gui/`へ移す。UI再設計、localhost/API化、外部Web埋め込み、Bridge breaking changeを混在させない。
+TASK-012で既存Frontendを挙動維持のまま`static/`から`apps/gui/`へ物理移動し、TASK-016でProject ownerが決定したspaceを8 libraryへ段階移行する。TASK-012へUI再設計を混在させず、TASK-016では同一責務のApplication実装を回帰確認後に削除する。localhost/API化、外部Web埋め込み、Bridge breaking changeは行わない。

@@ -1,14 +1,16 @@
 # Data and Flow Contract
 
 - Status: Current Specification
-- Last verified: 2026-08-21
+- Last verified: 2026-08-24
+- Decision: [ADR Rename List Path Compatibility](../decisions/ADR-rename-list-path-compatibility.md)
 
 ## Flow file
 
 - 正式extensionは`.zizd`である。
 - Top levelは`metadata`、`variables`、`steps`、`flows`を使用する。
 - `metadata.mode`は`dataflow`、開始変数は`variables.start`、Connector入力は`steps[].params`、DAGは`flows.edges`へ保存する。
-- Repository移行で保存schemaを暗黙変換しない。Breaking changeは専用Decision、versioning、migration、回帰Testを必要とする。
+- Repository移行で保存schemaを暗黙変換しない。Breaking changeは専用Decision、明示的な互換方針、回帰Testを必要とし、versioning／migrationの要否もDecisionで決定する。
+- `rename_list_path: config\rename.csv`の旧既定値はTASK-010で後方互換を終了する。既存`.zizd`は自動変換せず、新Source pathへの暗黙fallbackも行わない。
 
 ## Schema item
 

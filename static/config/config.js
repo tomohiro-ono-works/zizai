@@ -362,7 +362,7 @@ const CONFIG = {
 
     "DataintegrationConnector.replace_fields_forrenamelist": [
       { key:"input_data", label:"入力データ", kind:"text", required:true, allowVars:true, placeholder:"例: {{step1}}" },
-      { key:"rename_list_path", label:"RENAMEリストファイル", kind:"file", required:true, default:"config\\rename.csv", accept:".csv" },
+      { key:"rename_list_path", label:"RENAMEリストファイル", kind:"file", required:true, default:"apps\\common\\config\\rename.csv", accept:".csv" },
       {
         key:"pre_rename_cleansing",
         label:"リネーム前クレンジング",

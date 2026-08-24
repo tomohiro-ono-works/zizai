@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "source_config_root": "apps/common/config",
+  "runtime_state_root": "config",
+  "workspace_default_root": "workflows",
+  "source_config_assets": [
+    "security_policies.yml",
+    "rename.csv",
+    "file_icon_map.json",
+    "suggest_index"
+  ]
+}

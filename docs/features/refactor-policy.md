@@ -1,7 +1,7 @@
 # Refactor Policy
 
 - Status: Current Specification
-- Last verified: 2026-08-21
+- Last verified: 2026-08-23
 
 ## Classification before action
 
@@ -51,4 +51,4 @@ Historical Handoff/Decisionが旧pathを過去Evidenceとして記録するこ�
 - `flow_locator.py`のWindows固有探索と汎用path/history責務の分離。
 - 未参照icon、legacy aggregate CSS等の利用有無確認。
 
-これらは候補であり、TASK-006から実装・削除を許可しない。Migration中はTASK-009～014の範囲とVerification Contractを優先する。
+これらは候補であり、候補記載だけでは実装・削除を許可しない。Migration中は`docs/tasks/active/`の承認済み依存Graph、TASK-017のCodex検証済み調査結果、Verification Contractを優先する。Frontend libraryと重複するUI責務の削除はTASK-016、その他の承認済みlegacy/generated residue削除はTASK-014へ分離する。

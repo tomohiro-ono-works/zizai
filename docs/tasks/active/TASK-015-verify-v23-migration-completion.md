@@ -2,7 +2,7 @@
 
 ## Status
 
-Blocked — TASK-005, TASK-008～014
+Blocked — TASK-014（全Migration TaskはTASK-014までに合流する）
 
 ## Goal
 
@@ -17,7 +17,7 @@ Migration全体が承認済みArchitecture、Repository構造、runtime behavior
 
 ## Scope
 
-Target tree、例外、imports、entrypoints、config、toolchain、Docs、Harness、Tests、CI、legacy references、runtimeを横断検証する。
+Target tree、例外、imports、entrypoints、config、toolchain、Docs、Harness、Tests、CI、legacy references、runtimeを横断検証する。`.gitignore`は対象folder、pattern、例外ruleを全体レビューし、Sourceとgenerated/local stateの境界を確認する。
 
 ## Out of scope
 
@@ -25,7 +25,7 @@ Target tree、例外、imports、entrypoints、config、toolchain、Docs、Harne
 
 ## Dependencies
 
-TASK-001～014、およびInvestigationから追加された全Task。
+TASK-001～014、TASK-016～019、およびInvestigationから追加された全Task。RISK-FS-001のsymlink実機検証は承認済みDecisionどおり本Taskでユーザーが実行し、それ以前のTaskをBlockしない。
 
 ## Expected change area
 
@@ -40,6 +40,9 @@ TASK-001～014、およびInvestigationから追加された全Task。
 - 旧PathにCode/Runtime/Test/CIの参照がない。
 - Active / canonical documentationにおける旧Pathへの有効参照が0である。
 - Sourceとgenerated/local stateが正しく分離されている。
+- `.gitignore`の対象folder、pattern、例外ruleが全件確認され、追跡すべきSourceを隠すbulk ignore、意図しない未追跡資産の露出、未承認のtracked-ignore例外が0である。
+- 承認済み8 Frontend libraryがProject owner決定spaceですべて使用され、同一UI責務のApplication実装が0である。
+- external URL入力はFrontend/backendの両方で`http(s)`だけを許可し、Desktop同梱UIの内部`file://` Runtimeと混同していない。
 - 未解決事項、失敗、未完了Taskが0である。
 - 独立レビュー結果がPASSである。
 
@@ -54,6 +57,7 @@ Documentation referenceは次の基準で判定する。
 - `unit` / `integration`: 全suite。
 - `e2e` / `manual-ui`: Windows Desktop/UI Runtime Gate。
 - `static-analysis`: tree/import/path/reference scan。
+- `.gitignore` review: ruleごとの所有責務確認、代表pathへの`git check-ignore -v --no-index`、`git ls-files -ci --exclude-standard`によるtracked-ignore検出。
 - clean environment lock verification。
 - CI full run。
 - 独立Architecture/Task Evidence review。
@@ -88,11 +92,12 @@ Migration実装とは分離された最終合否判定であり、全Task共通�
 
 ## Evidence
 
-- TASK-001～014と追加Taskが依存条件として定義されている。
+- TASK-001～014、TASK-016～019と追加Taskが依存条件として定義されている。
 
 ## Remaining
 
 - 全Task完了後、修正を行わずMigration全体を独立検証する。
+- Project ownerと`.gitignore`の対象folder、pattern、例外ruleを全体レビューする。問題を検出した場合は本Taskで便乗修正せず、責務Taskへ戻すか修正Taskを作る。
 
 ## Exact next action
 

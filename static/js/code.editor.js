@@ -17,13 +17,6 @@
     return shellApi.loadScriptOnce(path);
   }
 
-  async function ensureYamlParserLoaded() {
-    const parser = window.jsyaml;
-    if (parser && typeof parser.load === "function") return parser;
-    await loadScriptOnce("./vendor/js-yaml/js-yaml.min.js");
-    return window.jsyaml || null;
-  }
-
   async function ensureCodeHighlightLoaded() {
     const api = getCodeHighlightApi();
     if (typeof api.renderHighlightedHtml === "function") return api;
@@ -113,42 +106,6 @@
     return normalized;
   }
 
-  function parseSuggestIndexYaml(text) {
-    const parser = window.jsyaml;
-    if (!parser || typeof parser.load !== "function") return [];
-    try {
-      const parsed = parser.load(String(text || "")) || [];
-      if (Array.isArray(parsed)) return normalizeSuggestEntries(parsed);
-      if (parsed && typeof parsed === "object" && Array.isArray(parsed.entries)) {
-        return normalizeSuggestEntries(parsed.entries);
-      }
-    } catch (_) {
-      return [];
-    }
-    return [];
-  }
-
-  async function fetchSuggestIndexFromStatic(connectorId) {
-    const fileName = `suggest_index_${connectorId}.yml`;
-    const candidates = [
-      `/config/suggest_index/${fileName}`,
-      `/static/config/suggest_index/${fileName}`,
-      `./config/suggest_index/${fileName}`
-    ];
-    for (const path of candidates) {
-      try {
-        const response = await fetch(path, { cache: "no-store" });
-        if (!response.ok) continue;
-        const text = await response.text();
-        const entries = parseSuggestIndexYaml(text);
-        if (entries.length) return entries;
-      } catch (_) {
-        // try next
-      }
-    }
-    return [];
-  }
-
   async function loadSuggestEntriesForConnector(connectorId) {
     const normalizedConnector = String(connectorId || "").trim();
     if (!normalizedConnector) return [];
@@ -161,23 +118,17 @@
 
     const promise = (async () => {
       const bridgeApi = getBridgeApi();
-      if (bridgeApi?.available?.()) {
-        try {
-          const payload = await bridgeApi.call("app.getSuggestIndex", { connector: normalizedConnector });
-          const entries = normalizeSuggestEntries(payload?.entries);
+      if (!bridgeApi?.available?.()) return [];
+      try {
+        const payload = await bridgeApi.call("app.getSuggestIndex", { connector: normalizedConnector });
+        const entries = normalizeSuggestEntries(payload?.entries);
+        if (payload?.loaded && entries.length) {
           SUGGEST_INDEX_CACHE.set(normalizedConnector, entries);
-          return entries;
-        } catch (_) {
-          SUGGEST_INDEX_CACHE.set(normalizedConnector, []);
-          return [];
         }
+        return entries;
+      } catch (_) {
+        return [];
       }
-      await ensureYamlParserLoaded().catch(() => null);
-      const entries = await fetchSuggestIndexFromStatic(normalizedConnector);
-      if (entries.length) {
-        SUGGEST_INDEX_CACHE.set(normalizedConnector, entries);
-      }
-      return entries;
     })();
 
     SUGGEST_INDEX_LOADING.set(normalizedConnector, promise);
