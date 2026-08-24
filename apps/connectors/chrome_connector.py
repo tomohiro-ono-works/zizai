@@ -6,8 +6,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from connectors.base_connector import BaseConnector
-from core.security_policies import is_web_target_allowed
+from apps.core.base_connector import BaseConnector
+from apps.core.security_policies import is_web_target_allowed
 
 
 class ChromeConnector(BaseConnector):

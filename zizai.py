@@ -1,10 +1,10 @@
 import argparse
 from pathlib import Path
 
-from app.gui.host import run_webview_app
-from app.main import run_cli
-from core.flow_locator import has_flow_extension, resolve_flow_path
-from core.logger import setup_logger
+from apps.desktop.host import run_webview_app
+from apps.cli.main import run_cli
+from apps.core.flow_locator import has_flow_extension, resolve_flow_path
+from apps.core.logger import setup_logger
 
 BASE_DIR = Path(__file__).resolve().parent
 HOME_HTML_PATH = BASE_DIR / "static" / "home.html"

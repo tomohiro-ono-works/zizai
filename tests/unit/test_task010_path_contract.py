@@ -11,13 +11,13 @@ GOAL_LAYOUT_PATH = REPOSITORY_ROOT / "tests" / "fixtures" / "task010" / "reposit
 
 pytestmark = [pytest.mark.unit, pytest.mark.risk_path_001]
 
-# TASK-010 WP-1 (Goal-state contract): `core.repository_layout.resolve_repository_layout`
+# TASK-010 WP-1 (Goal-state contract): `apps.core.repository_layout.resolve_repository_layout`
 # does not exist yet. Import it inside each test so the rest of the WP-1 suite can
 # still collect and report its own focused RED reasons.
 
 
 def resolve_repository_layout(repository_root: Path):
-    module = importlib.import_module("core.repository_layout")
+    module = importlib.import_module("apps.core.repository_layout")
     return module.resolve_repository_layout(repository_root)
 
 

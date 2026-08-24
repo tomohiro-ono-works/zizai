@@ -27,6 +27,7 @@ def tracked_verification_sources() -> list[str]:
             "pytest.ini",
             "tests",
             ".github/workflows/migration-verification.yml",
+            "apps/common/contracts/bridge/protocol-v1.json",
         ],
         cwd=REPOSITORY_ROOT,
         capture_output=True,

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from connectors.base_connector import BaseConnector
+from apps.core.base_connector import BaseConnector
 
 
 pytestmark = [pytest.mark.unit, pytest.mark.risk_conn_002]

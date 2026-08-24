@@ -1,9 +1,9 @@
 import os
 import sys
 
-from core.flow_locator import WORKFLOW_DIR, resolve_flow_path
-from core.logger import setup_logger
-from core.workflow_engine import WorkflowEngine
+from apps.core.flow_locator import WORKFLOW_DIR, resolve_flow_path
+from apps.core.logger import setup_logger
+from apps.core.workflow_engine import WorkflowEngine
 
 logger = setup_logger()
 engine = WorkflowEngine(logger)
@@ -41,7 +41,7 @@ def run_cli(yaml_path):
 
 def main():
     if len(sys.argv) < 2:
-        print("usage: python -m app.main <flow_path>")
+        print("usage: python -m apps.cli.main <flow_path>")
         return 1
 
     report = run_cli(sys.argv[1])

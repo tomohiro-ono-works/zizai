@@ -6,7 +6,7 @@ import sys
 import tempfile
 from typing import Any
 
-from connectors.base_connector import BaseConnector
+from apps.core.base_connector import BaseConnector
 
 RESULT_MARKER = "__ZIZ_RESULT__="
 

@@ -652,7 +652,7 @@ def run_webview_app(form_html_path, *, repository_root, debug=False):
             except Exception:
                 initial_target = ""
         if not initial_target:
-            initial_target = str(html_path.parent.parent / "workflows" / default_name)
+            initial_target = str(resolved_repository_root / "workflows" / default_name)
         selected, _ = QFileDialog.getSaveFileName(
             window,
             "フローを保存",

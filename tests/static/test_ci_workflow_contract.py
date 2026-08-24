@@ -71,6 +71,7 @@ def test_browser_and_webengine_jobs_are_deterministic_and_local_only() -> None:
     [
         "tests/integration/test_entrypoint_cli.py",
         "tests/integration/test_repository_layout_process.py",
+        "tests/integration/test_task011_import_contract.py",
         "tests/unit/test_manual_ui_validator.py",
     ],
 )

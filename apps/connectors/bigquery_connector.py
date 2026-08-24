@@ -9,8 +9,8 @@ from google.cloud import bigquery
 from google.auth.exceptions import DefaultCredentialsError
 import pandas as pd
 
-from connectors.base_connector import BaseConnector
-from core.type_registry import (
+from apps.core.base_connector import BaseConnector
+from apps.core.type_registry import (
     build_dataframe_schema,
     resolve_bigquery_type,
     split_struct_field,

@@ -10,7 +10,7 @@ import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.utils.cell import column_index_from_string, get_column_letter
 
-from connectors.base_connector import BaseConnector
+from apps.core.base_connector import BaseConnector
 
 
 XLSX_MAIN_NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"

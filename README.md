@@ -54,7 +54,7 @@
 - 外部ナビゲーションは制限
 - DevTools は通常起動では無効
 - `--debug` 起動時のみ DevTools 利用可
-- API / Web 接続制御は `config/security_policies.yml` で管理
+- API / Web 接続制御は `apps/common/config/security_policies.yml` で管理
   - `apis.profiles`
   - `web.allowlist`
 
@@ -65,14 +65,19 @@
 ## ディレクトリ構成
 
 ```text
-app/
-  gui/
+apps/
+  cli/
+    main.py
+  common/
+    config/
+    contracts/
+      bridge/
+  connectors/
+  core/
+  desktop/
     bridge.py
     host.py
-  main.py
-
-connectors/
-core/
+bin/
 config/
 scripts/
 static/
@@ -92,16 +97,18 @@ uv.lock
 
 - `zizai.py`
   - 起動エントリポイント
-- `app/main.py`
+- `apps/cli/main.py`
   - フロー実行エンジン（ヘッドレス実行用途）
-- `app/gui/host.py`
+- `apps/desktop/host.py`
   - Qt / WebView ホスト
-- `app/gui/bridge.py`
+- `apps/desktop/bridge.py`
   - WebView と Python の bridge
-- `connectors/`
+- `apps/connectors/`
   - コネクタ実装
-- `core/`
+- `apps/core/`
   - 共通ロジック
+- `apps/common/contracts/bridge/`
+  - Bridge Protocol の言語中立な正本
 - `static/`
   - フロントエンド UI
 
@@ -147,7 +154,7 @@ sh bin/ziz.sh /path/to/flow.zizd
 
 ## 設定ファイル
 
-### `config/security_policies.yml`
+### `apps/common/config/security_policies.yml`
 
 外部接続のポリシーを管理します。
 
@@ -169,7 +176,7 @@ web:
         - "/icons"
 ```
 
-### `config/rename.csv`
+### `apps/common/config/rename.csv`
 
 RENAME リストから列名を一括変更するためのサンプル CSV です。
 

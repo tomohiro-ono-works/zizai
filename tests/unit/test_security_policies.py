@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from core.security_policies import is_web_target_allowed, load_security_policies
+from apps.core.security_policies import is_web_target_allowed, load_security_policies
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]

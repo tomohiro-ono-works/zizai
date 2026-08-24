@@ -7,8 +7,8 @@ import pandas as pd
 import pytest
 import yaml
 
-from app.gui.bridge import BridgeRuntime
-from connectors.dataintegration_connector import DataintegrationConnector
+from apps.desktop.bridge import BridgeRuntime
+from apps.connectors.dataintegration_connector import DataintegrationConnector
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from connectors.csv_connector import CSVConnector
+from apps.connectors.csv_connector import CSVConnector
 
 
 pytestmark = [pytest.mark.integration, pytest.mark.risk_conn_002]

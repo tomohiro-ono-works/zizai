@@ -5,10 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from app.gui.bridge import BridgeRuntime
-from app.gui.host import _is_within_path
-from core import flow_locator
-from core import logger as app_logger
+from apps.desktop.bridge import BridgeRuntime
+from apps.desktop.host import _is_within_path
+from apps.core import flow_locator
+from apps.core import logger as app_logger
+from apps.core import security_policies
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -26,6 +27,7 @@ def test_current_path_resolvers_match_the_layout_contract(layout: dict) -> None:
     runtime = BridgeRuntime(REPOSITORY_ROOT)
 
     assert flow_locator.BASE_DIR.resolve() == REPOSITORY_ROOT
+    assert security_policies.BASE_DIR.resolve() == REPOSITORY_ROOT
     assert flow_locator.CONFIG_DIR.resolve() == REPOSITORY_ROOT / layout["runtime_state_root"]
     assert flow_locator.WORKFLOW_DIR.resolve() == REPOSITORY_ROOT / layout["workflow_root"]
     assert (REPOSITORY_ROOT / app_logger.LOG_DIR).resolve() == REPOSITORY_ROOT / layout["log_root"]

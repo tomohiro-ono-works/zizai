@@ -15,7 +15,7 @@ pytestmark = [pytest.mark.static_analysis, pytest.mark.risk_entry_001]
     [
         "zizai.py",
         "bin/ziz.bat",
-        "app/main.py",
+        "apps/cli/main.py",
         "static/home.html",
         "tests/fixtures/workflows/minimal-noop.zizd",
         "tests/fixtures/workflows/invalid.txt",

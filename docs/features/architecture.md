@@ -1,7 +1,7 @@
 # Architecture
 
 - Status: Current Specification
-- Last verified: 2026-08-21
+- Last verified: 2026-08-24
 - Decisions: [ADR-v23 Application Topology](../decisions/ADR-v23-application-topology.md)、[ADR Source, Runtime, and Workspace Boundary](../decisions/ADR-source-runtime-workspace-boundary.md)
 
 ## Runtime topology
@@ -19,11 +19,12 @@
 |---|---|
 | `zizai.py` | 正式入口。GUI、`--debug`、`.zizd` headless実行を振り分ける |
 | `bin/ziz.bat` | Windows launcher。引数を`zizai.py`へ透過する |
-| `app/main.py` | `run_cli()`によるheadless実行入口 |
-| `app/gui/host.py` | PySide6、QtWebEngine、QWebChannel、local navigation boundary |
-| `app/gui/bridge.py` | Frontend向けApplication InterfaceとBridgeRuntime |
-| `core/` | Workflow実行、flow path、型、logging等のApplication logic |
-| `connectors/` | 外部System、file format、OS操作のAdapter |
+| `apps/cli/main.py` | `run_cli()`によるheadless実行入口 |
+| `apps/desktop/host.py` | PySide6、QtWebEngine、QWebChannel、local navigation boundary |
+| `apps/desktop/bridge.py` | Frontend向けApplication InterfaceとBridgeRuntime |
+| `apps/core/` | Workflow実行、flow path、型、logging等のApplication logicとConnector Interface |
+| `apps/connectors/` | 外部System、file format、OS操作のAdapter |
+| `apps/common/contracts/bridge/` | 言語中立なBridge Protocol contract |
 | `static/` | Desktop同梱Frontend |
 | `config/` | Source設定とlocal runtime state。両者を同一扱いしない |
 
@@ -46,7 +47,7 @@
 
 ## Approved target responsibilities
 
-物理移行後のTarget Treeは`apps/{desktop,cli,gui,core,connectors,common}`である。これは承認済みの移行先であり、TASK-011/012完了前にCurrent Pathとして記述しない。詳細と依存方向はADRを正とする。
+Target Treeは`apps/{desktop,cli,gui,core,connectors,common}`である。Python責務は`apps/{desktop,cli,core,connectors}`へ移行済みで、FrontendはTASK-012までroot `static/`をCurrent Pathとする。詳細と依存方向はADRを正とする。
 
 ## Approved configuration boundary
 

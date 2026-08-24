@@ -5,11 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from app.gui.bridge import BridgeRuntime
+from apps.desktop.bridge import BridgeRuntime
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-PROTOCOL_PATH = REPOSITORY_ROOT / "tests" / "fixtures" / "bridge" / "protocol-v1.json"
+PROTOCOL_PATH = REPOSITORY_ROOT / "apps" / "common" / "contracts" / "bridge" / "protocol-v1.json"
 EXTERNAL_URL_CASES_PATH = REPOSITORY_ROOT / "tests" / "fixtures" / "security" / "external-url-cases.json"
 EXTERNAL_URL_CASES = json.loads(EXTERNAL_URL_CASES_PATH.read_text(encoding="utf-8"))["cases"]
 REJECTED_EXTERNAL_URL_CASES = [case for case in EXTERNAL_URL_CASES if not case["accepted"]]
@@ -49,8 +49,8 @@ def allowlisted_runtime(
         POLICY_FIXTURE_PATH.read_text(encoding="utf-8"), encoding="utf-8"
     )
     launcher = LauncherSpy()
-    monkeypatch.setattr("app.gui.bridge.subprocess.Popen", launcher)
-    monkeypatch.setattr("app.gui.bridge.webbrowser.open", launcher)
+    monkeypatch.setattr("apps.desktop.bridge.subprocess.Popen", launcher)
+    monkeypatch.setattr("apps.desktop.bridge.webbrowser.open", launcher)
     monkeypatch.setattr(
         BridgeRuntime, "_resolve_chrome_executable", lambda self: str(tmp_path / "chrome.exe")
     )

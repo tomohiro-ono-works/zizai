@@ -1,7 +1,7 @@
 # Connector Contract
 
 - Status: Current Specification
-- Last verified: 2026-08-21
+- Last verified: 2026-08-24
 
 ## Common boundary
 
@@ -28,7 +28,7 @@
 ### ChromeConnector
 
 - 正式actionは`open_in_chrome`である。
-- URLは`core.security_policies.is_web_target_allowed()`で検証し、許可外URLではprocessを起動しない。
+- URLは`apps.core.security_policies.is_web_target_allowed()`で検証し、許可外URLではprocessを起動しない。
 - ChromeへURLを非同期に渡し、DOM操作、session管理、redirect完了待ちは行わない。
 
 ### SeleniumConnector

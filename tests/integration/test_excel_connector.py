@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from openpyxl import Workbook
 
-from connectors.excel_connector import ExcelConnector
+from apps.connectors.excel_connector import ExcelConnector
 
 
 pytestmark = [pytest.mark.integration, pytest.mark.risk_conn_002]
@@ -97,7 +97,7 @@ def test_preview_excel_streams_without_openpyxl_workbook_load(
     def fail_workbook_load(*_args, **_kwargs):
         raise AssertionError("preview must not load workbook")
 
-    monkeypatch.setattr("connectors.excel_connector.load_workbook", fail_workbook_load)
+    monkeypatch.setattr("apps.connectors.excel_connector.load_workbook", fail_workbook_load)
     preview = ExcelConnector().preview_excel(str(path), sheet_name="Orders", max_rows=30)
 
     assert preview["sheet_names"] == ["Orders"]

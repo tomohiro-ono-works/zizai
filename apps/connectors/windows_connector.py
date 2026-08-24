@@ -13,7 +13,7 @@ import pandas as pd
 import pyautogui
 import pyperclip
 
-from connectors.base_connector import BaseConnector
+from apps.core.base_connector import BaseConnector
 
 
 class WindowsConnector(BaseConnector):

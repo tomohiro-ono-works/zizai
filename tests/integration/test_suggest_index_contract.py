@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from app.gui.bridge import BridgeRuntime
+from apps.desktop.bridge import BridgeRuntime
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]

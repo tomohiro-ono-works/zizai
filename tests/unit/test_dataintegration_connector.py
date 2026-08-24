@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from connectors.dataintegration_connector import DataintegrationConnector
+from apps.connectors.dataintegration_connector import DataintegrationConnector
 
 
 pytestmark = [pytest.mark.unit, pytest.mark.risk_conn_002]

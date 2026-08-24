@@ -19,8 +19,8 @@ def test_layout_resolves_identically_in_a_fresh_process() -> None:
     script = """
 import json
 from pathlib import Path
-from core import flow_locator
-from app.gui.bridge import BridgeRuntime
+from apps.core import flow_locator
+from apps.desktop.bridge import BridgeRuntime
 
 root = Path.cwd().resolve()
 runtime = BridgeRuntime(root)

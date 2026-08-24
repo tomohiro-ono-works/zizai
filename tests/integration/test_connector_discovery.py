@@ -4,13 +4,15 @@ import importlib
 import inspect
 import json
 import logging
+import pkgutil
 import socket
 from pathlib import Path
 
 import pytest
 
-from connectors.base_connector import BaseConnector
-from core.workflow_engine import WorkflowEngine
+import apps.connectors
+from apps.core.base_connector import BaseConnector
+from apps.core.workflow_engine import WorkflowEngine
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -30,7 +32,7 @@ def test_inventory_resolves_one_connector_class_without_execution(monkeypatch: p
 
     for expected in inventory:
         connector_class = engine._get_connector_class(expected["module"])
-        module = importlib.import_module(f"connectors.{expected['module']}")
+        module = importlib.import_module(f"apps.connectors.{expected['module']}")
         subclasses = [
             value
             for _, value in inspect.getmembers(module, inspect.isclass)
@@ -47,3 +49,18 @@ def test_inventory_resolves_one_connector_class_without_execution(monkeypatch: p
 
     assert resolved == inventory
     assert engine._load_connector_by_class_name_scan("MissingConnector") == (None, None)
+
+
+def test_apps_connectors_module_set_is_exactly_the_inventory() -> None:
+    inventory_modules = {
+        entry["module"]
+        for entry in json.loads(INVENTORY_PATH.read_text(encoding="utf-8"))["connectors"]
+    }
+    package_path = Path(apps.connectors.__file__).parent
+    discovered_modules = {
+        module_name
+        for _, module_name, is_pkg in pkgutil.iter_modules([str(package_path)])
+        if not is_pkg and module_name != "__init__"
+    }
+
+    assert discovered_modules == inventory_modules

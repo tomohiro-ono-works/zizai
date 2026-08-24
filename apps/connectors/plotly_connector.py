@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from connectors.base_connector import BaseConnector
+from apps.core.base_connector import BaseConnector
 
 
 SUPPORTED_OUTPUT_MODES = {"png", "html", "jpg", "jpeg", "pdf", "svg"}

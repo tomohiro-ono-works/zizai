@@ -18,9 +18,9 @@
   "required_files": [
     "zizai.py",
     "bin/ziz.bat",
-    "app/main.py",
-    "app/gui/host.py",
-    "app/gui/bridge.py",
+    "apps/cli/main.py",
+    "apps/desktop/host.py",
+    "apps/desktop/bridge.py",
     "apps/common/config/security_policies.yml",
     "apps/common/config/rename.csv",
     "apps/common/config/file_icon_map.json",

@@ -73,7 +73,7 @@ class BaseConnector(ABC):
         date_cleansing: bool = True,
     ) -> pd.DataFrame:
         if isinstance(dataframe, pd.DataFrame):
-            from core.type_registry import build_dataframe_schema
+            from apps.core.type_registry import build_dataframe_schema
 
             schema_items = (
                 BaseConnector.parse_schema_definition(schema_override)

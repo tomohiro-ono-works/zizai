@@ -20,12 +20,12 @@ import yaml
 import pandas as pd
 from PySide6.QtCore import QObject, Signal, Slot
 
-from connectors.excel_connector import ExcelConnector
-from core.type_registry import build_dataframe_schema
-from core.workflow_engine import WorkflowEngine
-from core.flow_locator import has_flow_extension, list_flows_local, list_templates_local, register_recent_flow
-from core.repository_layout import resolve_repository_layout
-from core.security_policies import (
+from apps.connectors.excel_connector import ExcelConnector
+from apps.core.type_registry import build_dataframe_schema
+from apps.core.workflow_engine import WorkflowEngine
+from apps.core.flow_locator import has_flow_extension, list_flows_local, list_templates_local, register_recent_flow
+from apps.core.repository_layout import resolve_repository_layout
+from apps.core.security_policies import (
     WEB_TARGET_ALLOWED_SCHEMES,
     is_web_target_allowed,
     load_security_policies,
@@ -1826,7 +1826,7 @@ class BridgeRuntime:
             if not run_id or not workspace_tab_id:
                 return
             session_key = f"{workspace_tab_id}:{run_id}"
-            from connectors import selenium_connector as _selenium_connector  # local import to avoid hard dependency at startup
+            from apps.connectors import selenium_connector as _selenium_connector  # local import to avoid hard dependency at startup
             _selenium_connector.clear_session_runtime(session_key)
         except Exception:
             logger.exception("Selenium セッションのクリーンアップに失敗しました。")

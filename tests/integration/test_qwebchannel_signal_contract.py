@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from app.gui.bridge import BridgeRuntime, WebViewBridge
+from apps.desktop.bridge import BridgeRuntime, WebViewBridge
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -58,8 +58,8 @@ def test_open_external_over_the_signal_boundary_respects_the_allowlist(
         launcher_calls.append((args, kwargs))
         return None
 
-    monkeypatch.setattr("app.gui.bridge.subprocess.Popen", record_launch)
-    monkeypatch.setattr("app.gui.bridge.webbrowser.open", record_launch)
+    monkeypatch.setattr("apps.desktop.bridge.subprocess.Popen", record_launch)
+    monkeypatch.setattr("apps.desktop.bridge.webbrowser.open", record_launch)
     monkeypatch.setattr(
         BridgeRuntime, "_resolve_chrome_executable", lambda self: str(tmp_path / "chrome.exe")
     )

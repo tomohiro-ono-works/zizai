@@ -13,7 +13,7 @@ import time
 from datetime import datetime
 import getpass
 from collections import defaultdict
-from connectors.base_connector import BaseConnector
+from apps.core.base_connector import BaseConnector
 
 warnings.filterwarnings("ignore")
 
@@ -58,14 +58,14 @@ class WorkflowEngine:
         return None
 
     def _load_connector_by_class_name_scan(self, conn_name: str):
-        import connectors
+        from apps import connectors
 
         package_path = os.path.dirname(str(connectors.__file__))
         for _, module_name, is_pkg in pkgutil.iter_modules([package_path]):
             if is_pkg or module_name == "base_connector":
                 continue
 
-            full_module_name = f"connectors.{module_name}"
+            full_module_name = f"apps.connectors.{module_name}"
             module = importlib.import_module(full_module_name)
             for name, obj in inspect.getmembers(module, inspect.isclass):
                 if obj is BaseConnector or not issubclass(obj, BaseConnector):
@@ -90,7 +90,7 @@ class WorkflowEngine:
                 return connector_class
 
             for module_name in self._connector_module_candidates(conn_name):
-                full_module_name = f"connectors.{module_name}"
+                full_module_name = f"apps.connectors.{module_name}"
                 try:
                     module = importlib.import_module(full_module_name)
                 except ModuleNotFoundError as e:

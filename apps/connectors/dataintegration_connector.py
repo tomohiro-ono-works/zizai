@@ -8,7 +8,7 @@ from typing import Any
 
 import pandas as pd
 
-from connectors.base_connector import BaseConnector
+from apps.core.base_connector import BaseConnector
 
 
 class DataintegrationConnector(BaseConnector):

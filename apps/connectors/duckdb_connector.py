@@ -6,7 +6,7 @@ from typing import Any, Optional
 
 import pandas as pd
 
-from connectors.base_connector import BaseConnector
+from apps.core.base_connector import BaseConnector
 
 try:
     import duckdb

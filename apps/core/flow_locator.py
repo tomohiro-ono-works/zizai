@@ -5,10 +5,10 @@ import os
 import subprocess
 from pathlib import Path
 
-from core.repository_layout import resolve_repository_layout
+from apps.core.repository_layout import resolve_repository_layout
 
 
-BASE_DIR = Path(__file__).resolve().parents[1]
+BASE_DIR = Path(__file__).resolve().parents[2]
 _LAYOUT = resolve_repository_layout(BASE_DIR)
 WORKFLOW_DIR = _LAYOUT.workspace_default_root
 TEMPLATE_DIR = BASE_DIR / "template"

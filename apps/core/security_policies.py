@@ -5,10 +5,10 @@ from urllib.parse import urlparse
 
 import yaml
 
-from core.repository_layout import resolve_repository_layout
+from apps.core.repository_layout import resolve_repository_layout
 
 
-BASE_DIR = Path(__file__).resolve().parents[1]
+BASE_DIR = Path(__file__).resolve().parents[2]
 
 WEB_TARGET_ALLOWED_SCHEMES = frozenset({"http", "https"})
 

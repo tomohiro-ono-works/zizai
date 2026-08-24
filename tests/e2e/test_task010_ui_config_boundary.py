@@ -16,7 +16,7 @@ from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QApplication
 
-from app.gui.bridge import BridgeRuntime, WebViewBridge
+from apps.desktop.bridge import BridgeRuntime, WebViewBridge
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]

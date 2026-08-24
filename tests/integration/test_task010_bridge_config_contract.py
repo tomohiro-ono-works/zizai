@@ -5,11 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from app.gui.bridge import BridgeRuntime
+from apps.desktop.bridge import BridgeRuntime
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-PROTOCOL_PATH = REPOSITORY_ROOT / "tests" / "fixtures" / "bridge" / "protocol-v1.json"
+PROTOCOL_PATH = REPOSITORY_ROOT / "apps" / "common" / "contracts" / "bridge" / "protocol-v1.json"
 GOAL_LAYOUT_PATH = REPOSITORY_ROOT / "tests" / "fixtures" / "task010" / "repository-layout-goal.json"
 
 pytestmark = [pytest.mark.integration, pytest.mark.risk_config_001, pytest.mark.risk_bridge_001]

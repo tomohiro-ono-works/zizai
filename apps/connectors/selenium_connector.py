@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Any
 import uuid
 
-from connectors.base_connector import BaseConnector
-from core.security_policies import is_web_target_allowed
+from apps.core.base_connector import BaseConnector
+from apps.core.security_policies import is_web_target_allowed
 
 SESSION_STORE: dict[str, dict] = {}
 LAST_SESSION_KEY: str = ""

@@ -16,7 +16,7 @@ from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QApplication
 
-from app.gui.bridge import BridgeRuntime, WebViewBridge
+from apps.desktop.bridge import BridgeRuntime, WebViewBridge
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -113,7 +113,7 @@ def wait_for_bridge_response(view: QWebEngineView, timeout_ms: int = 10000) -> d
 def test_locked_down_page_blocks_untrusted_navigation_and_popups() -> None:
     from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile
 
-    from app.gui.host import build_locked_down_web_types
+    from apps.desktop.host import build_locked_down_web_types
 
     QApplication.instance() or QApplication([])
     layout = json.loads(LAYOUT_PATH.read_text(encoding="utf-8"))

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from app.gui.bridge import BridgeRuntime
+from apps.desktop.bridge import BridgeRuntime
 
 
 pytestmark = [pytest.mark.unit, pytest.mark.risk_fs_001]
