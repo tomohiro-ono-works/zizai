@@ -28,6 +28,7 @@ def tracked_verification_sources() -> list[str]:
             "tests",
             ".github/workflows/migration-verification.yml",
             "apps/common/contracts/bridge/protocol-v1.json",
+            "apps/common/contracts/web-frame/protocol-v1.json",
         ],
         cwd=REPOSITORY_ROOT,
         capture_output=True,

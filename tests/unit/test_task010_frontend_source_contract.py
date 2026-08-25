@@ -7,7 +7,7 @@ import pytest
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-JS_ROOT = REPOSITORY_ROOT / "static" / "js"
+JS_ROOT = REPOSITORY_ROOT / "apps" / "gui" / "js"
 
 pytestmark = [pytest.mark.unit, pytest.mark.risk_config_001, pytest.mark.static_analysis]
 

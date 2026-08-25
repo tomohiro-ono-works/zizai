@@ -9,7 +9,7 @@ import pytest
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-STATIC_ROOT = REPOSITORY_ROOT / "static"
+STATIC_ROOT = REPOSITORY_ROOT / "apps" / "gui"
 LAYOUT_PATH = REPOSITORY_ROOT / "tests" / "fixtures" / "contracts" / "repository-layout.json"
 
 pytestmark = [pytest.mark.static_analysis, pytest.mark.risk_web_001]

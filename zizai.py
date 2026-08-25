@@ -7,7 +7,7 @@ from apps.core.flow_locator import has_flow_extension, resolve_flow_path
 from apps.core.logger import setup_logger
 
 BASE_DIR = Path(__file__).resolve().parent
-HOME_HTML_PATH = BASE_DIR / "static" / "home.html"
+HOME_HTML_PATH = BASE_DIR / "apps" / "gui" / "home.html"
 
 
 HELP_TEXT = """COMMAND NAME

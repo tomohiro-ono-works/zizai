@@ -2,7 +2,7 @@ const { test, expect } = require("@playwright/test");
 
 
 test("field reference warnings distinguish supported and unknown variables", async ({ page }) => {
-  await page.goto("/static/dataflow.html");
+  await page.goto("/gui/dataflow.html");
 
   const warnings = await page.evaluate(() => {
     const getWarnings = window.zizPackages.ui.fields.getFieldReferenceWarnings;

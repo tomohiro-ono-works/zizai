@@ -17,7 +17,7 @@ ALLOWED_EXTERNAL_URL_CASES = [case for case in EXTERNAL_URL_CASES if case["accep
 POLICY_FIXTURE_PATH = (
     REPOSITORY_ROOT / "tests" / "fixtures" / "config" / "valid" / "apps" / "common" / "config" / "security_policies.yml"
 )
-SCRIPT_ROOT = REPOSITORY_ROOT / "static" / "js"
+SCRIPT_ROOT = REPOSITORY_ROOT / "apps" / "gui" / "js"
 EXTERNAL_URL_ADAPTER_PATH = SCRIPT_ROOT / "bridge.js"
 
 pytestmark = [pytest.mark.unit, pytest.mark.risk_bridge_001]

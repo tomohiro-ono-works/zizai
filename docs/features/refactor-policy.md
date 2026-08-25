@@ -45,7 +45,7 @@ Historical Handoff/Decisionが旧pathを過去Evidenceとして記録するこ�
 
 次は削除承認ではなく、専用TaskでEvidenceを再確認する候補である。
 
-- `WorkflowEngine`、`BridgeRuntime`、`static/js/app.js`、`ui.node.canvas.js`、`workspace.manager.js`の責務分割。
+- `WorkflowEngine`、`BridgeRuntime`、`apps/gui/js/app.js`、`ui.node.canvas.js`、`workspace.manager.js`の責務分割。
 - Connectorのparameter validation、DataFrame解決、action dispatch、side-effect resultの段階的共通化。
 - `config.js`、`ui.fields.js`、詳細panel CSSの責務分割。
 - `flow_locator.py`のWindows固有探索と汎用path/history責務の分離。

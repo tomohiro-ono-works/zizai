@@ -13,7 +13,7 @@ from apps.connectors.dataintegration_connector import DataintegrationConnector
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE_ROOT = REPOSITORY_ROOT / "template"
-CONFIG_JS_PATH = REPOSITORY_ROOT / "static" / "config" / "config.js"
+CONFIG_JS_PATH = REPOSITORY_ROOT / "apps" / "gui" / "config" / "config.js"
 GOAL_LAYOUT_PATH = REPOSITORY_ROOT / "tests" / "fixtures" / "task010" / "repository-layout-goal.json"
 
 # JS source literals (two literal backslash characters encode one escaped backslash).

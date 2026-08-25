@@ -21,7 +21,7 @@ from apps.desktop.bridge import BridgeRuntime, WebViewBridge
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 GOAL_LAYOUT_PATH = REPOSITORY_ROOT / "tests" / "fixtures" / "task010" / "repository-layout-goal.json"
-ENTRY_HTML = REPOSITORY_ROOT / "static" / "dataflow.html"
+ENTRY_HTML = REPOSITORY_ROOT / "apps" / "gui" / "dataflow.html"
 
 pytestmark = [pytest.mark.e2e, pytest.mark.risk_web_001, pytest.mark.timeout(45)]
 

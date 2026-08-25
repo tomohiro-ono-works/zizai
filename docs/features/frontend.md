@@ -6,10 +6,10 @@
 
 ## Current pages and runtime
 
-- `static/home.html`、`static/dataflow.html`、`static/settings.html`の3 pageをDesktopが`file://`で読み込む。
-- 共通shellは`static/js/app-shell.js`、page固有処理は`app.js`、`app.home.js`、`app.static.js`へ分離する。
-- Frontend moduleは`static/js/packages/*.package.js`から`window.zizPackages`へ登録する。
-- Pythonとの通信は`static/js/bridge.js`のQWebChannel Adapterを通し、object名`backendBridge`とProtocol `1.0`を維持する。
+- `apps/gui/home.html`、`apps/gui/dataflow.html`、`apps/gui/settings.html`の3 pageをDesktopが`file://`で読み込む。
+- 共通shellは`apps/gui/js/app-shell.js`、page固有処理は`app.js`、`app.home.js`、`app.static.js`へ分離する。
+- Frontend moduleは`apps/gui/js/packages/*.package.js`から`window.zizPackages`へ登録する。
+- Pythonとの通信は`apps/gui/js/bridge.js`のQWebChannel Adapterを通し、object名`backendBridge`とProtocol `1.0`を維持する。
 
 ## State and rendering
 
@@ -22,7 +22,7 @@
 
 ## Styling
 
-- Colorは`static/css/00_tokens.css`を正本とし、Componentからliteral colorを追加しない。
+- Colorは`apps/gui/css/00_tokens.css`を正本とし、Componentからliteral colorを追加しない。
 - Semantic state（error/success/warning/info）とinteractive state（hover/active/focus/selected/disabled）を分離する。
 - Semanticの意味をhover等で失わせず、既存tokenで表現できる場合は新規tokenを作らない。
 - Existing non-complianceは別Taskで一括修正せず、対象Component変更時に解消する。
@@ -63,4 +63,4 @@
 
 ## Approved target
 
-TASK-012で既存Frontendを挙動維持のまま`static/`から`apps/gui/`へ物理移動し、TASK-016でProject ownerが決定したspaceを8 libraryへ段階移行する。TASK-012へUI再設計を混在させず、TASK-016では同一責務のApplication実装を回帰確認後に削除する。localhost/API化、外部Web埋め込み、Bridge breaking changeは行わない。
+TASK-012で既存Frontendを挙動維持のまま`static/`から`apps/gui/`へ物理移動済みである。TASK-016でProject ownerが決定したspaceを8 libraryへ段階移行する。TASK-012へUI再設計を混在させず、TASK-016では同一責務のApplication実装を回帰確認後に削除する。localhost/API化、外部Web埋め込み、Bridge breaking changeは行わない。

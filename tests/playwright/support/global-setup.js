@@ -6,7 +6,7 @@ const { spawn } = require("child_process");
 
 const HOST = "127.0.0.1";
 const PORT = 4173;
-const URL = `http://${HOST}:${PORT}/static/home.html`;
+const URL = `http://${HOST}:${PORT}/gui/home.html`;
 const RUNTIME_FILE = path.join(__dirname, "..", ".static-server.runtime.json");
 
 

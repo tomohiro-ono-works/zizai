@@ -5,7 +5,7 @@ const { URL } = require("url");
 
 
 const repositoryRoot = path.resolve(__dirname, "..", "..", "..");
-const staticRoot = path.resolve(repositoryRoot, "static");
+const staticRoot = path.resolve(repositoryRoot, "apps", "gui");
 const hostIndex = process.argv.indexOf("--host");
 const portIndex = process.argv.indexOf("--port");
 const host = hostIndex >= 0 ? String(process.argv[hostIndex + 1] || "") : "127.0.0.1";
@@ -27,8 +27,8 @@ const contentTypes = new Map([
 
 function resolveStaticPath(rawUrl) {
   const pathname = new URL(rawUrl, `http://${host}:${port}`).pathname;
-  if (!pathname.startsWith("/static/")) return null;
-  const candidate = path.resolve(staticRoot, decodeURIComponent(pathname.slice("/static/".length)));
+  if (!pathname.startsWith("/gui/")) return null;
+  const candidate = path.resolve(staticRoot, decodeURIComponent(pathname.slice("/gui/".length)));
   if (candidate !== staticRoot && !candidate.startsWith(`${staticRoot}${path.sep}`)) return null;
   return candidate;
 }

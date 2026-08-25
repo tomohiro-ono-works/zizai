@@ -31,7 +31,7 @@
 
 ## CSS and UI
 
-- 色は`static/css/00_tokens.css`の既存tokenを使用する。
+- 色は`apps/gui/css/00_tokens.css`の既存tokenを使用する。
 - 新規tokenは既存のbrand/semantic/interactive/surface/text/border/alpha責務へ分類する。
 - Component CSSは対象componentへ閉じ、global selectorや既存tokenの意味変更を避ける。
 - Semantic stateとinteractive stateを混同せず、hover等でerror/successの意味を消さない。

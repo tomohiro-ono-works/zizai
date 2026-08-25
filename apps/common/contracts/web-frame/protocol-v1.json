@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "source_flag": "ziz-embedded",
+  "frame_to_host_message_types": [
+    "loaded",
+    "load-error",
+    "run-state",
+    "shortcut",
+    "state"
+  ],
+  "host_to_frame_custom_events": [
+    "ziz:workspace-flow-open",
+    "ziz:workspace-flow-tab-activated"
+  ]
+}

@@ -2,7 +2,7 @@
 
 ## Status
 
-Blocked — TASK-010, TASK-012
+Ready — 実装計画の承認待ち
 
 ## Goal
 
@@ -560,22 +560,22 @@ Codex Verification:
 - Work Package全件を`Owner: Codex`へ割り当てた。Claude Codeは実装Ownerにせず、利用可能な場合の読取専用reviewに限定する。
 - TASK-017の監査により、正本化WPをTASK-018、security behavior修正をTASK-019へ分離し、TASK-012とのRollback境界を固定した。
 - TASK-019が完了し、library eventも通るexternal URL Application Adapterとnavigation boundaryが確立した。
+- TASK-010とTASK-012が完了し、Source／Runtime config境界と`apps/gui/`のFrontend正規配置が成立した。
 
 ## Evidence
 
 - `docs/handoffs/TASK-010-frontend-library-integration-audit.md`
 - 8 repositoryの調査時revision
-- 現行`static/`とTASK-012後の`apps/gui/`移行契約
+- TASK-012着手前のroot `static/`とTASK-012後の`apps/gui/`の移行契約
 
 ## Remaining
 
-- TASK-010、TASK-012を完了する。
 - 本TaskのScope、Work Package、Owner、依存順についてProject ownerの実装計画承認を得る。
 - WP-2から、各spaceの配置判断を得て実装する。
 
 ## Exact next action
 
-TASK-010／TASK-012完了後にWP-2の実装計画承認を確認する。
+WP-2の実装計画承認を確認する。
 
 ## Termination condition
 

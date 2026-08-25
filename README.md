@@ -3,7 +3,7 @@
 ローカル環境で動作する、PySide6 + WebView ベースのデータ加工 / ワークフロー作成アプリです。  
 主な用途は、非エンジニア向けの ETL、業務自動化、SQL 作成補助です。
 
-![zizai icon](static/img/icon2.png)
+![zizai icon](apps/gui/icons/ziz.svg)
 
 ## 作業ルールと正本
 
@@ -72,20 +72,21 @@ apps/
     config/
     contracts/
       bridge/
+      web-frame/
   connectors/
   core/
   desktop/
     bridge.py
     host.py
+  gui/
+    css/
+    img/
+    icons/
+    js/
+    modal/
 bin/
 config/
 scripts/
-static/
-  css/
-  img/
-  icons/
-  js/
-  modal/
 template/
 workflows/
 zizai.py
@@ -109,7 +110,9 @@ uv.lock
   - 共通ロジック
 - `apps/common/contracts/bridge/`
   - Bridge Protocol の言語中立な正本
-- `static/`
+- `apps/common/contracts/web-frame/`
+  - 同梱`dataflow.html`内部Frame通信の言語中立な正本
+- `apps/gui/`
   - フロントエンド UI
 
 ## 起動方法

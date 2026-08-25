@@ -27,14 +27,14 @@ function bridgeStub() {
 
 
 test("bottom detail area is flush with its container", async ({ page }) => {
-  await page.route("**/static/js/bridge.js*", async (route) => {
+  await page.route("**/gui/js/bridge.js*", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "text/javascript; charset=utf-8",
       body: bridgeStub(),
     });
   });
-  await page.goto("/static/dataflow.html?mode=dataflow&embedded=1");
+  await page.goto("/gui/dataflow.html?mode=dataflow&embedded=1");
   await expect(page.locator(".detail-panel")).toBeVisible();
 
   const metrics = await page.evaluate(() => {

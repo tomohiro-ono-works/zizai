@@ -25,7 +25,7 @@
 | `apps/core/` | Workflow実行、flow path、型、logging等のApplication logicとConnector Interface |
 | `apps/connectors/` | 外部System、file format、OS操作のAdapter |
 | `apps/common/contracts/bridge/` | 言語中立なBridge Protocol contract |
-| `static/` | Desktop同梱Frontend |
+| `apps/gui/` | Desktop同梱Frontend |
 | `config/` | Source設定とlocal runtime state。両者を同一扱いしない |
 
 ## Dependency boundaries
@@ -47,7 +47,7 @@
 
 ## Approved target responsibilities
 
-Target Treeは`apps/{desktop,cli,gui,core,connectors,common}`である。Python責務は`apps/{desktop,cli,core,connectors}`へ移行済みで、FrontendはTASK-012までroot `static/`をCurrent Pathとする。詳細と依存方向はADRを正とする。
+Target Treeは`apps/{desktop,cli,gui,core,connectors,common}`である。Python責務は`apps/{desktop,cli,core,connectors}`、Frontendは`apps/gui/`へ移行済みである。詳細と依存方向はADRを正とする。
 
 ## Approved configuration boundary
 

@@ -5,15 +5,15 @@
   "runtime_state_root": "config",
   "workflow_root": "workflows",
   "log_root": "logs",
-  "gui_root": "static",
+  "gui_root": "apps/gui",
   "entrypoints": [
     "zizai.py",
     "bin/ziz.bat"
   ],
   "web_entries": [
-    "static/home.html",
-    "static/dataflow.html",
-    "static/settings.html"
+    "apps/gui/home.html",
+    "apps/gui/dataflow.html",
+    "apps/gui/settings.html"
   ],
   "required_files": [
     "zizai.py",
@@ -26,8 +26,8 @@
     "apps/common/config/file_icon_map.json",
     "apps/common/config/suggest_index/suggest_index_BQConnector.yml",
     "apps/common/config/suggest_index/suggest_index_PythonConnector.yml",
-    "static/home.html",
-    "static/dataflow.html",
-    "static/settings.html"
+    "apps/gui/home.html",
+    "apps/gui/dataflow.html",
+    "apps/gui/settings.html"
   ]
 }

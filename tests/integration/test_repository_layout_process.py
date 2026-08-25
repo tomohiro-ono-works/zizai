@@ -30,7 +30,7 @@ print(json.dumps({
     "runtime_state_root": str(runtime.runtime_state_root),
     "workspace_default_root": str(runtime.workspace_default_root),
     "log_root": str(runtime._execution_log_path.parent),
-    "gui_root": str((root / "static").resolve()),
+    "gui_root": str((root / "apps" / "gui").resolve()),
 }))
 """
     result = subprocess.run(

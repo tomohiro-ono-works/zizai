@@ -2,7 +2,7 @@ const { test, expect } = require("@playwright/test");
 
 
 test("home shell renders and navigates without a backend", async ({ page }) => {
-  await page.goto("/static/home.html");
+  await page.goto("/gui/home.html");
 
   await expect(page.locator(".home-screen")).toBeVisible();
   await expect(page.locator(".home-screen__title")).toContainText("ziz ai craft");
@@ -17,12 +17,12 @@ test("home shell renders and navigates without a backend", async ({ page }) => {
   await expect(page.locator("#appDialog")).not.toHaveClass(/is-open/);
 
   await page.locator('[data-sidebar-action="explorer"]').first().click();
-  await expect(page).toHaveURL(/\/static\/dataflow\.html/);
+  await expect(page).toHaveURL(/\/gui\/dataflow\.html/);
 });
 
 
 test("external URL adapter rejects unsafe schemes before Bridge call", async ({ page }) => {
-  await page.goto("/static/home.html");
+  await page.goto("/gui/home.html");
 
   const result = await page.evaluate(async () => {
     const bridge = window.zizBridge;
