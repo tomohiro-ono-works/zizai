@@ -1,0 +1,490 @@
+.zui-shell {
+  --zui-activitybar-width: 52px;
+  --zui-sidebar-width: 280px;
+  --zui-right-panel-width: 320px;
+  --zui-bottom-panel-height: 220px;
+  --zui-topbar-height: 40px;
+  --zui-statusbar-height: 24px;
+  --zui-topbar-track: 0px;
+  --zui-activitybar-track: 0px;
+  --zui-sidebar-track: 0px;
+  --zui-right-panel-track: 0px;
+  --zui-bottom-panel-track: 0px;
+  --zui-statusbar-track: 0px;
+
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns:
+    var(--zui-activitybar-track)
+    var(--zui-sidebar-track)
+    minmax(0, 1fr)
+    var(--zui-right-panel-track);
+  grid-template-rows:
+    var(--zui-topbar-track)
+    minmax(0, 1fr)
+    var(--zui-bottom-panel-track)
+    var(--zui-statusbar-track);
+  grid-template-areas:
+    "topbar topbar topbar topbar"
+    "activity sidebar main right"
+    "activity sidebar bottom right"
+    "status status status status";
+  overflow: hidden;
+  background: var(--surface-workspace);
+  color: var(--text-primary);
+  font-family: var(--zui-font-sans);
+  font-size: 13px;
+}
+
+.zui-shell.has-topbar {
+  --zui-topbar-track: var(--zui-topbar-height);
+}
+
+.zui-shell.has-activitybar {
+  --zui-activitybar-track: var(--zui-activitybar-width);
+}
+
+.zui-shell.has-statusbar {
+  --zui-statusbar-track: var(--zui-statusbar-height);
+}
+
+.zui-shell.is-sidebar-visible {
+  --zui-sidebar-track: var(--zui-sidebar-width);
+}
+
+.zui-shell.is-right-panel-visible {
+  --zui-right-panel-track: var(--zui-right-panel-width);
+}
+
+.zui-shell.is-bottom-panel-visible {
+  --zui-bottom-panel-track: var(--zui-bottom-panel-height);
+}
+
+.zui-shell.is-bottom-panel-justify {
+  grid-template-areas:
+    "topbar topbar topbar topbar"
+    "activity sidebar main right"
+    "activity bottom bottom bottom"
+    "status status status status";
+}
+
+.zui-shell__topbar {
+  grid-area: topbar;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-divider);
+  background: var(--surface-workspace-rail);
+}
+
+.zui-shell__activitybar {
+  grid-area: activity;
+  min-width: 0;
+  min-height: 0;
+  padding: 5px 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  border-right: 1px solid var(--border-default);
+  background: var(--surface-sidebar);
+  color: var(--text-on-dark);
+  contain: paint;
+  isolation: isolate;
+}
+
+.zui-shell__sidebar {
+  grid-area: sidebar;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-right: 1px solid var(--border-default);
+  background: var(--surface-workspace);
+}
+
+.zui-shell__main {
+  grid-area: main;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--surface-workspace);
+}
+
+.zui-shell__right-panel {
+  grid-area: right;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--border-default);
+  background: var(--surface-workspace-rail);
+}
+
+.zui-shell__bottom-panel {
+  grid-area: bottom;
+  grid-column: 3 / 4;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-top: 1px solid var(--border-default);
+  background: var(--surface-subtle);
+}
+
+.zui-shell.is-bottom-panel-justify .zui-shell__bottom-panel {
+  grid-column: 2 / 5;
+}
+
+.zui-shell__statusbar {
+  grid-area: status;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px;
+  overflow: hidden;
+  border-top: 1px solid var(--border-divider);
+  background: var(--surface-base);
+  font-size: 12px;
+}
+
+.zui-shell__region-content {
+  min-width: 0;
+  min-height: 0;
+}
+
+.zui-shell__topbar > .zui-shell__region-content,
+.zui-shell__statusbar > .zui-shell__region-content {
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.zui-shell__activitybar > .zui-shell__region-content {
+  flex: 0 0 auto;
+}
+
+.zui-shell__main-content,
+.zui-shell__bottom-panel > .zui-shell__region-content,
+.zui-shell__right-panel > .zui-shell__region-content,
+.zui-shell__sidebar > .zui-shell__region-content {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.zui-shell__tabbar {
+  min-width: 0;
+  min-height: 40px;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  overflow: hidden;
+  border-bottom: 0;
+  background: var(--surface-workspace-rail);
+  user-select: none;
+}
+
+.zui-shell__tabs {
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.zui-shell__tab {
+  flex: 0 1 220px;
+  min-width: 120px;
+  max-width: 280px;
+  height: 40px;
+  display: flex;
+  align-items: stretch;
+  border-right: 1px solid var(--border-divider);
+  background: var(--surface-workspace-rail);
+}
+
+.zui-shell__tab.is-active {
+  position: relative;
+  z-index: 1;
+  margin-bottom: -1px;
+  border-top: 1px solid var(--border-default);
+  border-right: 1px solid var(--border-default);
+  border-bottom: 1px solid var(--surface-subtle);
+  border-left: 1px solid var(--border-default);
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  background: var(--surface-subtle);
+}
+
+.zui-shell__tab-activate {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  overflow: hidden;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.zui-shell__tab-title {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.zui-shell__tab-icon,
+.zui-shell__command-icon,
+.zui-shell__activity-icon {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  display: block;
+  object-fit: contain;
+}
+
+.zui-shell__tab-dirty {
+  flex: 0 0 auto;
+  color: var(--brand-500);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.zui-shell__tab-badge,
+.zui-shell__activity-badge {
+  min-width: 16px;
+  padding: 1px 4px;
+  border-radius: 8px;
+  background: var(--brand-600);
+  color: var(--text-on-dark);
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+}
+
+.zui-shell__tab-close,
+.zui-shell__command,
+.zui-shell__activity {
+  border: 0;
+  font-family: var(--zui-font-sans);
+  cursor: pointer;
+}
+
+.zui-shell__tab-close {
+  flex: 0 0 auto;
+  width: 28px;
+  padding: 0;
+  border-radius: 0 10px 0 0;
+  background: transparent;
+  color: inherit;
+  font-size: 16px;
+  opacity: 0.66;
+}
+
+.zui-shell__tab-close:hover {
+  background: var(--surface-hover);
+  opacity: 1;
+}
+
+.zui-shell__tab-context-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 160px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--surface-base);
+  box-shadow: var(--shadow-soft-weak);
+}
+
+.zui-shell__tab-context-menu-item {
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.zui-shell__tab-context-menu-item:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.zui-shell__tab-context-menu-item:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.zui-shell__commands,
+.zui-shell__status-items {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.zui-shell__tabbar > .zui-shell__commands {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+}
+
+.zui-shell__command {
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+}
+
+.zui-shell__command:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.zui-shell__command:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.zui-shell__activities {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.zui-shell__activity {
+  position: relative;
+  width: 100%;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 2px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--text-on-dark);
+}
+
+.zui-shell__activity:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.zui-shell__activity.is-active {
+  border-color: var(--brand-600);
+  background: var(--surface-subtle);
+  box-shadow: var(--shadow-soft-weak);
+}
+
+.zui-shell__activity.is-active .zui-shell__activity-icon,
+.zui-shell__activity.is-active .zui-shell__activity-fallback {
+  background: var(--brand-600);
+  color: var(--text-on-dark);
+}
+
+.zui-shell__activity-icon,
+.zui-shell__activity-fallback {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--surface-activity-icon);
+  color: var(--text-on-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.zui-shell__activity-icon {
+  padding: 7px;
+}
+
+.zui-shell__activity-badge {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+}
+
+.zui-shell__status-item {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zui-shell__resizer {
+  position: absolute;
+  z-index: 5;
+}
+
+.zui-shell__resizer--sidebar {
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+.zui-shell__resizer--right {
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+.zui-shell__resizer--bottom {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.zui-shell__resizer:hover {
+  background: rgba(94, 30, 246, 0.18);
+}
+
+.zui-shell :is(button, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand-600);
+  outline-offset: -2px;
+}
+
+.zui-shell-resizing {
+  cursor: default;
+  user-select: none;
+}
+
+.zui-shell [hidden] {
+  display: none !important;
+}

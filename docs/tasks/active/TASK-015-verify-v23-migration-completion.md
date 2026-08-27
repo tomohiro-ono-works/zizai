@@ -25,7 +25,7 @@ Target tree、例外、imports、entrypoints、config、toolchain、Docs、Harne
 
 ## Dependencies
 
-TASK-001～014、TASK-016～019、およびInvestigationから追加された全Task。RISK-FS-001のsymlink実機検証は承認済みDecisionどおり本Taskでユーザーが実行し、それ以前のTaskをBlockしない。
+TASK-001～014、TASK-016～019、およびv23 Migration Investigationから初回release条件として追加されたTask。初回release後の別releaseへ明示的に延期したProduct enhancement Task（現時点ではTASK-020）は含めない。RISK-FS-001のsymlink実機検証は承認済みDecisionどおり本Taskでユーザーが実行し、それ以前のTaskをBlockしない。
 
 ## Expected change area
 
@@ -93,6 +93,7 @@ Migration実装とは分離された最終合否判定であり、全Task共通�
 ## Evidence
 
 - TASK-001～014、TASK-016～019と追加Taskが依存条件として定義されている。
+- TASK-020は初回release後のProduct enhancementであり、本Taskの依存条件から明示的に除外されている。
 
 ## Remaining
 

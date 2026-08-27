@@ -5,13 +5,22 @@
     "is", "lambda", "match", "None", "nonlocal", "not", "or", "pass", "raise", "return", "True",
     "try", "while", "with", "yield"
   ]);
-  const SQL_KEYWORDS = new Set([
-    "ALL", "AND", "AS", "ASC", "BETWEEN", "BY", "CASE", "CREATE", "DELETE", "DESC", "DISTINCT",
-    "ELSE", "END", "FROM", "FULL", "GROUP", "HAVING", "IN", "INNER", "INSERT", "INTO", "IS",
-    "JOIN", "LEFT", "LIKE", "LIMIT", "NOT", "NULL", "ON", "OR", "ORDER", "OUTER", "RIGHT",
-    "SELECT", "SET", "TABLE", "THEN", "UNION", "UPDATE", "VALUES", "WHEN", "WHERE", "WITH"
-  ]);
   const JSON_LITERALS = new Set(["true", "false", "null"]);
+
+  // SQL tokenization belongs to the vendored zizai-highlighter-sql library. The
+  // Application only resolves the dialect and composes its own `{{variable}}`
+  // decoration on top of the library's public tokenizer.
+  const SQL_TOKEN_CLASS_PREFIX = "sqhl-";
+  const SQL_TEMPLATE_CLASS = "cm-token cm-variable-template";
+  const SQL_DIALECT_IDS = ["bigquery", "duckdb"];
+  const DEFAULT_SQL_DIALECT_ID = "bigquery";
+  const CONNECTOR_SQL_DIALECT_IDS = {
+    bqconnector: "bigquery",
+    duckconnector: "duckdb"
+  };
+  // Template variables stay invisible inside SQL strings and comments, matching the
+  // previous Application behaviour.
+  const SQL_OPAQUE_TOKEN_TYPES = new Set(["string", "comment"]);
 
   function escapeHtml(value) {
     return String(value || "")
@@ -112,90 +121,92 @@
     return out.join("");
   }
 
-  function tokenizeSql(text) {
-    const out = [];
+  function normalizeSqlDialect(value) {
+    const id = String(value || "").trim().toLowerCase();
+    return SQL_DIALECT_IDS.indexOf(id) >= 0 ? id : DEFAULT_SQL_DIALECT_ID;
+  }
+
+  function resolveSqlDialectForConnector(connectorId) {
+    const key = String(connectorId || "").trim().toLowerCase();
+    return normalizeSqlDialect(CONNECTOR_SQL_DIALECT_IDS[key]);
+  }
+
+  function getSqlHighlighter() {
+    const api = window.SqlHighlighter;
+    return api && typeof api.tokenize === "function" ? api : null;
+  }
+
+  function toSqlTokenRanges(tokens) {
+    const ranges = [];
+    let cursor = 0;
+    (tokens || []).forEach((token) => {
+      const value = String(token?.value || "");
+      const end = cursor + value.length;
+      ranges.push({ start: cursor, end, type: String(token?.type || "plain") });
+      cursor = end;
+    });
+    return ranges;
+  }
+
+  function isOpaqueSqlOffset(tokenRanges, offset) {
+    for (let i = 0; i < tokenRanges.length; i += 1) {
+      const token = tokenRanges[i];
+      if (offset < token.start) break;
+      if (offset < token.end) return SQL_OPAQUE_TOKEN_TYPES.has(token.type);
+    }
+    return false;
+  }
+
+  function findSqlTemplateRanges(text, tokenRanges) {
+    const ranges = [];
     let index = 0;
-
     while (index < text.length) {
-      const ch = text[index];
-      const next2 = text.slice(index, index + 2);
+      const start = text.indexOf("{{", index);
+      if (start < 0) break;
+      const end = findTemplateTokenEnd(text, start);
+      if (end <= start) break;
+      if (!isOpaqueSqlOffset(tokenRanges, start)) ranges.push({ start, end });
+      index = end;
+    }
+    return ranges;
+  }
 
-      if (next2 === "--") {
-        let end = index;
-        while (end < text.length && text[end] !== "\n") end += 1;
-        out.push(wrapToken(text.slice(index, end), "cm-comment"));
-        index = end;
-        continue;
-      }
+  function renderSqlTokenSpans(text, tokenRanges, from, to) {
+    if (to <= from) return "";
+    let html = "";
+    tokenRanges.forEach((token) => {
+      const start = Math.max(token.start, from);
+      const end = Math.min(token.end, to);
+      if (end <= start) return;
+      const escaped = escapeHtml(text.slice(start, end));
+      html += token.type === "plain"
+        ? escaped
+        : `<span class="${SQL_TOKEN_CLASS_PREFIX}${token.type}">${escaped}</span>`;
+    });
+    return html;
+  }
 
-      if (next2 === "/*") {
-        let end = index + 2;
-        while (end < text.length && text.slice(end, end + 2) !== "*/") end += 1;
-        end = Math.min(text.length, end + 2);
-        out.push(wrapToken(text.slice(index, end), "cm-comment"));
-        index = end;
-        continue;
-      }
+  function renderSqlHighlightedHtml(text, dialectId) {
+    const highlighter = getSqlHighlighter();
+    if (!highlighter) return escapeHtml(text);
 
-      if (ch === "#") {
-        let end = index;
-        while (end < text.length && text[end] !== "\n") end += 1;
-        out.push(wrapToken(text.slice(index, end), "cm-comment"));
-        index = end;
-        continue;
-      }
-
-      if (ch === "'" || ch === "\"" || ch === "`") {
-        const quote = ch;
-        let end = index + 1;
-        while (end < text.length) {
-          const current = text[end];
-          if (current === quote) {
-            if (quote === "'" && text[end + 1] === "'") {
-              end += 2;
-              continue;
-            }
-            end += 1;
-            break;
-          }
-          end += 1;
-        }
-        out.push(wrapToken(text.slice(index, end), "cm-string"));
-        index = end;
-        continue;
-      }
-
-      if (ch === "{" && text[index + 1] === "{") {
-        const end = findTemplateTokenEnd(text, index);
-        if (end > index) {
-          out.push(wrapToken(text.slice(index, end), "cm-variable-template"));
-          index = end;
-          continue;
-        }
-      }
-
-      if (/\d/.test(ch)) {
-        let end = index + 1;
-        while (end < text.length && /[\d._]/.test(text[end])) end += 1;
-        out.push(wrapToken(text.slice(index, end), "cm-number"));
-        index = end;
-        continue;
-      }
-
-      if (/[A-Za-z_]/.test(ch)) {
-        let end = index + 1;
-        while (end < text.length && /[A-Za-z0-9_]/.test(text[end])) end += 1;
-        const word = text.slice(index, end);
-        out.push(wrapToken(word, SQL_KEYWORDS.has(word.toUpperCase()) ? "cm-keyword" : ""));
-        index = end;
-        continue;
-      }
-
-      out.push(escapeHtml(ch));
-      index += 1;
+    let tokenRanges;
+    try {
+      tokenRanges = toSqlTokenRanges(highlighter.tokenize(text, normalizeSqlDialect(dialectId)));
+    } catch (_) {
+      return escapeHtml(text);
     }
 
-    return out.join("");
+    const templateRanges = findSqlTemplateRanges(text, tokenRanges);
+    let html = "";
+    let position = 0;
+    templateRanges.forEach((range) => {
+      html += renderSqlTokenSpans(text, tokenRanges, position, range.start);
+      html += `<span class="${SQL_TEMPLATE_CLASS}">${escapeHtml(text.slice(range.start, range.end))}</span>`;
+      position = range.end;
+    });
+    html += renderSqlTokenSpans(text, tokenRanges, position, text.length);
+    return html;
   }
 
   function tokenizeJson(text) {
@@ -249,17 +260,17 @@
     return out.join("");
   }
 
-  function renderHighlightedHtml(text, language) {
+  function renderHighlightedHtml(text, language, options) {
     const source = String(text || "");
     if (!source) return " ";
 
     if (language === "python") return tokenizePython(source);
-    if (language === "sql") return tokenizeSql(source);
+    if (language === "sql") return renderSqlHighlightedHtml(source, (options || {}).sqlDialect);
     if (language === "json") return tokenizeJson(source);
     return escapeHtml(source);
   }
 
-  const api = { renderHighlightedHtml };
+  const api = { renderHighlightedHtml, normalizeSqlDialect, resolveSqlDialectForConnector };
   window.codeHighlight = api;
   const packages = window.zizPackages = window.zizPackages || {};
   const core = packages.core = packages.core || {};

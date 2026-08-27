@@ -4,7 +4,8 @@
   const bridge = (window.zizPackages || {}).core?.bridge || window.zizBridge || null;
   const dialog = (window.zizPackages || {}).core?.dialog || window.zizDialog || null;
   const shell = window.zizWorkspaceShell || null;
-  if (!bridge || !shell) return;
+  const appShell = shell?.appShell || (window.zizShell || {}).appShell || null;
+  if (!bridge || !shell || !appShell) return;
 
   const STORAGE_KEY_PENDING_SIDEBAR_ACTION = 'ziz.workspace.pendingSidebarAction.v1';
   const RECENT_ROOTS_CONFIG_SCOPE = 'runtime';
@@ -12,6 +13,11 @@
   const MAX_OPEN_TABS = 4;
   const MAX_RECENT_ROOTS = 10;
   const TEXT_EXTENSIONS = new Set(['.md', '.sql', '.py', '.json', '.zizd']);
+  const WORKSPACE_SQL_DIALECTS = [
+    { id: 'bigquery', label: 'BigQuery' },
+    { id: 'duckdb', label: 'DuckDB' },
+  ];
+  const DEFAULT_WORKSPACE_SQL_DIALECT = 'bigquery';
   const FLOW_EXTENSIONS = new Set(['.zizd']);
   const DEFAULT_FILE_ICON_MAP = {
     default: './icons/block.svg',
@@ -39,14 +45,12 @@
     tabStore: {},
   };
 
-  let contextMenuEl = null;
   let explorerContextMenuEl = null;
   let lockOverlayEl = null;
   let lockWatchdogTimer = 0;
   let fileIconMap = { ...DEFAULT_FILE_ICON_MAP };
   let fileIconMapLoaded = false;
   let runningFlowTabId = '';
-  let draggedTabId = '';
 
   function getShellApi() {
     return window.zizShell || {};
@@ -164,6 +168,46 @@
     if (ext === 'py') return 'python';
     if (ext === 'json') return 'json';
     return '';
+  }
+
+  function isWorkspaceMarkdownTab(tab) {
+    return fileExtensionFromPath(tab?.relPath || '') === 'md';
+  }
+
+  function getMarkdownEditorCtor() {
+    return typeof window.MarkdownEditor === 'function' ? window.MarkdownEditor : null;
+  }
+
+  // Session-only SQL dialect choice. It lives on the open tab object and is never
+  // written to the SQL file, a sidecar, Runtime config, or a Bridge payload.
+  function normalizeWorkspaceSqlDialect(value) {
+    const id = String(value || '').trim().toLowerCase();
+    return WORKSPACE_SQL_DIALECTS.some((entry) => entry.id === id) ? id : DEFAULT_WORKSPACE_SQL_DIALECT;
+  }
+
+  function applyTabSqlDialect(tab) {
+    const controller = tab?.codeEditorController;
+    if (!controller || typeof controller.setSqlDialect !== 'function') return;
+    controller.setSqlDialect(normalizeWorkspaceSqlDialect(tab.sqlDialect));
+  }
+
+  function createSqlDialectSelect(tab) {
+    const select = document.createElement('select');
+    select.className = 'workspace-text-dialect';
+    select.setAttribute('aria-label', 'SQL方言');
+    WORKSPACE_SQL_DIALECTS.forEach((entry) => {
+      const option = document.createElement('option');
+      option.value = entry.id;
+      option.textContent = entry.label;
+      select.appendChild(option);
+    });
+    select.value = normalizeWorkspaceSqlDialect(tab.sqlDialect);
+    select.addEventListener('change', () => {
+      tab.sqlDialect = normalizeWorkspaceSqlDialect(select.value);
+      select.value = tab.sqlDialect;
+      applyTabSqlDialect(tab);
+    });
+    return select;
   }
 
   function resolveTabIconPath(tab) {
@@ -657,7 +701,10 @@
       tab.content = String(result?.content || '');
       tab.mtimeNs = normalizeMtimeNs(result?.mtime_ns);
       tab.dirty = false;
-      if (tab.textareaEl) {
+      if (tab.markdownEditorController) {
+        tab.markdownEditorController.setValue(tab.content);
+        syncMarkdownArticleTitle(tab);
+      } else if (tab.textareaEl) {
         tab.__suppressEditorInputSync = true;
         tab.textareaEl.value = tab.content;
         if (tab.codeEditorLanguage) {
@@ -714,6 +761,21 @@
     if (tab.viewEl) {
       tab.viewEl.remove();
     }
+    tab.codeEditorController = null;
+    if (tab.markdownEditorController) {
+      if (tab.markdownEditorHost && tab.markdownLinkClickHandler) {
+        tab.markdownEditorHost.removeEventListener('click', tab.markdownLinkClickHandler);
+      }
+      try {
+        tab.markdownEditorController.destroy();
+      } catch (error) {
+        logInfo('markdownEditorController.destroy failed', normalizeError(error));
+      }
+      tab.markdownEditorController = null;
+      tab.markdownEditorHost = null;
+      tab.markdownLinkClickHandler = null;
+      tab.markdownModeButtons = null;
+    }
     if (runningFlowTabId === tab.id) runningFlowTabId = '';
     delete state.tabStore[tab.id];
     mountTabViews();
@@ -725,22 +787,189 @@
     return true;
   }
 
+  function createSaveIconButton() {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'workspace-text-save-btn';
+    button.dataset.action = 'save';
+    button.title = '保存';
+    button.setAttribute('aria-label', '保存');
+    const icon = document.createElement('img');
+    icon.className = 'workspace-text-save-btn__icon';
+    icon.src = './icons/save.svg';
+    icon.alt = '';
+    button.appendChild(icon);
+    return button;
+  }
+
+  // Mode is tab-session-only Application state: it lives on the open tab object, is
+  // never written to the Markdown file, a sidecar, or Runtime config, and always starts
+  // at "view" for a freshly opened tab.
+  function updateMarkdownModeButtons(tab) {
+    const buttons = tab?.markdownModeButtons;
+    if (!buttons) return;
+    const mode = tab.markdownMode === 'view' ? 'view' : 'edit';
+    Object.keys(buttons).forEach((key) => {
+      const button = buttons[key];
+      const pressed = key === mode;
+      button.setAttribute('aria-pressed', pressed ? 'true' : 'false');
+      button.classList.toggle('is-active', pressed);
+    });
+  }
+
+  function applyMarkdownMode(tab, mode) {
+    const nextMode = mode === 'view' ? 'view' : 'edit';
+    tab.markdownMode = nextMode;
+    const controller = tab.markdownEditorController;
+    if (controller?.getMode?.() !== nextMode) {
+      controller?.setMode?.(nextMode);
+    }
+    syncMarkdownArticleTitle(tab);
+    updateMarkdownModeButtons(tab);
+  }
+
+  function syncMarkdownArticleTitle(tab) {
+    const host = tab?.markdownEditorHost;
+    const viewer = host?.querySelector?.('.mce-viewer');
+    if (!viewer) return;
+    viewer.querySelector(':scope > .workspace-markdown-article-title')?.remove();
+    if (tab.markdownMode !== 'view') return;
+
+    const titleText = String(host.querySelector('.mce-titlebar-title')?.textContent || '').trim();
+    if (!titleText) return;
+    const title = document.createElement('h1');
+    title.className = 'mce-article-title workspace-markdown-article-title';
+    title.textContent = titleText;
+    viewer.prepend(title);
+  }
+
+  function createMarkdownModeToggle(tab) {
+    const group = document.createElement('div');
+    group.className = 'workspace-markdown-mode-toggle';
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-label', '表示モード');
+
+    const editButton = document.createElement('button');
+    editButton.type = 'button';
+    editButton.className = 'workspace-markdown-mode-btn';
+    editButton.dataset.markdownMode = 'edit';
+    editButton.textContent = '編集';
+
+    const viewButton = document.createElement('button');
+    viewButton.type = 'button';
+    viewButton.className = 'workspace-markdown-mode-btn';
+    viewButton.dataset.markdownMode = 'view';
+    viewButton.textContent = '表示';
+
+    group.appendChild(editButton);
+    group.appendChild(viewButton);
+    group.addEventListener('click', (event) => {
+      const button = event.target?.closest?.('button[data-markdown-mode]');
+      if (!button) return;
+      applyMarkdownMode(tab, button.dataset.markdownMode);
+    });
+
+    tab.markdownMode = tab.markdownMode === 'edit' ? 'edit' : 'view';
+    tab.markdownModeButtons = { edit: editButton, view: viewButton };
+    updateMarkdownModeButtons(tab);
+    return group;
+  }
+
+  function createFloatingEditorActions(tab, isSqlTab, isMarkdownTab) {
+    const floating = document.createElement('div');
+    floating.className = 'workspace-text-floating-actions';
+    if (isSqlTab) {
+      floating.appendChild(createSqlDialectSelect(tab));
+    }
+    if (isMarkdownTab) {
+      floating.appendChild(createMarkdownModeToggle(tab));
+    }
+    floating.appendChild(createSaveIconButton());
+    floating.addEventListener('click', async (event) => {
+      const button = event.target?.closest?.('button[data-action="save"]');
+      if (!button) return;
+      await saveTab(tab.id);
+    });
+    return floating;
+  }
+
+  // Application Adapter boundary: only http/https URLs accepted by the real Bridge
+  // isAllowedExternalUrl() are forwarded to openExternal(); every other anchor click
+  // inside the viewer (javascript:, document links, etc.) is only ever prevented.
+  function handleMarkdownViewerLinkClick(tab, event) {
+    const anchor = event.target?.closest?.('a');
+    if (!anchor || !anchor.closest('.mce-viewer')) return;
+    event.preventDefault();
+    const href = anchor.getAttribute('href') || '';
+    if (!bridge?.isAllowedExternalUrl?.(href)) return;
+    bridge.openExternal(href, { prefer: 'chrome' }).catch((error) => {
+      const normalized = normalizeError(error);
+      showMessage(`外部ブラウザで開けませんでした。\n${normalized.message}`, { kind: 'error', title: '外部リンクエラー' });
+    });
+  }
+
+  function mountMarkdownEditorView(tab, frame) {
+    const host = document.createElement('div');
+    host.className = 'workspace-markdown-editor-host';
+    frame.appendChild(host);
+
+    const MarkdownEditorCtor = getMarkdownEditorCtor();
+    if (!MarkdownEditorCtor) {
+      console.warn('[workspace] MarkdownEditor library is not available');
+      return;
+    }
+
+    const editor = new MarkdownEditorCtor(host, {
+      value: tab.content,
+      saveButton: false,
+      pageTree: true,
+      documents: [],
+    });
+
+    editor.addEventListener('md:change', () => {
+      if (isTabRunning(tab.id)) {
+        editor.setValue(tab.content);
+        showMessage('実行中のタブは編集できません。', { kind: 'warning', title: '実行中' });
+        return;
+      }
+      tab.content = editor.getValue();
+      tab.dirty = true;
+      renderTabs();
+    });
+
+    host.addEventListener('focusin', () => {
+      if (state.activeTabId !== tab.id) activateTab(tab.id);
+    });
+
+    tab.markdownLinkClickHandler = (event) => handleMarkdownViewerLinkClick(tab, event);
+    host.addEventListener('click', tab.markdownLinkClickHandler);
+    tab.markdownEditorHost = host;
+    tab.markdownEditorController = editor;
+    applyMarkdownMode(tab, tab.markdownMode);
+  }
+
   function createTextView(tab) {
     const wrap = document.createElement('div');
     wrap.className = 'workspace-text-view';
     wrap.dataset.tabId = tab.id;
 
-    const toolbar = document.createElement('div');
-    toolbar.className = 'workspace-text-toolbar';
-    toolbar.innerHTML = [
-      `<span class="workspace-text-path">${tab.scope}/${tab.relPath}</span>`,
-      '<div class="workspace-text-actions">',
-      '  <button type="button" data-action="save">保存</button>',
-      '  <button type="button" data-action="reload">再読み込み</button>',
-      '</div>'
-    ].join('');
+    const isMarkdownTab = isWorkspaceMarkdownTab(tab);
+    const language = isMarkdownTab ? '' : getWorkspaceEditorLanguage(tab);
+    const isSqlTab = language === 'sql';
+    if (isSqlTab) {
+      tab.sqlDialect = normalizeWorkspaceSqlDialect(tab.sqlDialect);
+    }
 
-    const language = getWorkspaceEditorLanguage(tab);
+    const frame = document.createElement('div');
+    frame.className = 'workspace-text-editor-frame';
+    frame.appendChild(createFloatingEditorActions(tab, isSqlTab, isMarkdownTab));
+
+    if (isMarkdownTab) {
+      mountMarkdownEditorView(tab, frame);
+      wrap.appendChild(frame);
+      return wrap;
+    }
+
     const textarea = document.createElement('textarea');
     textarea.className = language ? 'workspace-text-editor code-editor-fallback' : 'workspace-text-editor';
     textarea.spellcheck = false;
@@ -765,25 +994,13 @@
       if (state.activeTabId !== tab.id) activateTab(tab.id);
     });
 
-    toolbar.addEventListener('click', async (event) => {
-      const button = event.target?.closest?.('button[data-action]');
-      if (!button) return;
-      const action = button.dataset.action;
-      if (action === 'save') {
-        await saveTab(tab.id);
-      }
-      if (action === 'reload') {
-        await reloadTab(tab.id);
-      }
-    });
-
-    wrap.appendChild(toolbar);
+    wrap.appendChild(frame);
     if (language) {
       tab.codeEditorLanguage = language;
       const editorHost = document.createElement('div');
       editorHost.className = 'workspace-text-editor-host code-editor';
       editorHost.appendChild(textarea);
-      wrap.appendChild(editorHost);
+      frame.appendChild(editorHost);
       ensureCodeEditorsApi()
         .then((codeEditorsApi) => {
           if (!codeEditorsApi || typeof codeEditorsApi.mountCodeEditor !== 'function') return;
@@ -791,16 +1008,22 @@
             input: textarea,
             value: textarea.value,
             language,
+            sqlDialect: isSqlTab ? tab.sqlDialect : '',
             connectorId: '',
             variableNames: [],
             suggestionHost: editorHost,
           });
         })
+        .then((mounted) => {
+          if (!mounted) return;
+          tab.codeEditorController = mounted;
+          if (isSqlTab) applyTabSqlDialect(tab);
+        })
         .catch((error) => {
           console.warn('[workspace] code editor mount failed', error);
         });
     } else {
-      wrap.appendChild(textarea);
+      frame.appendChild(textarea);
     }
     tab.textareaEl = textarea;
     return wrap;
@@ -1163,95 +1386,52 @@
       : openTextFile(scope, relPath, options);
   }
 
-  function moveTab(tabId, targetTabId, afterTarget) {
-    if (!tabId || tabId === targetTabId) return;
-    const sourceIndex = state.tabOrder.indexOf(tabId);
+  function renderTabs() {
+    appShell.setTabs(
+      allTabs().map((tab) => ({
+        id: tab.id,
+        title: tabDisplayName(tab),
+        icon: resolveTabIconPath(tab),
+        dirty: !!tab.dirty,
+        closable: !!tab.closable,
+        badge: isTabRunning(tab.id) ? '実行中' : '',
+        reorderable: true,
+        contextActions: tab.closable ? [{ id: 'close', label: '閉じる' }] : [],
+      })),
+      state.activeTabId
+    );
+  }
+
+  function reorderTab(tabId, targetTabId, placement) {
+    const sourceId = String(tabId || '');
+    const targetId = String(targetTabId || '');
+    if (!sourceId || !targetId || sourceId === targetId) return;
+    const sourceIndex = state.tabOrder.indexOf(sourceId);
     if (sourceIndex < 0) return;
     state.tabOrder.splice(sourceIndex, 1);
-    const targetIndex = state.tabOrder.indexOf(targetTabId);
-    if (targetIndex < 0) return;
-    state.tabOrder.splice(targetIndex + (afterTarget ? 1 : 0), 0, tabId);
+    const targetIndex = state.tabOrder.indexOf(targetId);
+    const insertIndex = targetIndex < 0
+      ? sourceIndex
+      : (placement === 'after' ? targetIndex + 1 : targetIndex);
+    state.tabOrder.splice(insertIndex, 0, sourceId);
     mountTabViews();
     renderTabs();
   }
 
-  function renderTabs() {
-    const host = shell.tabsHost;
-    if (!host) return;
-    host.innerHTML = '';
-
-    allTabs().forEach((tab) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'workspace-tab';
-      button.draggable = true;
-      if (tab.id === state.activeTabId) {
-        button.classList.add('is-active');
-      }
-      button.dataset.tabId = tab.id;
-      const title = tabDisplayName(tab);
-      const iconPath = resolveTabIconPath(tab);
-      button.innerHTML = [
-        `<img class="workspace-tab__file-icon" src="${iconPath}" alt="" aria-hidden="true" />`,
-        `<span class="workspace-tab__title">${title}${tab.dirty ? ' ●' : ''}${isTabRunning(tab.id) ? ' (実行中)' : ''}</span>`,
-        tab.closable ? '<span class="workspace-tab__close" role="button" aria-label="閉じる">×</span>' : ''
-      ].join('');
-      const icon = button.querySelector('.workspace-tab__file-icon');
-      if (icon) {
-        icon.addEventListener('error', () => {
-          const fallback = String(fileIconMap.default || DEFAULT_FILE_ICON_MAP.default);
-          if (icon.getAttribute('src') !== fallback) {
-            icon.setAttribute('src', fallback);
-          }
-        });
-      }
-
-      button.addEventListener('click', (event) => {
-        const targetEl = event.target instanceof Element ? event.target : event.target?.parentElement;
-        if (targetEl?.closest?.('.workspace-tab__close')) return;
-        activateTab(tab.id);
-      });
-
-      button.addEventListener('dragstart', (event) => {
-        draggedTabId = tab.id;
-        if (event.dataTransfer) {
-          event.dataTransfer.effectAllowed = 'move';
-          event.dataTransfer.setData('text/plain', tab.id);
-        }
-      });
-
-      button.addEventListener('dragover', (event) => {
-        if (!draggedTabId || draggedTabId === tab.id) return;
-        event.preventDefault();
-        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
-      });
-
-      button.addEventListener('drop', (event) => {
-        event.preventDefault();
-        const sourceTabId = draggedTabId || event.dataTransfer?.getData('text/plain');
-        const bounds = button.getBoundingClientRect();
-        moveTab(sourceTabId, tab.id, event.clientX >= bounds.left + (bounds.width / 2));
-      });
-
-      button.addEventListener('dragend', () => {
-        draggedTabId = '';
-      });
-
-      button.addEventListener('contextmenu', (event) => {
-        event.preventDefault();
-        showTabContextMenu(tab, event.clientX, event.clientY);
-      });
-
-      const closeButton = button.querySelector('.workspace-tab__close');
-      if (closeButton) {
-        closeButton.addEventListener('click', async (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          await requestTabClose(tab.id);
-        });
-      }
-
-      host.appendChild(button);
+  function bindShellTabEvents() {
+    appShell.on('tab:activate', ({ tabId }) => {
+      if (String(tabId || '') === String(state.activeTabId || '')) return;
+      activateTab(tabId);
+    });
+    appShell.on('tab:close-request', ({ tabId }) => {
+      void requestTabClose(tabId);
+    });
+    appShell.on('tab:reorder-request', ({ tabId, targetTabId, placement }) => {
+      reorderTab(tabId, targetTabId, placement);
+    });
+    appShell.on('tab:context-action', ({ tabId, actionId }) => {
+      if (String(actionId || '') !== 'close') return;
+      void requestTabClose(tabId);
     });
   }
 
@@ -1362,55 +1542,6 @@
     return invokeTabAction(tab?.id || '', action);
   }
 
-  function ensureContextMenu() {
-    if (contextMenuEl) return contextMenuEl;
-    contextMenuEl = document.createElement('div');
-    contextMenuEl.className = 'workspace-tab-menu';
-    contextMenuEl.hidden = true;
-    contextMenuEl.style.pointerEvents = 'none';
-    contextMenuEl.innerHTML = [
-      '<button type="button" data-action="close">閉じる</button>'
-    ].join('');
-    document.body.appendChild(contextMenuEl);
-
-    document.addEventListener('click', (event) => {
-      if (!contextMenuEl || contextMenuEl.hidden) return;
-      if (event.target && contextMenuEl.contains(event.target)) return;
-      hideContextMenu();
-    });
-
-    return contextMenuEl;
-  }
-
-  function hideContextMenu() {
-    if (!contextMenuEl) return;
-    contextMenuEl.hidden = true;
-    contextMenuEl.style.pointerEvents = 'none';
-  }
-
-  function showTabContextMenu(tab, x, y) {
-    if (!tab || !tab.closable) return;
-    const menu = ensureContextMenu();
-    menu.hidden = false;
-    menu.style.pointerEvents = 'auto';
-    menu.style.left = `${Math.max(8, x)}px`;
-    menu.style.top = `${Math.max(8, y)}px`;
-    menu.dataset.tabId = tab.id;
-  }
-
-  function bindContextMenuActions() {
-    const menu = ensureContextMenu();
-    menu.addEventListener('click', async (event) => {
-      const targetEl = event.target instanceof Element ? event.target : event.target?.parentElement;
-      const button = targetEl?.closest?.('button[data-action]');
-      if (!button) return;
-      const tabId = menu.dataset.tabId;
-      const action = button.dataset.action;
-      if (action === 'close') await requestTabClose(tabId);
-      hideContextMenu();
-    });
-  }
-
   function ensureExplorerContextMenu() {
     if (explorerContextMenuEl) return explorerContextMenuEl;
     explorerContextMenuEl = document.createElement('div');
@@ -1439,7 +1570,6 @@
     const kind = meta?.kind === 'dir' ? 'dir' : 'file';
     const canDelete = !!relPath;
     const canRename = kind === 'file' && !!relPath;
-    hideContextMenu();
     const menu = ensureExplorerContextMenu();
     menu.dataset.scope = scope;
     menu.dataset.relPath = relPath;
@@ -2012,15 +2142,13 @@
     if (!title || !body) return;
 
     if (!state.globalStore.leftMode) {
-      shell.globalLeftArea.classList.add('is-hidden');
-      shell.workspaceLayout.classList.add('is-left-collapsed');
+      appShell.setLayout({ sidebarVisible: false });
       title.textContent = 'サイドエリア';
       body.innerHTML = '<div class="workspace-empty">左サイドバーから機能を選択してください。</div>';
       return;
     }
 
-    shell.globalLeftArea.classList.remove('is-hidden');
-    shell.workspaceLayout.classList.remove('is-left-collapsed');
+    appShell.setLayout({ sidebarVisible: true });
 
     if (state.globalStore.leftMode === 'project-select') {
       title.textContent = 'プロジェクト選択';
@@ -2054,16 +2182,7 @@
 
   function syncSidebarActionSelection() {
     const current = String(state.globalStore.leftMode || '').trim();
-    document.querySelectorAll('.sidebar [data-sidebar-action]').forEach((button) => {
-      const action = String(button.dataset.sidebarAction || '').trim();
-      const active = (action === 'project-select' || action === 'explorer') && action === current;
-      button.classList.toggle('is-current', active);
-      if (active) {
-        button.setAttribute('aria-current', 'page');
-      } else {
-        button.removeAttribute('aria-current');
-      }
-    });
+    getShellApi().setActiveActivity?.(current);
   }
 
   function bindSidebarActions() {
@@ -2210,8 +2329,8 @@
 
   async function init() {
     setWorkspaceLock(false);
+    bindShellTabEvents();
     bindSidebarActions();
-    bindContextMenuActions();
     bindExplorerContextMenuActions();
     bindWorkspaceRunEvents();
     bindGlobalSaveShortcut();

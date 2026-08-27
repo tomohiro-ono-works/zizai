@@ -30,6 +30,21 @@
       || {};
   }
 
+  function normalizeSqlDialect(value) {
+    const api = getCodeHighlightApi();
+    if (typeof api.normalizeSqlDialect === "function") return api.normalizeSqlDialect(value);
+    return String(value || "").trim().toLowerCase() === "duckdb" ? "duckdb" : "bigquery";
+  }
+
+  function resolveSqlDialect({ sqlDialect, connectorId }) {
+    if (sqlDialect) return normalizeSqlDialect(sqlDialect);
+    const api = getCodeHighlightApi();
+    if (typeof api.resolveSqlDialectForConnector === "function") {
+      return api.resolveSqlDialectForConnector(connectorId);
+    }
+    return normalizeSqlDialect("");
+  }
+
   function applyEditorHeight(input, surface, highlight, host) {
     const basis = host || input;
     const shouldStretchInRightSidebar = !!basis?.closest?.(
@@ -412,7 +427,11 @@
     return { hide };
   }
 
-  function createHighlightController({ input, wrapper, language }) {
+  function createHighlightController({ input, wrapper, language, sqlDialect }) {
+    const isSql = language === "sql";
+    let currentSqlDialect = isSql ? normalizeSqlDialect(sqlDialect) : "";
+    if (isSql) wrapper.dataset.sqlDialect = currentSqlDialect;
+
     const surface = document.createElement("div");
     surface.className = "code-editor-surface";
     const highlight = document.createElement("pre");
@@ -436,7 +455,7 @@
       highlight.style.paddingLeft = `${highlightPaddingLeft}px`;
       if (typeof api.renderHighlightedHtml === "function") {
         surface.hidden = false;
-        highlight.innerHTML = api.renderHighlightedHtml(input.value, language);
+        highlight.innerHTML = api.renderHighlightedHtml(input.value, language, { sqlDialect: currentSqlDialect });
         wrapper.classList.add("is-code-editor-ready");
         return;
       }
@@ -468,13 +487,30 @@
       }, { passive: false });
     }
 
+    function setSqlDialect(nextDialect) {
+      if (!isSql) return currentSqlDialect;
+      const normalized = normalizeSqlDialect(nextDialect);
+      if (normalized === currentSqlDialect) return currentSqlDialect;
+      currentSqlDialect = normalized;
+      wrapper.dataset.sqlDialect = currentSqlDialect;
+      render();
+      return currentSqlDialect;
+    }
+
     input.addEventListener("input", render);
     input.addEventListener("scroll", syncScroll);
     bindWheelScrollSync();
     render();
     syncScroll();
 
-    return { surface, highlight, render, syncScroll };
+    return {
+      surface,
+      highlight,
+      render,
+      syncScroll,
+      setSqlDialect,
+      getSqlDialect: () => currentSqlDialect
+    };
   }
 
   function createLineNumberController({ input, wrapper }) {
@@ -560,7 +596,7 @@
     return { gutter, inner, render, syncScroll };
   }
 
-  function mountCodeEditor({ input, value, language, connectorId, variableNames, suggestionHost, onCommitChanged }) {
+  function mountCodeEditor({ input, value, language, sqlDialect, connectorId, variableNames, suggestionHost, onCommitChanged }) {
     if (!input || !suggestionHost) {
       return Promise.reject(new Error("Textarea host is not available"));
     }
@@ -583,11 +619,13 @@
     return ensureCodeHighlightLoaded()
       .catch(() => null)
       .then(() => {
-        const { surface, highlight } = createHighlightController({
+        const highlightController = createHighlightController({
           input,
           wrapper: suggestionHost,
-          language
+          language,
+          sqlDialect: language === "sql" ? resolveSqlDialect({ sqlDialect, connectorId }) : ""
         });
+        const { surface, highlight } = highlightController;
         const lineNumbers = createLineNumberController({
           input,
           wrapper: suggestionHost
@@ -611,7 +649,14 @@
           });
         }
 
-        return { input, surface, highlight, lineNumbers };
+        return {
+          input,
+          surface,
+          highlight,
+          lineNumbers,
+          setSqlDialect: highlightController.setSqlDialect,
+          getSqlDialect: highlightController.getSqlDialect
+        };
       });
   }
 

@@ -123,7 +123,7 @@ def run_webview_app(form_html_path, *, repository_root, debug=False):
     logger.info("[gui-startup] phase=environment_configured elapsed_ms=%s", round((time.perf_counter() - startup_started) * 1000, 1))
     try:
         from PySide6.QtCore import QElapsedTimer, QEvent, QRect, Qt, QTimer, QUrl, Signal
-        from PySide6.QtGui import QAction, QCursor, QIcon, QKeySequence
+        from PySide6.QtGui import QAction, QColor, QCursor, QIcon, QKeySequence, QPainter
         from PySide6.QtWebChannel import QWebChannel
         from PySide6.QtWidgets import (
             QApplication,
@@ -353,6 +353,16 @@ def run_webview_app(form_html_path, *, repository_root, debug=False):
             self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
             self.setWindowOpacity(0.01)
             self.setMouseTracking(True)
+
+        def paintEvent(self, event):
+            # On a WA_TranslucentBackground window, pixels that are never painted are
+            # fully transparent to hit-testing and the platform passes clicks straight
+            # through to the windows underneath. Painting the whole rect opaquely makes
+            # the overlay hit-testable; the 0.01 window opacity above is what keeps it
+            # visually near-invisible.
+            painter = QPainter(self)
+            painter.fillRect(self.rect(), QColor(0, 0, 0, 255))
+            painter.end()
 
         def begin(self, capture_id):
             next_capture_id = str(capture_id or "").strip()

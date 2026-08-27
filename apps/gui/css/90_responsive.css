@@ -3,7 +3,6 @@
 ========================================================= */
 @media (max-width: 768px) {
   body {
-    --sidebar-width: 60px;
     --app-gutter: 8px;
   }
   .panel { padding: 12px; }
@@ -24,16 +23,6 @@
     left: 0;
     width: min(96vw, 272px);
     grid-template-columns: 78px 83px 1fr;
-  }
-
-  .sidebar {
-    padding-inline: 8px;
-  }
-
-  .sidebar-toggle,
-  .sidebar-item {
-    min-height: 52px;
-    border-radius: 16px;
   }
 }
 

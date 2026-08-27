@@ -1,0 +1,329 @@
+.mce-root,
+.mce-root * { box-sizing: border-box; }
+
+.mce-root {
+  --mce-border: #dfe1e6;
+  --mce-muted: #6b778c;
+  --mce-bg: #ffffff;
+  --mce-soft: #f4f5f7;
+  --mce-accent: #0c66e4;
+  color: #172b4d;
+  font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.mce-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 0;
+  background-color: #f2f3f4;
+  background-image: linear-gradient(90deg, #f2f3f4 0%, #e2e4e7 50%, #c9ccd1 100%);
+}
+
+.mce-titlebar-title {
+  min-width: 0;
+  overflow: hidden;
+  color: #1f2328;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mce-toolbar button {
+  flex: 0 0 auto;
+  margin-left: auto;
+  border: 1px solid #c7cbd1;
+  border-radius: 3px;
+  padding: 6px 11px;
+  color: #172b4d;
+  background: rgba(255, 255, 255, .96);
+  cursor: pointer;
+}
+
+.mce-toolbar button:hover,
+.mce-toolbar button:focus-visible { border-color: var(--mce-accent); }
+
+.mce-editor-shell {
+  position: relative;
+  min-height: 360px;
+  border: 1px solid var(--mce-border);
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+  background: var(--mce-bg);
+}
+
+.mce-highlight,
+.mce-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-height: 360px;
+  margin: 0;
+  border: 0;
+  padding: 18px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  tab-size: 2;
+  font: 14px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.mce-highlight {
+  pointer-events: none;
+  color: #172b4d;
+  background: #fff;
+}
+
+.mce-input {
+  z-index: 1;
+  resize: vertical;
+  color: transparent;
+  caret-color: #172b4d;
+  background: transparent;
+  outline: none;
+}
+
+.mce-input::selection { background: rgba(12, 102, 228, .22); }
+.mce-md-heading { color: #5e4db2; font-weight: 700; }
+.mce-md-marker { color: #97a0af; }
+.mce-md-link { color: #0c66e4; text-decoration: underline; }
+.mce-md-doc { color: #006644; background: #e3fcef; border-radius: 3px; }
+.mce-md-code { color: #bf2600; background: #ffebe6; }
+.mce-md-quote { color: #6554c0; }
+.mce-md-list { color: #ff8b00; font-weight: 700; }
+
+.mce-suggestions {
+  position: fixed;
+  z-index: 10000;
+  min-width: 240px;
+  max-height: 240px;
+  overflow: auto;
+  padding: 5px;
+  border: 1px solid var(--mce-border);
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(9, 30, 66, .18);
+}
+
+.mce-suggestion {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 4px;
+  padding: 8px 10px;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mce-suggestion small { display: block; color: var(--mce-muted); }
+.mce-suggestion[aria-selected="true"] { background: #e9f2ff; }
+.mce-hidden { display: none !important; }
+
+.mce-viewer {
+  padding: 28px;
+  border: 1px solid var(--mce-border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.mce-root > .mce-viewer {
+  border-top: 0;
+  border-radius: 0;
+}
+
+.mce-viewer h1, .mce-viewer h2, .mce-viewer h3,
+.mce-viewer h4, .mce-viewer h5, .mce-viewer h6 { margin: 1.25em 0 .55em; line-height: 1.25; }
+.mce-viewer h1:first-child { margin-top: 0; }
+.mce-viewer .mce-article-title {
+  margin: 0;
+  padding: 7px 10px;
+  border-radius: 0;
+  color: #1f2328;
+  background-color: #f2f3f4;
+  background-image: linear-gradient(90deg, #f2f3f4 0%, #e2e4e7 50%, #c9ccd1 100%);
+}
+.mce-viewer .mce-section-heading {
+  padding-bottom: .35em;
+  border-bottom: 2px solid var(--mce-border);
+}
+.mce-viewer .mce-subsection-heading { border-bottom: 0; }
+.mce-viewer .mce-heading-number { font-variant-numeric: tabular-nums; }
+.mce-viewer p { margin: .65em 0; }
+.mce-viewer a { color: var(--mce-accent); }
+.mce-viewer .mce-document-link { text-decoration: none; border-bottom: 1px dashed currentColor; }
+.mce-viewer blockquote { margin: 1em 0; padding: 4px 16px; border-left: 4px solid #b3bac5; color: #5e6c84; }
+.mce-viewer table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+.mce-viewer th, .mce-viewer td { border: 1px solid var(--mce-border); padding: 8px 10px; text-align: left; }
+.mce-viewer th { background: var(--mce-soft); }
+.mce-viewer .mce-tsv-table { display: table; }
+.mce-viewer .mce-tsv-table th,
+.mce-viewer .mce-tsv-table td { overflow-wrap: anywhere; }
+.mce-viewer .mce-code-block {
+  margin: 1em 0;
+  overflow: hidden;
+  border: 1px solid var(--mce-border);
+  border-radius: 6px;
+  background: #172b4d;
+}
+
+.mce-viewer .mce-code-summary {
+  padding: 9px 12px;
+  color: #44546f;
+  background: var(--mce-soft);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  user-select: none;
+}
+
+.mce-viewer .mce-code-block[open] .mce-code-summary {
+  border-bottom: 1px solid var(--mce-border);
+}
+
+.mce-viewer .mce-data-block { background: #fff; }
+.mce-viewer .mce-data-block .mce-tsv-table { margin: 0; }
+
+.mce-viewer pre { overflow: auto; margin: 0; padding: 14px; border-radius: 0; background: #172b4d; color: #f4f5f7; }
+.mce-viewer code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.mce-viewer :not(pre) > code { padding: 2px 5px; border-radius: 3px; background: #f4f5f7; color: #bf2600; }
+
+.mce-token-keyword { color: #c792ea; font-weight: 700; }
+.mce-token-string { color: #c3e88d; }
+.mce-token-number { color: #f78c6c; }
+.mce-token-comment { color: #8292a2; font-style: italic; }
+.mce-token-function { color: #82aaff; }
+
+.mce-view-layout {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.mce-view-layout-no-tree {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.mce-page-tree {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 2px 18px 2px 0;
+  border-right: 1px solid var(--mce-border);
+}
+
+.mce-page-tree-title {
+  margin-bottom: 8px;
+  color: var(--mce-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mce-page-tree-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mce-page-tree-item {
+  margin: 1px 0;
+}
+
+.mce-page-tree-link {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 4px;
+  padding: 5px 7px;
+  overflow: hidden;
+  color: #44546f;
+  background: transparent;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.mce-page-tree-link:hover,
+.mce-page-tree-link:focus-visible {
+  color: var(--mce-accent);
+  background: #e9f2ff;
+  outline: none;
+}
+
+.mce-page-tree-level-2 { padding-left: 10px; }
+.mce-page-tree-level-3 { padding-left: 20px; }
+.mce-page-tree-level-4 { padding-left: 30px; }
+.mce-page-tree-level-5 { padding-left: 40px; }
+.mce-page-tree-level-6 { padding-left: 50px; }
+
+.mce-view-content {
+  --mce-content-indent-step: 20px;
+  min-width: 0;
+}
+
+.mce-heading-content {
+  min-width: 0;
+}
+
+.mce-viewer .mce-heading-level-0 { margin-left: 0; }
+.mce-viewer .mce-heading-level-1 { margin-left: var(--mce-content-indent-step); }
+.mce-viewer .mce-heading-level-2 { margin-left: calc(var(--mce-content-indent-step) * 2); }
+
+.mce-heading-content-level-0 { margin-left: 0; }
+.mce-heading-content-level-1 { margin-left: var(--mce-content-indent-step); }
+.mce-heading-content-level-2 { margin-left: calc(var(--mce-content-indent-step) * 2); }
+.mce-heading-content-level-3 { margin-left: calc(var(--mce-content-indent-step) * 3); }
+
+.mce-view-content > :first-child,
+.mce-heading-content > :first-child {
+  margin-top: 0;
+}
+
+.mce-page-heading {
+  scroll-margin-top: 16px;
+}
+
+.mce-root > .mce-viewer .mce-page-tree {
+  top: 58px;
+  max-height: calc(100vh - 74px);
+}
+
+.mce-root > .mce-viewer .mce-page-heading {
+  scroll-margin-top: 58px;
+}
+
+@media (max-width: 720px) {
+  .mce-titlebar-title {
+    font-size: 16px;
+  }
+
+  .mce-toolbar {
+    padding: 6px 8px;
+  }
+
+  .mce-view-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .mce-page-tree {
+    position: static;
+    max-height: none;
+    padding: 0 0 14px;
+    border-right: 0;
+    border-bottom: 1px solid var(--mce-border);
+  }
+}

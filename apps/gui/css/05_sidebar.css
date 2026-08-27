@@ -1,223 +1,18 @@
 /* =========================================================
-   Sidebar
+   Right Panel (Flow Layout) content overrides
+   The outer chrome (activity bar, sidebar, right panel, resize)
+   is rendered by the vendored zizai-app-shell library
+   (see vendor/zizai-app-shell/src/ui-shell.css). The rules below
+   only style page-specific content mounted inside library regions.
 ========================================================= */
-.sidebar {
-  position: sticky;
-  top: var(--shell-header-height, 0px);
-  width: var(--sidebar-width, 52px);
-  height: calc(100vh - var(--shell-header-height, 0px));
-  padding: 5px 3px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: var(--surface-sidebar);
-  border-right: 1px solid var(--border-default);
-  box-shadow: none;
-  backdrop-filter: none;
-  contain: paint;
-  isolation: isolate;
-  z-index: 80;
-}
 
-.sidebar-top {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.sidebar-brand-submark {
-  display: none;
-  justify-content: center;
-  padding-top: 2px;
-}
-
-.sidebar-brand-submark img {
-  display: block;
-  width: min(100%, 125px);
-  height: auto;
-  max-height: 32px;
-  object-fit: contain;
-}
-
-.sidebar-nav,
-.sidebar-bottom {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.sidebar-nav {
-  flex: 1 1 auto;
-}
-
-.sidebar-bottom {
-  margin-top: auto;
-  padding-top: 10px;
-  border-top: 1px solid var(--border-divider);
-}
-
-.sidebar-toggle,
-.sidebar-item {
-  width: 100%;
-  min-height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  padding: 3px 2px;
-  border-radius: 16px;
-  border: 1px solid transparent;
-  background: transparent;
-  transition:
-    background-color 120ms ease,
-    border-color 120ms ease,
-    box-shadow 120ms ease,
-    transform 120ms ease;
-}
-
-.sidebar-toggle {
-  min-height: auto;
-  justify-content: center;
-  padding: 2px 0 8px;
-  border: 0;
-  background: transparent;
-}
-
-.sidebar-toggle:hover,
-.sidebar-item:hover {
-  background: var(--surface-hover);
-  border-color: transparent;
-}
-
-.sidebar-toggle:hover {
-  background: transparent;
-  border-color: transparent;
-}
-
-.sidebar-toggle:active,
-.sidebar-item:active {
-  transform: translateY(1px);
-}
-
-.sidebar-toggle:active {
-  transform: none;
-}
-
-.sidebar-toggle-icon,
-.sidebar-item-icon {
-  flex: 0 0 auto;
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-}
-
-.sidebar-toggle-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: auto;
-  border-radius: 0;
-  background: transparent;
-  border: 0;
-}
-
-.sidebar-item-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #474764;
-}
-
-.sidebar-toggle-icon img,
-.sidebar-item-icon img {
-  display: block;
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
-}
-
-.sidebar-toggle-icon img {
-  width: min(100%, 100px);
-  height: auto;
-  max-height: 28px;
-  opacity: 1;
-}
-
-
-.sidebar-item-settings .sidebar-item-icon {
-  background: linear-gradient(160deg, var(--brand-100) 0%, var(--surface-page) 100%);
-  border-color: var(--border-default);
-}
-
-.sidebar-item-icon img {
-  opacity: 0.88;
-}
-
-.sidebar-item-label {
-  flex: 1 1 auto;
-  min-width: 0;
-  text-align: left;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 0;
-  opacity: 0;
-  transform: translateX(-4px);
-  transition: max-width 140ms ease, opacity 100ms ease, transform 120ms ease;
-}
-
-.sidebar-item.is-current {
-  background: var(--surface-page);
-  border-color: var(--brand-600);
-  box-shadow: 0 4px 10px var(--alpha-shadow-06);
-}
-
-.sidebar-item.is-current .sidebar-item-icon {
-  background: var(--brand-600);
-  border-color: var(--brand-600);
-}
-
-.sidebar-item.is-current .sidebar-item-icon img {
-  filter: brightness(0) invert(1);
-  opacity: 1;
-}
-
-.sidebar-item.is-current.sidebar-item-settings .sidebar-item-icon {
-  background: var(--brand-600);
-  border-color: var(--brand-600);
-}
-
-/* =========================================================
-   Right Sidebar (Flow Layout)
-========================================================= */
-.right-sidebar {
-  position: sticky;
-  top: var(--shell-header-height, 0px);
-  height: var(--shell-content-height, calc(100vh - var(--shell-header-height, 0px)));
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  background: #e3e3f3;
-  border-left: 1px solid var(--border-default);
-  box-shadow: none;
-  backdrop-filter: none;
-  isolation: isolate;
-  z-index: 80;
-  overflow: hidden;
-}
-
-/* Flow workspace ではコネクタポップアップが中央エリアの前面に出るようにする */
-.flow-layout-page .right-sidebar {
+/* コネクタポップアップが中央エリアの前面に出るようにする */
+.flow-layout-page .zui-shell__right-panel {
   z-index: 180;
   overflow: visible !important;
 }
 
-.flow-layout-page .right-sidebar-content {
+.flow-layout-page .zui-shell__right-panel > .zui-shell__region-content {
   overflow: visible !important;
 }
 
@@ -225,26 +20,9 @@
   overflow: visible !important;
 }
 
-.right-sidebar-resizer {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 10px;
-  height: 100%;
-  cursor: ew-resize;
-  z-index: 3;
-}
-
-.right-sidebar-resizer::after {
-  content: none;
-}
-
 .right-sidebar-content {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
+  height: 100%;
   padding: 12px;
-  background: #e3e3f3;
 }
 
 .right-sidebar-content > #nodeDetail {
@@ -253,16 +31,4 @@
   flex-direction: column;
   min-height: 0;
   overflow: auto;
-}
-
-body.right-sidebar-collapsed .right-sidebar-resizer,
-body.right-sidebar-collapsed .right-sidebar-content {
-  display: none;
-}
-
-body.right-sidebar-collapsed .right-sidebar {
-  border-left: 0;
-  box-shadow: none;
-  visibility: hidden;
-  pointer-events: none;
 }

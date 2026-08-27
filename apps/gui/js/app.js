@@ -2716,11 +2716,27 @@
     }
   }
 
+  // <main> is a flex column sized by the canvas and the bottom panel, so measuring it
+  // would feed the heights this module just wrote back into the next calculation.
+  // The stretched shell host is the only stable source for the available height.
+  function getFlowLayoutHostHeight() {
+    const host = mainRoot?.closest(".zui-shell__main-content") || mainRoot?.parentElement || null;
+    if (!host) return 0;
+    const measured = host.clientHeight || host.getBoundingClientRect().height || 0;
+    return Math.max(0, Math.floor(measured));
+  }
+
+  function getFlowMinHeight() {
+    if (!flowRoot) return 0;
+    const parsed = parseFloat(window.getComputedStyle(flowRoot).minHeight);
+    return Number.isFinite(parsed) ? Math.ceil(parsed) : 0;
+  }
+
   function getDetailPanelHeightBounds() {
     const minH = 88;
     if (splitDetailLayout && mainRoot) {
-      const rootHeight = Math.max(240, Math.floor(mainRoot.getBoundingClientRect().height || 0));
-      const maxH = Math.max(minH, Math.floor(rootHeight * 0.75));
+      const rootHeight = Math.max(240, getFlowLayoutHostHeight());
+      const maxH = Math.max(minH, rootHeight - getFlowMinHeight());
       const midH = Math.max(minH, Math.floor((minH + maxH) / 2));
       return { minH, maxH, midH };
     }
@@ -2744,14 +2760,15 @@
   function applyFlowViewportHeight() {
     if (!flowRoot || !detailPanel) return;
     if (splitDetailLayout && mainRoot) {
-      const mainHeight = Math.floor(mainRoot.getBoundingClientRect().height || 0);
+      const hostHeight = getFlowLayoutHostHeight();
       if (homeViewModel.visible) {
-        flowRoot.style.height = `${Math.max(320, mainHeight - 8)}px`;
+        flowRoot.style.height = `${Math.max(320, hostHeight)}px`;
         return;
       }
-      const detailH = detailPanel.hidden ? 0 : (detailPanel.getBoundingClientRect().height || 300);
-      const available = Math.floor(mainHeight - detailH - 10);
-      flowRoot.style.height = `${Math.max(180, available)}px`;
+      const detailH = detailPanel.hidden
+        ? 0
+        : Math.round(detailPanel.getBoundingClientRect().height || 300);
+      flowRoot.style.height = `${Math.max(getFlowMinHeight(), hostHeight - detailH)}px`;
       return;
     }
     const header = document.querySelector("header");
@@ -2951,8 +2968,8 @@
       min: 300,
       maxViewportRatio: 0.6
     };
-    const appShell = document.querySelector(".app-shell");
-    const leftSidebar = document.querySelector(".sidebar");
+    const appShell = document.querySelector(".zui-shell");
+    const leftSidebar = document.querySelector(".zui-shell__sidebar");
     const shellWidth = Math.floor(appShell?.getBoundingClientRect().width || window.innerWidth);
     const leftWidth = Math.floor(leftSidebar?.getBoundingClientRect().width || 0);
     const available = Math.max(240, shellWidth - leftWidth);

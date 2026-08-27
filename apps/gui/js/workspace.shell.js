@@ -1,28 +1,26 @@
-﻿(function () {
+(function () {
   const searchParams = new URLSearchParams(window.location.search);
   if (searchParams.get('embedded') === '1') return;
   const body = document.body;
-  const shell = document.querySelector('.app-shell');
-  const appMain = shell?.querySelector('.app-main');
-  const sidebar = shell?.querySelector('.sidebar');
-  if (!body || !shell || !appMain || !sidebar) return;
+  const page = String(body?.dataset.shellPage || '');
+  if (page !== 'dataflow') return;
 
-  const page = String(body.dataset.shellPage || '');
-  const isFlowPage = page === 'dataflow';
-  if (!isFlowPage) return;
-  if (appMain.querySelector('.workspace-layout')) return;
+  const shellApi = window.zizShell || null;
+  const appShell = shellApi?.appShell || null;
+  if (!body || !appShell) return;
+  if (body.classList.contains('workspace-enabled')) return;
 
-  const main = appMain.querySelector('main');
+  const mainContentHost = document.querySelector('.zui-shell__main-content');
+  const main = mainContentHost?.querySelector('main');
   if (!main) return;
-  const rightSidebar = document.getElementById('rightSidebar');
+  const rightPanelContent = document.querySelector('.zui-shell__right-panel .right-sidebar-content');
 
-  shell.classList.remove('app-shell--with-right-sidebar');
   body.classList.add('workspace-enabled');
 
   const workspaceLayout = document.createElement('div');
   workspaceLayout.className = 'workspace-layout';
 
-  const globalLeftArea = document.createElement('aside');
+  const globalLeftArea = document.createElement('div');
   globalLeftArea.className = 'workspace-global-left-area';
   globalLeftArea.id = 'workspaceGlobalLeftArea';
   globalLeftArea.innerHTML = [
@@ -31,14 +29,6 @@
     '<div class="workspace-empty">左サイドバーから機能を選択してください。</div>',
     '</div>'
   ].join('');
-
-  const workspaceRegion = document.createElement('section');
-  workspaceRegion.className = 'workspace-region';
-
-  const tabHeader = document.createElement('div');
-  tabHeader.className = 'workspace-tab-header';
-  tabHeader.id = 'workspaceTabHeader';
-  tabHeader.innerHTML = '<div class="workspace-tabs" id="workspaceTabs"></div>';
 
   const panes = document.createElement('div');
   panes.className = 'workspace-panes';
@@ -49,10 +39,7 @@
     '</section>'
   ].join('');
 
-  workspaceRegion.appendChild(tabHeader);
-  workspaceRegion.appendChild(panes);
-  workspaceLayout.appendChild(globalLeftArea);
-  workspaceLayout.appendChild(workspaceRegion);
+  workspaceLayout.appendChild(panes);
 
   const hiddenHost = document.createElement('div');
   hiddenHost.className = 'workspace-flow-hidden-host';
@@ -62,29 +49,23 @@
   dataflowView.dataset.viewType = 'dataflow';
   dataflowView.dataset.tabId = 'tab-dataflow';
   dataflowView.appendChild(main);
-  if (rightSidebar) dataflowView.appendChild(rightSidebar);
+  if (rightPanelContent) dataflowView.appendChild(rightPanelContent);
   hiddenHost.appendChild(dataflowView);
+  workspaceLayout.appendChild(hiddenHost);
 
-  appMain.innerHTML = '';
-  appMain.appendChild(workspaceLayout);
-  appMain.appendChild(hiddenHost);
+  appShell.setRegion('sidebar', globalLeftArea);
+  appShell.setRegion('main', workspaceLayout);
+  appShell.setRegion('rightPanel', null);
 
   window.zizWorkspaceShell = {
-    appShell: shell,
-    appMain,
+    appShell,
     workspaceLayout,
     globalLeftArea,
     leftAreaTitle: globalLeftArea.querySelector('#workspaceLeftAreaTitle'),
     leftAreaBody: globalLeftArea.querySelector('#workspaceLeftAreaBody'),
-    workspaceRegion,
-    tabHeader,
-    tabsHost: tabHeader.querySelector('#workspaceTabs'),
     panes,
     pane: panes.querySelector('[data-pane="active"]'),
     paneBody: panes.querySelector('[data-pane-body="active"]'),
     dataflowView,
   };
 })();
-
-
-

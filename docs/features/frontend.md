@@ -36,7 +36,7 @@
 
 ## Approved Frontend library requirement
 
-次の8 libraryをすべてexact revisionのlocal assetとして利用し、Application側へ同一UI責務を重複実装しない。
+次の7 libraryをexact revisionのlocal assetとして利用し、Application側へ同一UI責務を重複実装しない。
 
 配置、責務境界、導入判断、検証条件の詳細正本は`docs/features/frontend-libraries.md`とする。
 
@@ -46,8 +46,9 @@
 4. `zizai-editor-markdown`
 5. `zizai-form`
 6. `zizai-highlighter-sql`
-7. `zizai-sqlflow-designer`
-8. `zizai-workflow-designer`
+7. `zizai-workflow-designer`
+
+`zizai-sqlflow-designer`は、現行Applicationに移管対象となるSQL flow表示機能が存在しないためTASK-016から除外する。新しい利用場面とspaceが承認された時点で、Migrationとは別の新機能Taskとして扱う。
 
 - 各libraryを利用するFrontend spaceは事前に一括決定しない。各spaceの移行Work Package開始前にProject ownerが決定する。
 - Agentはrepository名、sample、既存画面名から配置を推測しない。
@@ -63,4 +64,4 @@
 
 ## Approved target
 
-TASK-012で既存Frontendを挙動維持のまま`static/`から`apps/gui/`へ物理移動済みである。TASK-016でProject ownerが決定したspaceを8 libraryへ段階移行する。TASK-012へUI再設計を混在させず、TASK-016では同一責務のApplication実装を回帰確認後に削除する。localhost/API化、外部Web埋め込み、Bridge breaking changeは行わない。
+TASK-012で既存Frontendを挙動維持のまま`static/`から`apps/gui/`へ物理移動済みである。TASK-016でProject ownerが決定したspaceを7 libraryへ段階移行する。TASK-012へUI再設計を混在させず、TASK-016では同一責務のApplication実装を回帰確認後に削除する。localhost/API化、外部Web埋め込み、Bridge breaking changeは行わない。

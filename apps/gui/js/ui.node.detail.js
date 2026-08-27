@@ -5,6 +5,7 @@
   const embeddedMode = new URLSearchParams(window.location.search).get("embedded") === "1";
   const { el, getFormSchema } = (corePkg.utils || {});
   const shared = (packages.ui && packages.ui.nodeShared) || window.uiNodeShared || {};
+  const nodeFormAdapter = (packages.ui && packages.ui.nodeFormAdapter) || window.uiNodeFormAdapter || {};
   const {
     getFieldReferenceWarningsSafe,
     ensureStartParameters,
@@ -153,6 +154,8 @@
   }
 
   function renderNodeDetail({ state, config, root, onStateChanged, tabKeys, defaultTab, includePanelRunAction, forcedActiveTab, hideTabs, topbarConnectorFirst }) {
+    (root.__nodeFormInstances || []).forEach((instance) => nodeFormAdapter.destroyNodeForm?.(instance));
+    root.__nodeFormInstances = [];
     root.innerHTML = "";
     const enabledTabs = normalizeTabKeys(tabKeys);
     const enabledTabSet = new Set(enabledTabs);
@@ -642,17 +645,39 @@
         ])
       );
     } else {
-      for (const field of detailFields) {
-        body.appendChild(renderFieldSafe({
-          node,
-          field,
-          upstreamSteps,
-          availableVariableNames: availableVariables.suggestNames,
-          hiddenBindings: state.hiddenBindings,
-          state,
-          config,
-          onStateChanged
-        }));
+      const fieldSegments = typeof nodeFormAdapter.buildFieldSegments === "function"
+        ? nodeFormAdapter.buildFieldSegments(detailFields)
+        : detailFields.map((field) => ({ type: "legacy", fields: [field] }));
+      for (const segment of fieldSegments) {
+        if (segment.type === "legacy") {
+          for (const field of segment.fields) {
+            const row = renderFieldSafe({
+              node,
+              field,
+              upstreamSteps,
+              availableVariableNames: availableVariables.suggestNames,
+              hiddenBindings: state.hiddenBindings,
+              state,
+              config,
+              onStateChanged
+            });
+            if (row && field.key) row.setAttribute("data-field-key", field.key);
+            body.appendChild(row);
+          }
+          continue;
+        }
+        const nodeFormHost = el("div", { class: "node-form-host" }, []);
+        body.appendChild(nodeFormHost);
+        const instance = typeof nodeFormAdapter.mountNodeForm === "function"
+          ? nodeFormAdapter.mountNodeForm({
+            root: nodeFormHost,
+            node,
+            fields: segment.fields,
+            onCommit: onStateChanged,
+            hiddenBindings: state.hiddenBindings
+          })
+          : null;
+        if (instance) root.__nodeFormInstances.push(instance);
       }
     }
 

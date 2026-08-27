@@ -1,33 +1,45 @@
 ﻿/* =========================================================
    Workspace Layout
+   The sidebar (explorer/project-select) and tab strip chrome are
+   owned by the vendored zizai-app-shell library; the rules below
+   style content mounted inside its sidebar/main regions.
 ========================================================= */
-.workspace-layout {
-  --workspace-left-area-width: 300px;
-  display: grid;
-  grid-template-columns: var(--workspace-left-area-width) minmax(0, 1fr);
+/* The vendored shell sizes itself with `min-height: 100vh`, so its rows stay
+   content-elastic. The dataflow page owns a fixed-viewport layout, so it pins the shell
+   to the viewport instead. */
+.flow-layout-page .zui-shell {
+  height: 100vh;
   min-height: 0;
-  height: var(--shell-content-height);
 }
 
-.workspace-layout.is-left-collapsed {
-  grid-template-columns: 0 minmax(0, 1fr);
+/* `.zui-shell__main` is a grid of `auto` (tab strip) + `minmax(0, 1fr)` (content). When
+   the shell hides an empty tab strip it drops out as a grid item, so the content host
+   auto-places into the `auto` row and collapses onto its own children, leaving the `1fr`
+   row empty below it. Pin the host to the flexible row so it is stretched either way.
+   Clipping here keeps the shell host from scrolling; #flowchart and #nodeDetailBottom
+   keep their own scrolling. */
+.flow-layout-page .zui-shell__main-content {
+  grid-row: 2;
+  overflow: hidden;
+}
+
+.workspace-layout {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .workspace-global-left-area {
   min-width: 0;
   min-height: 0;
-  border-right: 1px solid var(--border-default);
+  height: 100%;
   background: #f7f5ff;
   display: flex;
   flex-direction: column;
   contain: paint;
   isolation: isolate;
-}
-
-.workspace-global-left-area.is-hidden {
-  width: 0;
-  border-right: 0;
-  overflow: hidden;
 }
 
 .workspace-global-left-area__head {
@@ -47,95 +59,6 @@
   overflow: auto;
   padding: 10px;
   background: #f7f5ff;
-}
-
-.workspace-region {
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.workspace-tab-header {
-  flex: 0 0 auto;
-  min-height: 40px;
-  border-bottom: 0;
-  background: #e3e3f3;
-  display: flex;
-  align-items: center;
-  overflow-x: auto;
-  padding-right: var(--shell-window-actions-width, 168px);
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-.workspace-tabs {
-  display: flex;
-  align-items: stretch;
-  min-height: 40px;
-}
-
-.workspace-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 140px;
-  max-width: 280px;
-  height: 40px;
-  border: 0;
-  border-right: 1px solid var(--border-divider);
-  border-radius: 0;
-  background: #e3e3f3;
-  color: var(--text-primary);
-  padding: 0 10px;
-}
-
-.workspace-tab:hover {
-  background: #e3e3f3;
-}
-
-.workspace-tab.is-active {
-  background: #ffffff;
-  box-shadow: none;
-  position: relative;
-  z-index: 1;
-  margin-bottom: -1px;
-  border-top: 1px solid var(--border-default);
-  border-left: 1px solid var(--border-default);
-  border-right: 1px solid var(--border-default);
-  border-bottom: 1px solid #ffffff;
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
-}
-
-
-.workspace-tab__title {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12px;
-  text-align: left;
-}
-
-.workspace-tab__file-icon {
-  flex: 0 0 auto;
-  width: 14px;
-  height: 14px;
-  object-fit: contain;
-}
-
-.workspace-tab__close {
-  flex: 0 0 auto;
-  font-size: 12px;
-  line-height: 1;
-  opacity: 0.66;
-}
-
-.workspace-tab__close:hover {
-  opacity: 1;
 }
 
 .workspace-panes {
@@ -255,36 +178,90 @@ body.right-sidebar-collapsed .workspace-dataflow-view > #rightSidebar {
   display: none !important;
 }
 
-.workspace-text-toolbar {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  border-bottom: 1px solid var(--border-divider);
-  padding: 8px 10px;
-  background: #f9fafe;
-}
-
-.workspace-text-path {
+.workspace-text-editor-frame {
+  flex: 1 1 auto;
   min-width: 0;
-  font-size: 12px;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-top: 44px;
+  background: #ffffff;
 }
 
-.workspace-text-actions {
-  flex: 0 0 auto;
+.workspace-text-floating-actions {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 5;
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-.workspace-text-actions > button {
+.workspace-text-dialect {
   height: 28px;
-  padding: 0 10px;
+  padding: 0 6px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--text-primary);
+  font-size: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.workspace-markdown-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.workspace-markdown-mode-btn {
+  height: 24px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.workspace-markdown-mode-btn:hover {
+  background: var(--surface-hover);
+}
+
+.workspace-markdown-mode-btn.is-active {
+  background: var(--brand-600);
+  color: #ffffff;
+}
+
+.workspace-text-save-btn {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.workspace-text-save-btn:hover {
+  background: var(--surface-hover);
+}
+
+.workspace-text-save-btn__icon {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .workspace-text-editor {
@@ -323,6 +300,31 @@ body.right-sidebar-collapsed .workspace-dataflow-view > #rightSidebar {
 .workspace-text-editor-host .code-editor-gutter-lines {
   font-size: 12px;
   line-height: 16px;
+}
+
+/* zizai-editor-markdown mounts directly onto this host element (it becomes the
+   library's own `.mce-root`), so these rules only stretch/scroll that assigned
+   root; they do not reach into the library's internal DOM structure. */
+.workspace-markdown-editor-host {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: #ffffff;
+}
+
+.workspace-markdown-editor-host.mce-root {
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace-markdown-editor-host > .mce-toolbar {
+  display: none;
+}
+
+.workspace-markdown-editor-host .mce-editor-shell {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .workspace-flow-view {
@@ -516,7 +518,7 @@ body.right-sidebar-collapsed .workspace-dataflow-view > #rightSidebar {
 }
 
 /* =========================================================
-   Tab Context Menu / Lock
+   Explorer Context Menu / Lock
 ========================================================= */
 .workspace-tab-menu {
   position: fixed;
@@ -565,18 +567,6 @@ body.right-sidebar-collapsed .workspace-dataflow-view > #rightSidebar {
 }
 
 .workspace-global-lock-overlay[hidden] {
-  display: none !important;
-}
-
-/* =========================================================
-   Workspace Header Override
-========================================================= */
-body.workspace-enabled #flowName,
-body.workspace-enabled #btnUndo,
-body.workspace-enabled #btnRedo,
-body.workspace-enabled #btnRun,
-body.workspace-enabled #btnReset,
-body.workspace-enabled #btnSave {
   display: none !important;
 }
 

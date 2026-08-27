@@ -1,40 +1,17 @@
 /* =========================================================
    Shell Controls
+   Window/diagnostics controls are rendered as zizai-app-shell
+   tabbar commands; the rules below only adjust their icon look.
 ========================================================= */
-.shell-window-actions {
-  position: fixed;
-  top: 4px;
-  right: 8px;
-  z-index: 260;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-  pointer-events: auto;
-}
-
-.shell-window-actions .header-icon-btn {
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
-  min-height: 32px;
-  border-radius: 8px;
-}
-
-.shell-window-actions .header-icon-btn:hover {
-  background: var(--surface-hover);
-}
-
-.shell-window-actions .header-icon-btn img[src$=".svg"] {
+.zui-shell__tabbar .zui-shell__command img[src$=".svg"] {
   filter: brightness(0) saturate(100%);
   opacity: 0.88;
 }
 
-.shell-window-actions .header-icon-btn:disabled img[src$=".svg"] {
+.zui-shell__tabbar .zui-shell__command:disabled img[src$=".svg"] {
   opacity: 0.45;
 }
 
-.sidebar-home-btn .sidebar-toggle-icon img[src$=".svg"] {
+.zui-shell__activity[data-activity-id="home"] .zui-shell__activity-icon img[src$=".svg"] {
   filter: brightness(0) saturate(100%) invert(100%);
 }

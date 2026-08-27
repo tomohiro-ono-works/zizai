@@ -118,6 +118,16 @@ body[data-home-visible="true"] .detail-panel {
   background: var(--surface-page);
 }
 
+.detail-panel .node-form-host {
+  margin-bottom: 14px;
+}
+
+.detail-panel .node-form-host .node-form__input,
+.detail-panel .node-form-host .node-form__textarea,
+.detail-panel .node-form-host .node-form__select {
+  background: var(--surface-page);
+}
+
 .detail-panel .row.required-empty input,
 .detail-panel .row.required-empty textarea,
 .detail-panel .row.required-empty select,
@@ -150,8 +160,6 @@ body[data-home-visible="true"] .detail-panel {
   right: auto;
   bottom: auto;
   z-index: 10;
-  margin-left: calc(var(--app-gutter) * -1);
-  margin-right: calc(var(--app-gutter) * -1);
   border-radius: 0;
   height: 300px;
   max-height: none;
@@ -175,7 +183,7 @@ body[data-home-visible="true"] .detail-panel {
 
 .flow-layout-page .detail-panel-resizer {
   height: 10px;
-  margin: -6px calc(var(--pad) * -1) 2px;
+  margin: -6px 0 2px;
   cursor: ns-resize;
 }
 
