@@ -44,7 +44,7 @@ PINNED_LIBRARIES: dict[str, dict[str, object]] = {
     },
     "zizai-data-viewer": {
         "url": "https://github.com/tomohiro-ono-works/zizai-data-viewer",
-        "commit": "62998cf76fdda5afea0c52a16654e89ded555e49",
+        "commit": "07ed40e496ddf5795811260b48f71d0d3a6ef527",
         "entries": [
             "apps/gui/vendor/zizai-data-viewer/src/report-viewer.css",
             "apps/gui/vendor/zizai-data-viewer/src/report-viewer.js",

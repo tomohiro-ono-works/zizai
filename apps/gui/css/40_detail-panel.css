@@ -251,10 +251,16 @@ body[data-home-visible="true"] .detail-panel {
   overflow: hidden;
 }
 
-.flow-layout-page #nodeDetailBottom .node-tab-pane[data-tab-key="data"] > .node-data-wrap.is-preview {
+.flow-layout-page #nodeDetailBottom .node-tab-pane[data-tab-key="data"] > .node-data-viewer {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  display: flex;
+}
+
+.flow-layout-page #nodeDetailBottom .node-data-viewer.rv {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
 }
 
 .flow-layout-page #nodeDetailBottom .detail-node .node-body::after,

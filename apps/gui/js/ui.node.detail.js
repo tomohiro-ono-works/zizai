@@ -6,6 +6,7 @@
   const { el, getFormSchema } = (corePkg.utils || {});
   const shared = (packages.ui && packages.ui.nodeShared) || window.uiNodeShared || {};
   const nodeFormAdapter = (packages.ui && packages.ui.nodeFormAdapter) || window.uiNodeFormAdapter || {};
+  const dataViewerAdapter = (packages.ui && packages.ui.dataViewerAdapter) || window.uiDataViewerAdapter || {};
   const {
     getFieldReferenceWarningsSafe,
     ensureStartParameters,
@@ -154,6 +155,9 @@
   }
 
   function renderNodeDetail({ state, config, root, onStateChanged, tabKeys, defaultTab, includePanelRunAction, forcedActiveTab, hideTabs, topbarConnectorFirst }) {
+    root.__nodeDetailDataViewer?.destroy?.();
+    root.__nodeDetailDataViewer = null;
+    root.__nodeDetailDataRequestEpoch = Number(root.__nodeDetailDataRequestEpoch || 0) + 1;
     (root.__nodeFormInstances || []).forEach((instance) => nodeFormAdapter.destroyNodeForm?.(instance));
     root.__nodeFormInstances = [];
     root.innerHTML = "";
@@ -180,19 +184,6 @@
     const detailFields = schema.filter((field) => !["schema", "schema_add_description"].includes(String(field?.key || "")));
     const hasSchemaField = !!schemaField;
     const runAllLocked = !!state?.__runAllRunning;
-    const dataViewNodeKey = [
-      String(node?.id || "").trim(),
-      String(node?.stepName || "").trim(),
-      String(node?.connector || "").trim(),
-      String(node?.action || "").trim()
-    ].join("|");
-    if (root.__nodeDetailDataViewNodeKey !== dataViewNodeKey) {
-      root.__nodeDetailDataViewNodeKey = dataViewNodeKey;
-      root.__nodeDetailDataView = hasSchemaField ? "schema" : "preview";
-    } else if (hasSchemaField && root.__nodeDetailDataView !== "schema") {
-      // 下部データエリアは schema 編集を主表示とする（preview は schema editor 内で表示）
-      root.__nodeDetailDataView = "schema";
-    }
     const actionConfig = getActionConfig(config, node.connector, node.action);
     const detailModal = actionConfig && actionConfig.detailModal;
     const missingRequiredLabels = getMissingRequiredFieldLabels(config, node);
@@ -408,23 +399,14 @@
     const yamlPane = el("div", { class: "node-tab-pane", "data-tab-key": "yaml" }, [yamlText]);
     const dataStatusNote = el("div", { class: "node-data-note" }, []);
     const dataStatusSlot = el("div", { class: "node-data-status-slot" }, [dataStatusNote]);
-    const dataSchemaEditorHost = el("div", { class: "node-data-schema-editor" }, []);
-    const dataSchemaWrap = el("div", { class: "node-data-wrap node-data-wrap--schema-editor" }, [dataSchemaEditorHost]);
-    const dataPreviewHead = el("thead", {}, []);
-    const dataPreviewBody = el("tbody", {}, []);
-    const dataPreviewTable = el("table", { class: "node-data-table" }, [
-      dataPreviewHead,
-      dataPreviewBody
-    ]);
-    const dataPreviewWrap = el("div", { class: "node-data-wrap is-preview" }, [dataPreviewTable]);
+    const dataViewerHost = el("div", { class: "node-data-viewer" }, []);
     const dataUnsupportedNote = el("div", { class: "node-data-note" }, [
       document.createTextNode("データコネクタではないため対応していません。")
     ]);
     const dataPane = el("div", { class: "node-tab-pane", "data-tab-key": "data" }, [
       dataUnsupportedNote,
       dataStatusSlot,
-      dataSchemaWrap,
-      dataPreviewWrap
+      dataViewerHost
     ]);
     const variablesPaneBody = el("div", { class: "variable-pane-body" }, []);
     const variablesPane = el("div", { class: "node-tab-pane", "data-tab-key": "variables" }, [variablesPaneBody]);
@@ -681,30 +663,6 @@
       }
     }
 
-    if (schemaField) {
-      const schemaRow = renderFieldSafe({
-        node,
-        field: schemaField,
-        upstreamSteps,
-        availableVariableNames: availableVariables.suggestNames,
-        hiddenBindings: state.hiddenBindings,
-        state,
-        config,
-        onStateChanged
-      });
-      if (schemaRow && schemaRow.classList) {
-        schemaRow.classList.add("row--schema-inline");
-        const schemaLabel = schemaRow.querySelector(":scope > label");
-        if (schemaLabel) schemaLabel.remove();
-      }
-      dataSchemaEditorHost.appendChild(schemaRow);
-      const schemaToolbarMain = dataSchemaEditorHost.querySelector(".schema-editor-toolbar-main");
-      if (schemaToolbarMain) {
-        schemaToolbarMain.appendChild(dataStatusSlot);
-        dataStatusSlot.classList.add("is-inline");
-      }
-    }
-
     function syncYamlView() {
       yamlText.value = dumpYamlSafe(buildNodeYamlSettings(node)).trimEnd();
     }
@@ -762,25 +720,6 @@
       }
     }
 
-    function isNumericZizDatatype(zizDatatype) {
-      const normalized = String(zizDatatype || "").trim().toUpperCase();
-      return normalized === "INT64" || normalized === "FLOAT64" || normalized === "NUMERIC";
-    }
-
-    function formatDatePreviewValue(value) {
-      const text = String(value ?? "").trim();
-      if (!text) return "";
-      const datePrefix = text.match(/^(\d{4}-\d{2}-\d{2})(?:[ T].*)?$/);
-      if (datePrefix) return datePrefix[1];
-      return text;
-    }
-
-    function formatPreviewValueBySchema(value, schemaItem) {
-      const datatype = String(schemaItem?.ziz_datatype || "").trim().toUpperCase();
-      if (datatype === "DATE") return formatDatePreviewValue(value);
-      return String(value ?? "");
-    }
-
     function setDataStatus(message = "") {
       const text = String(message || "");
       const visible = !!text.trim();
@@ -809,123 +748,138 @@
       return messages.join(" / ");
     }
 
-    let currentDataConnector = false;
-    function getSupportedDataViews() {
-      const views = [];
-      if (hasSchemaField) views.push("schema");
-      if (currentDataConnector) {
-        views.push("preview");
-      }
-      return views;
+    const dataRequestEpoch = root.__nodeDetailDataRequestEpoch;
+    function isCurrentDataRequest() {
+      return root.__nodeDetailDataRequestEpoch === dataRequestEpoch;
     }
 
-    function setActiveDataView(viewKey) {
-      const supportedViews = getSupportedDataViews();
-      if (!supportedViews.length) {
-        root.__nodeDetailDataView = "";
-        dataSchemaWrap.hidden = true;
-        dataPreviewWrap.hidden = true;
-        dataUnsupportedNote.hidden = false;
-        return;
-      }
-      const fallbackView = hasSchemaField ? "schema" : supportedViews[0];
-      const activeView = supportedViews.includes(viewKey)
-        ? viewKey
-        : (supportedViews.includes(fallbackView) ? fallbackView : supportedViews[0]);
-      root.__nodeDetailDataView = activeView;
-
-      const showSchema = hasSchemaField && activeView === "schema";
-      const showPreview = currentDataConnector && activeView === "preview";
-      dataSchemaWrap.hidden = !showSchema || !hasSchemaField;
-      dataPreviewWrap.hidden = !showPreview || (!dataPreviewHead.children.length && !dataPreviewBody.children.length);
-      dataUnsupportedNote.hidden = showSchema || currentDataConnector;
+    function clearDataViewer() {
+      root.__nodeDetailDataViewer?.destroy?.();
+      root.__nodeDetailDataViewer = null;
+      dataViewerHost.innerHTML = "";
+      dataViewerHost.hidden = true;
     }
 
-    function buildSchemaByName(schemaDto) {
-      const columns = Array.isArray(schemaDto?.columns) ? schemaDto.columns : [];
-      const schemaByName = {};
-      columns.forEach((column) => {
-        const newName = String(column?.new_name || column?.origin_name || "");
-        if (newName) schemaByName[newName] = column;
+    function getLocalSchemaDto() {
+      const value = schemaField ? node?.form?.[schemaField.key] : null;
+      if (Array.isArray(value)) return { columns: value };
+      if (value && typeof value === "object" && Array.isArray(value.columns)) return value;
+      const text = String(value || "").trim();
+      if (!text) return null;
+      try {
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed)) return { columns: parsed };
+        if (parsed && typeof parsed === "object" && Array.isArray(parsed.columns)) return parsed;
+      } catch (_) {
+        return null;
+      }
+      return null;
+    }
+
+    function getSchemaColumnIdentity(column) {
+      const originName = String(column?.origin_name ?? "").trim();
+      if (originName) return originName;
+      return String(column?.new_name ?? "").trim();
+    }
+
+    function mergeAutoextractSchema(localSchemaDto, resultSchemaDto) {
+      const localColumns = Array.isArray(localSchemaDto?.columns) ? localSchemaDto.columns : [];
+      const resultColumns = Array.isArray(resultSchemaDto?.columns) ? resultSchemaDto.columns : [];
+      const knownIdentities = new Set(localColumns.map(getSchemaColumnIdentity).filter(Boolean));
+      const appendedColumns = resultColumns.filter((column) => {
+        const identity = getSchemaColumnIdentity(column);
+        if (!identity || knownIdentities.has(identity)) return false;
+        knownIdentities.add(identity);
+        return true;
       });
-      return schemaByName;
+      return {
+        columns: appendedColumns.length ? [...localColumns, ...appendedColumns] : localColumns,
+        changed: appendedColumns.length > 0,
+      };
     }
 
-    function renderPreviewRows(previewDto, schemaByName) {
-      const columns = Array.isArray(previewDto?.columns) ? previewDto.columns : [];
-      const rows = Array.isArray(previewDto?.rows) ? previewDto.rows : [];
-      dataPreviewHead.innerHTML = "";
-      dataPreviewBody.innerHTML = "";
-      if (!columns.length) {
-        dataPreviewWrap.hidden = true;
-        return;
-      }
-      const headerCells = columns.map((column) => el("th", {}, [document.createTextNode(String(column || ""))]));
-      headerCells.push(el("th", { class: "node-data-spacer", "aria-hidden": "true" }, []));
-      dataPreviewHead.appendChild(el("tr", {}, headerCells));
-      if (!rows.length) {
-        dataPreviewBody.appendChild(
-          el("tr", {}, [
-            el(
-              "td",
-              { class: "node-data-value", colspan: String(Math.max(columns.length + 1, 1)) },
-              [document.createTextNode("データがないです。")]
-            )
-          ])
-        );
-      } else {
-        rows.forEach((row) => {
-          const values = Array.isArray(row) ? row : [];
-          const rowCells = columns.map((column, index) => {
-            const schemaItem = schemaByName[String(column || "")] || null;
-            const value = index < values.length ? values[index] : "";
-            return el(
-              "td",
-              { class: `node-data-value${isNumericZizDatatype(schemaItem?.ziz_datatype) ? " is-numeric" : ""}` },
-              [document.createTextNode(formatPreviewValueBySchema(value, schemaItem))]
-            );
-          });
-          rowCells.push(el("td", { class: "node-data-spacer", "aria-hidden": "true" }, []));
-          dataPreviewBody.appendChild(
-            el("tr", {}, rowCells)
-          );
-        });
-      }
-      dataPreviewWrap.hidden = false;
+    function mountDataViewer(schemaDto, previewDto) {
+      if (!isCurrentDataRequest()) return;
+      clearDataViewer();
+      root.__nodeDetailDataViewer = dataViewerAdapter.mountDataViewer?.({
+        root: dataViewerHost,
+        schema: schemaDto,
+        preview: previewDto,
+        schemaEditable: hasSchemaField,
+        onSchemaChange: (columns) => {
+          node.form[schemaField.key] = JSON.stringify(columns, null, 2);
+          onStateChanged();
+        },
+      }) || null;
+      if (!root.__nodeDetailDataViewer) throw new Error("DataViewer is unavailable.");
+      dataViewerHost.hidden = false;
+      dataUnsupportedNote.hidden = true;
+    }
+
+    function mountSchemaOnly() {
+      if (!hasSchemaField) return;
+      mountDataViewer(getLocalSchemaDto() || { columns: [] }, { columns: [], rows: [], row_count: 0, truncated: false });
     }
 
     function applyDataPayload(schemaDto, previewDto) {
-      const schemaByName = buildSchemaByName(schemaDto);
-      renderPreviewRows(previewDto, schemaByName);
-      const previewRowCount = Number(previewDto?.row_count || 0);
-      const truncated = !!previewDto?.truncated;
-      const previewLabel = truncated ? `プレビュー ${previewRowCount} 行（先頭のみ）` : `プレビュー ${previewRowCount} 行`;
-      setDataStatus(buildDataStatusMessage(previewLabel));
-      setActiveDataView(root.__nodeDetailDataView || (hasSchemaField ? "schema" : "preview"));
+      if (!isCurrentDataRequest()) return;
+      const localSchemaDto = getLocalSchemaDto();
+      const autoextractEnabled = hasSchemaField && !!schemaField?.schema_autoextract;
+      const autoextractSchema = autoextractEnabled
+        ? mergeAutoextractSchema(localSchemaDto || { columns: [] }, schemaDto)
+        : null;
+      const schemaForViewer = autoextractSchema
+        ? { columns: autoextractSchema.columns }
+        : hasSchemaField && Array.isArray(localSchemaDto?.columns) && localSchemaDto.columns.length
+        ? localSchemaDto
+        : schemaDto;
+      if (autoextractSchema?.changed) {
+        node.form[schemaField.key] = JSON.stringify(autoextractSchema.columns, null, 2);
+        onStateChanged();
+        if (!isCurrentDataRequest()) return;
+      }
+      mountDataViewer(schemaForViewer, previewDto);
+      setDataStatus(buildDataStatusMessage(""));
     }
 
     async function syncDataView() {
-      currentDataConnector = isDataConnector(node.connector, config);
+      clearDataViewer();
       dataUnsupportedNote.hidden = true;
-      dataSchemaWrap.hidden = true;
-      dataPreviewWrap.hidden = true;
-      dataPreviewHead.innerHTML = "";
-      dataPreviewBody.innerHTML = "";
+      const currentDataConnector = isDataConnector(node.connector, config);
       if (!currentDataConnector) {
-        setDataStatus(hasSchemaField ? "" : buildDataStatusMessage("データコネクタではないため対応していません。"));
-        setActiveDataView(root.__nodeDetailDataView || (hasSchemaField ? "schema" : ""));
+        if (hasSchemaField) {
+          try {
+            mountSchemaOnly();
+            setDataStatus("");
+          } catch (error) {
+            setDataStatus(buildDataStatusMessage(`データ表示の初期化に失敗しました。${error?.message ? ` ${error.message}` : ""}`));
+          }
+          return;
+        }
+        dataUnsupportedNote.hidden = false;
+        setDataStatus(buildDataStatusMessage("データコネクタではないため対応していません。"));
         return;
       }
       const activeBridge = resolveActiveBridgeApi();
       if (!activeBridge?.available?.()) {
+        if (hasSchemaField) {
+          try {
+            mountSchemaOnly();
+          } catch (error) {
+            console.error("data viewer schema mount failed", error);
+          }
+        }
         setDataStatus(buildDataStatusMessage(getBridgeUnavailableMessage(activeBridge)));
-        setActiveDataView(root.__nodeDetailDataView || (hasSchemaField ? "schema" : "preview"));
         return;
       }
       const cacheKey = getDataCacheKey();
       const cached = cacheKey ? dataCacheStore[cacheKey] : null;
       if (cached) {
-        applyDataPayload(cached.schemaDto, cached.previewDto);
+        try {
+          applyDataPayload(cached.schemaDto, cached.previewDto);
+        } catch (error) {
+          setDataStatus(buildDataStatusMessage(`データ表示の初期化に失敗しました。${error?.message ? ` ${error.message}` : ""}`));
+        }
         return;
       }
       const requestSeq = ++dataRequestSeq;
@@ -935,19 +889,33 @@
           activeBridge.call("result.getSchema", { mode: String(state?.appMode || ""), step_id: node.stepName }),
           activeBridge.call("result.getPreview", { mode: String(state?.appMode || ""), step_id: node.stepName })
         ]);
-        if (requestSeq !== dataRequestSeq) return;
+        if (requestSeq !== dataRequestSeq || !isCurrentDataRequest()) return;
         writeDataCache(cacheKey, { schemaDto, previewDto });
         applyDataPayload(schemaDto, previewDto);
       } catch (error) {
-        if (requestSeq !== dataRequestSeq) return;
+        if (requestSeq !== dataRequestSeq || !isCurrentDataRequest()) return;
         const code = String(error?.code || "").trim();
         if (code === "E_NOT_FOUND") {
-          setDataStatus(hasSchemaField ? "" : buildDataStatusMessage("未実行の為、データなし"));
-          setActiveDataView(root.__nodeDetailDataView || (hasSchemaField ? "schema" : "preview"));
+          if (hasSchemaField) {
+            try {
+              mountSchemaOnly();
+            } catch (mountError) {
+              console.error("data viewer schema mount failed", mountError);
+            }
+            setDataStatus("");
+            return;
+          }
+          setDataStatus(buildDataStatusMessage("未実行の為、データなし"));
           return;
         }
+        if (hasSchemaField) {
+          try {
+            mountSchemaOnly();
+          } catch (mountError) {
+            console.error("data viewer schema mount failed", mountError);
+          }
+        }
         setDataStatus(buildDataStatusMessage(`データ取得に失敗しました。${error?.message ? ` ${error.message}` : ""}`));
-        setActiveDataView(root.__nodeDetailDataView || (hasSchemaField ? "schema" : "preview"));
       }
     }
 
@@ -967,7 +935,7 @@
     function ensureDataViewSynced(options = {}) {
       const force = !!options.force;
       const nextKey = buildDataSyncKey();
-      if (!force && root.__nodeDetailLastDataSyncKey === nextKey) return;
+      if (!force && root.__nodeDetailLastDataSyncKey === nextKey && root.__nodeDetailDataViewer) return;
       root.__nodeDetailLastDataSyncKey = nextKey;
       syncDataView().catch((error) => {
         console.error("data view sync failed", error);

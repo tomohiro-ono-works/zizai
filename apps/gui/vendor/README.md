@@ -52,7 +52,7 @@
 ### zizai-data-viewer
 
 - Source: https://github.com/tomohiro-ono-works/zizai-data-viewer
-- Commit: 62998cf76fdda5afea0c52a16654e89ded555e49
+- Commit: 07ed40e496ddf5795811260b48f71d0d3a6ef527
 - License: `apps/gui/vendor/zizai-data-viewer/LICENSE`
 - Runtime load order (`file://`, in order):
   1. `apps/gui/vendor/zizai-data-viewer/src/report-viewer.css`

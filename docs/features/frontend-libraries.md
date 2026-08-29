@@ -95,6 +95,27 @@ Applicationはlibraryごとの差をAdapter内へ閉じ込め、page codeから�
 - Application mode headerを使用するため、library toolbarはApplication CSSで非表示にする。既存save iconとmode切替をTab直下で画面内・クリック可能に維持する。
 - `MarkdownEditor.destroy()`が所有listenerとDOM参照を解放するupstream revisionを確定してからApplicationへ再vendorする。
 
+### WP-7 DataViewer
+
+- Project owner approved this space on 2026-08-27 and limited the initial data boundary on 2026-08-28.
+- ノード詳細下部のdata領域にあるtableとschema UIを`zizai-data-viewer`へ移管する。移管後は同じ責務を持つApplication側の旧preview table／schema rendererを残さない。
+- 初期版は既存`result.getPreview`が返す先頭100行だけをlibraryのlocal modeへ渡し、そのsample内で帳票、sort／filter、column resize、column設定、schema JSON編集を利用する。全件取得を装ったpaging／distribution／総件数表示を行わない。
+- DataViewer内蔵execute操作は初期版で表示せず、既存Applicationのノード実行操作とlock制御を単一の入口として維持する。
+- 初期版のtabは、schema編集可能なdata nodeで帳票／カラム設定／JSON編集、schema編集を持たないdata nodeで帳票だけを表示する。non-data nodeではDataViewerをmountせず既存の非対応表示を維持し、distributionはTASK-023完了まで表示しない。
+- libraryはtab／execute／export等を汎用`features`設定で有効化できる。無効機能はCSSで隠すだけでなく、対応するDOM、body menu、document listenerを生成しない。使用するpopupはDataViewer root内へ配置し、`destroy()`で解放する。
+- schema columnは既存Application schemaの`origin_name`、`new_name`、`description`、`ziz_datatype`を欠落なくround-tripする。libraryのcolumn設定／JSON編集結果は既存schema fieldと同じノード設定へ反映し、Applicationの保存経路を使用する。libraryが専用表示を持たない`BYTES`、`TIME`、`INTERVAL`、`ARRAY<T>`、`STRUCT<...>`等は、型名を保持したまま表示、sort、filter上の挙動だけを文字列相当とする。
+- `new_name`が空の場合は画面上だけ`origin_name`を補助表示し、保存値は空のまま維持する。利用者が新フィールド名を明示編集した時だけ`new_name`を更新する。
+- schema編集は、列名／説明をEnterまたはblur、型を選択直後、JSONを`適用`操作で確定する。Escapeは未確定の列名／説明変更を破棄し、入力中の1文字ごとにApplication stateを更新しない。
+- 保存済みschema JSONが不正な場合も元textをJSON編集画面へ表示し、validation errorを示す。帳票／カラム設定は一時的に無効化し、修正後の`適用`が成功した時だけ通常表示へ戻す。不正内容を自動補正・自動保存しない。
+- filter候補一覧は受信した先頭100行だけから作り、「プレビュー内の候補」であることを表示する。sort／filterも同じ100行sampleだけへ適用する。
+- DataViewer自身が件数を表示するため、Applicationは正常取得後に重複する`プレビュー N 行`見出しを表示しない。取得中、未実行、Bridge不在、取得失敗等の状態表示は維持する。
+- filter候補のcheckboxはhost Applicationの汎用`input`幅指定に影響されない固定control幅とし、label文字領域を圧迫しない。帳票とカラム設定のtableは明示した各列幅の合計をtable幅とし、右端を含む列resizeで対象外の列へ余白を再配分しない。viewportに余る領域は空白のまま維持する。
+- 初期版は既存Previewの100行上限を維持し、新しいcolumn数、cell文字数、payload byte上限を追加しない。幅広tableや長文cellを含む上限はTASK-023で実測して決定する。
+- Python結果Store、5,000行固定page、全件sort／filter、全件数、件数上位30区分の遅延distribution、virtualized renderingはTASK-023で調査・決定し、TASK-016初期版へ含めない。
+- TASK-022で、CSV／Excelはsort／filterの影響を受けない元のstep結果全件をConnector経由で生成し、clipboardは現在pageだけを最大5,000行で専用Bridgeから書き込む。TASK-016ではBridgeとConnectorをexportのために変更しない。
+- Application Adapterが実行とBridgeを所有し、libraryへBridge、DataFrame、Connector、step等のApplication概念を渡さない。
+- `destroy()`はdocument listener、body menu、timer、DOM参照を解放する。upstream repositoryでschema description／unknown type／commit timing／lifecycle Testを通過したcommitだけを再vendorする。
+
 ## Theme, CSS, namespace, and lifecycle
 
 - Applicationのcolor tokenを正本とし、library tokenはAdapterまたはlibrary側のaliasで接続する。

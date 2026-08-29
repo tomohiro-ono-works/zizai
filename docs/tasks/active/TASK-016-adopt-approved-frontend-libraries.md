@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation in progress — WP-5B automated verification complete; awaiting manual smoke
+Implementation in progress — WP-7I-D implementation complete; WP-7I-E verification next
 
 ## Goal
 
@@ -857,7 +857,7 @@ Owner: claude-assist
 
 Assignment Reason: lifecycle blocker解消済みrevisionとspace決定を前提に、viewer／Adapter／mount-unmount Testをまとまった実装単位として委譲できるため。
 
-Task: 承認spaceのtable/schema/distribution UIを`zizai-data-viewer`へ移行し、execute/page/exportをApplication Adapterへ接続する。
+Task: 承認spaceのtable／schema UIを`zizai-data-viewer`へ移行し、既存Bridgeの先頭100行Previewをlocal modeへ接続する。全件data機能はTASK-023、export実処理はTASK-022へ分離する。
 
 Dependencies:
 - WP-2。
@@ -867,14 +867,21 @@ Dependencies:
 Read Scope:
 - `apps/gui/`のdata/schema/preview領域
 - DataViewer source/test
-- Bridge result/export contract
+- Bridge result preview contract
 
 Edit Scope:
 - 承認されたdata viewer/adapter領域
 - 対応testとTask evidence
 
 Acceptance Criteria:
-- schema/data/page/distributionとeventがAdapter経由でround-tripする。
+- schemaと先頭100行PreviewがAdapter経由でround-tripする。
+- TASK-022完了前は利用不能なCSV／Excel／clipboard操作を表示しない。
+- TASK-023完了前は利用不能なpaging／distribution／全件数操作を表示しない。
+- 初期版は既存Previewの100行上限を維持し、column／cell文字数／payload byte上限を新設しない。上限候補はTASK-023で調査する。
+- DataViewer内蔵execute操作を表示せず、既存のノード実行操作とlock制御を維持する。
+- schema編集可能なdata nodeは帳票／カラム設定／JSON編集、schema編集を持たないdata nodeは帳票だけを表示する。non-data nodeではDataViewerをmountせず、distributionはTASK-023まで表示しない。
+- libraryの汎用`features`設定で無効化したtab／execute／exportは、対応DOM、body menu、document listenerを生成しない。使用するpopupはDataViewer root内へ配置する。
+- 不正schema JSONでも元textとvalidation errorをJSON編集画面へ表示し、修正して`適用`が成功するまで帳票／カラム設定を無効化する。自動補正・自動保存しない。
 - mount/unmount後にdocument listener/body menuが残らない。
 - 重複table/schema rendererが0である。
 
@@ -883,10 +890,483 @@ Constraints:
 
 Tests:
 - DataViewer browser tests。
-- preview/schema/page/export integrationとrepeated mount/unmount test。
+- preview/schema integrationとrepeated mount/unmount test。
 
 Codex Verification:
-- lifecycle leak、large payload boundary、旧renderer参照0を確認する。
+- lifecycle leak、Preview 100行上限、旧renderer参照0を確認する。
+
+#### Current WP-7 initial delivery decomposition
+
+End State: ノード詳細下部のdata領域がDataViewerを単一rendererとして使用し、既存Bridgeの先頭100行Previewをlocal modeで表示する。schema編集は既存4 fieldを欠落なく保存し、初期版で利用不能なexecute／paging／distribution／exportを表示しない。Bridge、Connector、Workflow Engineは変更しない。
+
+Goal Traceability:
+- DataViewerへ汎用feature configurationとroot内popup／lifecycleを追加する → WP-7I-A。
+- 既存schemaを壊さない編集／回復contractをlibraryへ追加する → WP-7I-B。
+- Test済みupstream revisionだけをApplicationへ同梱する → WP-7I-C。
+- 先頭100行Previewと既存schema保存をApplication Adapterへ接続し、旧rendererを置換する → WP-7I-D。
+- lifecycle、schema round-trip、100行境界、Windows表示を独立検証する → WP-7I-E。
+
+Critical Path: `WP-7I-A generic feature/lifecycle → WP-7I-B schema compatibility → WP-7I-C GitHub反映・再vendor → WP-7I-D Application統合 → WP-7I-E自動・手動検証`。
+
+Parallel Work: None。WP-7I-A／Bは同じupstream source、WP-7I-Dは確定vendor APIへ依存するため直列実行する。
+
+Task Graph Changes: 2026-08-28のProject owner判断で、Python結果Storeと分割転送を初期版へ追加しない。full-data planは実行せずTASK-023へ、exportはTASK-022へ分離する。
+
+Deferred Decisions: None for initial delivery。5,000行page、全件sort／filter、全件数、上位30区分distribution、virtualization、payload byte上限はTASK-023、CSV／Excel／clipboardはTASK-022で扱う。
+
+#### WP-7I-A DataViewer generic feature and lifecycle controls
+
+Owner: claude-assist
+
+Assignment Reason: featureごとのDOM生成とlifecycle解放は公開APIが確定しており、通常のTest-first実装としてClaude Sonnetへ委譲できるため。
+
+Task: 一時cloneした`zizai-data-viewer@62998cf76fdda5afea0c52a16654e89ded555e49`へ汎用`features`設定を追加し、無効なtab／execute／exportのDOMとlistenerを生成せず、popupをcomponent root内へ閉じる。
+
+Dependencies:
+- `docs/features/frontend-libraries.md`のWP-7初期版仕様。
+- CodexがApplication Worktree外の一時directoryへcloneし、専用`codex/`branchを作成する。
+
+Read Scope:
+- upstream `README.md`
+- upstream `src/`
+- upstream `test/`
+- upstream `sample/`
+
+Edit Scope:
+- upstreamの承認されたsource、test、README、sampleだけ。
+
+Interfaces:
+- constructorの汎用`features`設定でreport、columns、json、distribution、execute、exportを個別に制御する。
+- 既存consumerで`features`省略時は現行機能を維持する。
+- 無効featureは対応DOM、menu、document listener、timerを生成しない。
+
+Acceptance Criteria:
+- `features`省略時の既存4 tab／execute／export behaviorを維持する。
+- 任意のtab組合せを描画でき、active tabが無効な場合は最初の有効tabへ安全に移る。
+- export無効時はbutton、body menu、export listenerが存在しない。
+- 使用するfilter／menu popupはDataViewer root内に配置される。
+- `destroy()`後にdocument listener、menu、timer、DOM参照、event通知が残らない。
+- Application、Bridge、node、Connector等の固有概念を追加しない。
+
+Constraints:
+- dependency、build、bundle、remote assetを追加しない。
+- Claudeはcommit、push、PR、mergeを行わない。
+
+Tests:
+- upstream unit／browser Testへdefault互換、feature組合せ、popup scope、destroyを追加する。
+
+Codex Verification:
+- 公開APIの汎用性、default互換、無効DOM 0、root scope、lifecycle解放を確認する。
+
+#### WP-7I-B DataViewer lossless schema editing
+
+Owner: claude-assist
+
+Assignment Reason: unknown type、invalid JSON、表示値と保存値、commit timingが相互作用するため、Claude OpusでTest-firstに固定する必要があるため。
+
+Task: DataViewer schemaへoptional description、任意type identifier、非破壊的表示fallback、不正JSON回復、確定単位eventを汎用機能として追加する。
+
+Dependencies:
+- WP-7I-A。
+
+Read Scope:
+- WP-7I-A後のupstream schema／columns／JSON／report sourceとtest。
+
+Edit Scope:
+- upstreamのschema／columns／JSON関連source、test、README、sampleだけ。
+
+Interfaces:
+- schema columnは`id`、`label`、optional `description`、任意`type`、visible／sortable／filterableを保持する。
+- unknown typeはidentifierを保持し、cell表示／sort／filterだけをstring相当として扱う。
+- 表示fallbackと保存値を分離し、空labelを自動的にidへ書き換えない。
+- invalid raw schema textをJSON編集画面へ渡し、修正後にvalidate／applyできる。
+- schema changeは変更fieldとcommit reasonを通知し、入力途中では通知しない。
+
+Acceptance Criteria:
+- descriptionとunknown typeがcolumns／JSON／eventを往復して欠落しない。
+- `BYTES`、`TIME`、`INTERVAL`、`ARRAY<T>`、`STRUCT<...>`をstring相当で扱い、明示変更までtype identifierを維持する。
+- 空labelは表示時だけidを補助表示し、別field編集でも空の保存値を維持する。
+- 列名／説明はEnterまたはblur、typeは選択直後、JSONは`適用`で1回だけeventを通知し、Escapeは未確定textを破棄する。
+- invalid JSON／duplicate id／missing idでもJSON編集とerror表示を利用でき、他tabは修正完了まで無効になる。
+- invalid contentを自動補正・自動保存しない。
+
+Constraints:
+- Application固有の`origin_name`、`new_name`、`ziz_datatype`というfield名をlibrary APIへ追加しない。
+- Claudeはcommit、push、PR、mergeを行わない。
+
+Tests:
+- upstream unit／browser Testへdescription、unknown type、empty label、commit timing、Escape、invalid JSON recoveryを追加する。
+
+Codex Verification:
+- 破壊的normalizeがないこと、event回数、invalid stateからの回復、Application固有語0を確認する。
+
+#### WP-7I-C Publish boundary and re-vendor DataViewer
+
+Owner: Codex
+
+Assignment Reason: upstream差分、commit identifier、vendor内容、LICENSE、load orderを照合し、Application Worktreeへ未検証sourceを混在させないため。
+
+Task: WP-7I-A／BのTest済みsourceをupstream local commitとして確定し、Project ownerのpush承認後にGitHubへ反映して、そのexact SHAを再vendorする。
+
+Dependencies:
+- WP-7I-A／B GREEN。
+- remote pushはProject ownerの明示承認。
+
+Read Scope:
+- upstream全差分／Test結果
+- `apps/gui/vendor/README.md`
+- `tests/static/test_frontend_library_vendor_contract.py`
+- `docs/decisions/ADR-frontend-library-vendoring.md`
+
+Edit Scope:
+- upstream repositoryのlocal commit
+- `apps/gui/vendor/zizai-data-viewer/`
+- `apps/gui/vendor/README.md`
+- pinned revision static Test
+
+Acceptance Criteria:
+- vendor sourceがGitHubへ反映済みの記録SHAと一致する。
+- LICENSEとruntime load orderが維持される。
+- Application Worktreeにclone metadata、upstream artifact、cacheを置かない。
+
+Constraints:
+- Project owner承認前にpushしない。
+- vendor copyだけへ独自patchを追加しない。
+
+Tests:
+- upstream full Test。
+- vendor/source一致、license、load-order、pinned revision static Test。
+
+Codex Verification:
+- GitHub SHA、vendor内容、manifest、Worktree状態を照合する。
+
+#### WP-7I-D DataViewer local Preview and schema integration
+
+Owner: Codex
+
+Assignment Reason: Project ownerの指定によりClaudeを使用せず、Codex Terra（xhigh）subagentが実装し、Codex主agentが仕様適合・差分・Testを独立検証するため。
+
+Task: DataViewer Application Adapterを追加し、既存`result.getPreview`の先頭100行、result schema、既存node schema保存を接続する。旧schema／preview rendererは結合Gate通過後に削除する。
+
+Dependencies:
+- WP-7I-C。
+
+Read Scope:
+- `apps/gui/js/ui.node.detail.js`
+- `apps/gui/js/ui.fields.js`のschema入力／JSON編集／data output renderer
+- node schema state／save経路
+- Bridge Adapterと`result.getSchema`／`result.getPreview`
+- data panel CSS／HTMLと関連Playwright Test
+
+Edit Scope:
+- DataViewer Application Adapter
+- node data panel integration／CSS／asset load order
+- `ui.fields.js`と`ui.node.detail.js`のDataViewerと重複する旧schema／preview描画
+- 対応JS／Playwright Test
+
+Acceptance Criteria:
+- Previewは既存Bridgeの先頭100行だけを使用し、library local modeのsort／filter／resizeを同sampleへ適用する。
+- filter候補へ「プレビュー内の候補」と表示する。
+- `origin_name`、`new_name`、`description`、`ziz_datatype`を欠落なく既存node paramsへ反映する。
+- unknown type、空`new_name`、invalid JSON、commit timingがCurrent Specificationどおり動作する。
+- schema編集可能nodeは帳票／カラム設定／JSON、schema編集なしdata nodeは帳票だけを表示する。
+- non-data nodeではDataViewerをmountしない。
+- execute、paging、distribution、全件数、CSV／Excel／clipboardを表示しない。
+- 既存`dataRequestSeq`を再利用し、遅いPreview応答が現在nodeを上書きしない。
+- 旧schema／preview rendererが通常経路に残らない。
+
+Constraints:
+- Bridge、Connector、Workflow Engine、protocol-v1を変更しない。
+- libraryへBridge object、path、DataFrame、node／Connector objectを渡さない。
+- schema保存形式を変更しない。
+
+Tests:
+- Adapter Unit: schema mapping、unknown type、empty name、feature selection、request sequence。
+- Browser Integration: 100行Preview、local sort／filter、schema form／JSON、invalid recovery、node切替。
+- repeated mount/unmount Test。
+
+Codex Verification:
+- Bridge／Backend差分0、schema round-trip、100行上限、旧renderer通常到達0を確認する。
+
+#### WP-7I-E DataViewer initial migration verification
+
+Owner: Codex
+
+Assignment Reason: upstream、vendor、Application統合を実装担当と独立して確認し、初期版と将来Taskの境界を守るため。
+
+Task: WP-7初期版の自動Gateを実行し、Windows manual smoke項目をProject ownerへ提示してEvidenceを記録する。
+
+Dependencies:
+- WP-7I-C／D GREEN。
+
+Read Scope:
+- WP-7初期版の全差分、仕様、upstream／Application Test結果。
+
+Edit Scope:
+- 必要な承認済みtest修正とTASK-016 Evidence／statusだけ。
+
+Acceptance Criteria:
+- 帳票、local sort／filter、column resize、schema edit／save／reopen、invalid recoveryを確認する。
+- 100行を超えるPreviewを受け取らず、全件機能とexport操作が表示されない。
+- node/tab切替とrepeated mount/unmountでstale response、menu、listener、timerが残らない。
+- non-data node、未実行、0件、errorが回帰しない。
+- required／e2e GateとWindows manual smokeがPASSする。
+
+Tests:
+- upstream full Test。
+- focused JS／Playwright Test。
+- `tests/run-verification.ps1 -Gate required`。
+- `tests/run-verification.ps1 -Gate e2e`。
+- Project owner Windows manual smoke。
+
+Codex Verification:
+- Acceptance criteria、Bridge／Backend差分0、旧renderer通常到達0、Worktree状態を最終照合する。
+
+#### Superseded WP-7 full-data delivery decomposition
+
+この節のWP-7A～WP-7Eは、2026-08-28のProject owner判断により実行しない。Python結果Store、分割転送、5,000行page、全件sort／filter、distribution、virtualizationはTASK-023へ、exportはTASK-022へ分離した。実行対象は直前のWP-7I-A～WP-7I-Eだけとする。
+
+End State: ノード詳細下部のdata領域がDataViewerを単一rendererとして使用し、既存schemaを欠落なく編集・保存できる。全件処理はPython、page描画はFrontendへ分離され、5,000行固定pageと遅延distributionが動作する。CSV／Excel／clipboardの実処理はTASK-022へ分離される。
+
+Goal Traceability:
+- Application非依存のremote mode、virtualized rendering、schema descriptionをlibraryへ追加する → WP-7A。
+- Test済みupstream revisionだけをApplicationへ同梱する → WP-7B。
+- 全件sort／filter、5,000行page、遅延distributionをPython/Application境界に実装する → WP-7C。
+- DataViewer eventを既存schema、実行、Bridgeへ接続し、旧preview rendererを置換する → WP-7D。
+- lifecycle、large payload、stale response、round-trip、Windows表示を独立検証する → WP-7E。
+
+Critical Path: `WP-7A upstream Test-first実装 → WP-7B local commit確定・再vendor → WP-7C Python query/export Adapter → WP-7D Application統合 → WP-7E自動・手動検証`。
+
+Parallel Work: WP-7Aで公開event／method contractを確定した後、WP-7CのPython処理はWP-7Bの配布準備と独立して進められる。ただし同じClaude利用枠とrevision管理を単純にするため本sessionでは直列実行する。
+
+Task Graph Changes: 2026-08-27のProject owner reviewで、既存local-only libraryをそのまま接続すると5,000行pageを超える全件sort／filter、遅延distribution、Python全件exportを正しく提供できないと確認した。WP-7をupstream、vendor、backend、Application統合、verificationの5境界へ分解する。
+
+Deferred Decisions: CSV／Excel／clipboardはTASK-022へ分離し、本WPでは決定・実装しない。page size、query scope、distribution timing、上位30区分、未対応型の文字列相当表示と型名保持、schema round-tripはProject ownerが2026-08-27に承認済み。
+
+#### WP-7A DataViewer remote mode and large-table rendering
+
+Owner: claude-assist
+
+Assignment Reason: 公開APIと性能要件が確定しており、難しいvirtualizationとout-of-order stateをClaude OpusでTest-first実装する境界として独立しているため。
+
+Task: 一時cloneした`zizai-data-viewer@62998cf76fdda5afea0c52a16654e89ded555e49`へ、既存local modeを壊さない汎用remote data mode、virtualized row rendering、loading表示、tab通知、optional descriptionを追加する。
+
+Dependencies:
+- `docs/features/frontend-libraries.md`のWP-7承認仕様。
+- CodexがApplication Worktree外の一時directoryへcloneし、専用`codex/`branchを作成する。
+
+Read Scope:
+- upstream `README.md`
+- upstream `src/`
+- upstream `test/`
+- upstream `sample/`
+
+Edit Scope:
+- upstreamの承認されたsource、test、README、sampleだけ。
+
+Interfaces:
+- local modeをdefaultとし、remote modeではsort／filter／page操作から全query stateを汎用eventで通知する。
+- 外部consumerがpage rows、page情報、loading／errorを原子的に更新できる公開methodを持つ。
+- active tab変更を通知し、distributionの遅延取得をconsumerが判断できる。
+- schema columnはoptional `description`と任意のtype identifierを保持し、column設定とJSON編集でround-tripする。libraryが認識しないtype identifierは値を変更せず、表示、sort、filterだけを文字列相当として扱う。
+- virtualizationはrow数やApplication固有page sizeを固定せず、library inputに対して汎用的に動作する。
+
+Acceptance Criteria:
+- local modeの既存sort／filter／page behaviorと公開eventを維持する。
+- remote modeではlibraryが受信page外をsort／filterしたふりをせず、query stateを1回通知して外部結果を待つ。
+- remote modeの候補一覧は受信pageの最大5,000行だけから作り、「現在ページの候補」と明示する。候補選択または手入力した条件はquery eventとして外部へ通知する。
+- 5,000行を設定してもviewport外rowをDOMへ全展開せず、scroll後に正しいrowと連番を描画する。
+- loading中の重複queryを制御でき、error／empty／page range／元データ全件数の表示をconsumer入力から区別できる。filter後件数はpaging制御だけに使い表示しない。
+- `description`を含むschemaのcolumns view／JSON view／`schemachange`で情報が欠落しない。
+- `BYTES`、`TIME`、`INTERVAL`、`ARRAY<T>`、`STRUCT<...>`等の未知typeが文字列相当で動作し、明示変更されない限り元type identifierを維持する。
+- 列名／説明はEnterまたはblur、型は選択直後、JSONは`適用`で1回だけ変更を通知し、Escapeは未確定の列名／説明を破棄する。
+- `destroy()`後にdocument listener、body menu、scroll handler、timer、DOM参照、event通知が残らない。
+- Bridge、DataFrame、Connector、step、file path、clipboard等のApplication固有概念をsourceへ追加しない。
+
+Constraints:
+- dependency、build、bundle、remote assetを追加しない。
+- Claudeはcommit、push、PR、mergeを行わない。
+
+Tests:
+- upstream unit／browser testにlocal互換、remote query、virtual scroll、description、loading／error、destroyを追加する。
+- 5,000行fixtureで実DOM row数がviewport相当へ制限されることを確認する。
+
+Codex Verification:
+- 公開APIの汎用性、local互換、DOM上限、lifecycle解放、Application固有語0を差分とTestで確認する。
+
+#### WP-7B Publish boundary and re-vendor DataViewer
+
+Owner: Codex
+
+Assignment Reason: upstream差分、commit identifier、vendor内容、LICENSE、load orderを同一人物が照合し、Application Worktreeへ未検証sourceを混在させないため。
+
+Task: WP-7AのTest済みsourceをupstream local commitとして確定し、Project ownerのpush承認後にGitHubへ反映して、そのexact SHAを`apps/gui/vendor/zizai-data-viewer/`へ再vendorする。
+
+Dependencies:
+- WP-7A GREEN。
+- remote pushはProject ownerの明示承認。
+
+Read Scope:
+- WP-7A差分とTest結果
+- `apps/gui/vendor/README.md`
+- `docs/decisions/ADR-frontend-library-vendoring.md`
+
+Edit Scope:
+- upstream repositoryのlocal commit
+- `apps/gui/vendor/zizai-data-viewer/`
+- `apps/gui/vendor/README.md`
+
+Acceptance Criteria:
+- vendor sourceが記録SHAのupstream sourceと一致する。
+- LICENSEとruntime load orderが維持される。
+- Application Worktreeにclone metadata、upstream test artifact、cacheを置かない。
+
+Constraints:
+- Project owner承認前にpushしない。
+- vendor copyだけへ独自patchを追加しない。
+
+Tests:
+- upstream full Test。
+- vendor/source一致check、license/load-order static check。
+
+Codex Verification:
+- `git diff`、取得元SHA、vendor内容、Worktree cleanlinessを照合する。
+
+#### WP-7C Result query and distribution Application service
+
+Owner: claude-assist
+
+Assignment Reason: 既存DataFrame resultとBridge payloadの範囲内で、型別query、page、集計、file生成をTest-first実装するbounded backend作業としてClaude Sonnetへ委譲できるため。
+
+Task: 既存Bridge Protocol 1.0のcommand数を変えず、`result.getPreview`と`result.getDatavolume`の追加payload scopeで、全件sort／filter後の5,000行page、total、遅延distributionをApplication側に実装する。
+
+Dependencies:
+- WP-7Aのquery／page／distribution／export interface確定。
+
+Read Scope:
+- `apps/desktop/bridge.py`
+- `apps/desktop/host.py`のnative dialog／clipboard callback境界
+- `apps/common/contracts/bridge/protocol-v1.json`
+- result/schema関連Test
+
+Edit Scope:
+- 承認されたDesktop Application service／Bridge payload処理
+- 対応Python Unit／Integration Test
+- payload contractの正本文書
+
+Interfaces:
+- page sizeはApplication側で5,000へ固定し、consumer指定で上限を拡張できない。
+- sort／filterは元DataFrame全件へ型を考慮して適用し、offset page、paging制御用filtered total、表示用unfiltered totalを返す。
+- distributionは元DataFrame全件を対象とし、明示要求時だけ既存`result.getDatavolume`経路で列ごとの件数上位30区分を集計する。31位以下を`その他`へ集約しない。
+- 既存payload省略時の先頭100行Preview互換を維持する。
+
+Acceptance Criteria:
+- Frontendへ返すrow payloadが1 requestあたり5,000行を超えない。
+- string、integer、decimal、boolean、date／datetime／timestampのsort／filter境界を検証する。
+- stable sort、null、duplicate、0件、offset末尾、無効条件を決定的に処理する。
+- 31区分以上を持つcolumnのdistribution responseが上位30件で安定し、31位以下を含まない。
+- TASK-022より先にexport用Bridge、native dialog、Connector、clipboardを変更しない。
+
+Constraints:
+- Bridge Protocol 1.0の31 Command／8 Eventとenvelopeを維持する。
+- DataFrame全体をJSON responseへ直列化しない。
+- Connector実装を変更しない。
+
+Tests:
+- Python Unit: query型、paging、distribution、legacy preview。
+- Integration: Bridge envelope、invalid payload。
+- 100,000行以上のfixtureでresponse row上限と処理完了を確認する。
+
+Codex Verification:
+- payload row数、Protocol command数、Connector差分0を確認する。
+
+#### WP-7D DataViewer Application Adapter and data-space migration
+
+Owner: claude-assist
+
+Assignment Reason: library event、既存node state、Bridge、schema field、旧renderer置換の接続点が確定した後は、通常のAdapter統合としてClaude Sonnetへ委譲できるため。
+
+Task: DataViewer専用Application Adapterを追加し、ノード詳細data領域へmountする。schema round-trip、step execute、remote query、lazy distributionを既存Application責務へ接続し、回帰Gate通過後に旧preview rendererを削除する。export操作はTASK-022完了まで表示しない。
+
+Dependencies:
+- WP-7Bのvendor revision。
+- WP-7CのApplication service。
+
+Read Scope:
+- `apps/gui/js/ui.node.detail.js`
+- `apps/gui/js/ui.fields.js`の既存schema入力／JSON編集／data output renderer
+- node schema field／state／save経路
+- step run経路
+- Bridge Adapterとvendor DataViewer API
+- data panel CSS／HTMLと関連Playwright Test
+
+Edit Scope:
+- DataViewer Application Adapter
+- 承認されたnode data panel integration／CSS／asset load order
+- `apps/gui/js/ui.fields.js`の旧schema入力／JSON編集／data output UIのうちDataViewerと重複する描画部分
+- `apps/gui/js/ui.node.detail.js`の旧preview renderer
+- 対応JS／Playwright Test
+
+Acceptance Criteria:
+- DataViewerのschema changeが`origin_name`、`new_name`、`description`、`ziz_datatype`を欠落なく既存node paramsへ反映する。
+- カラム設定とschema JSON編集はDataViewerの画面を使用し、`ui.fields.js`には既存schema形式への変換、state更新、保存経路だけを残す。
+- executeは既存step実行経路、query／distributionはBridgeを利用する。
+- CSV／Excel／clipboard操作はTASK-022完了まで表示せず、押しても動かない操作を残さない。
+- pageは5,000行固定で、query変更時はoffset 0へ戻る。
+- distribution tab初回表示まで集計requestを送らず、同一結果ではcacheし、再実行時に破棄する。
+- request correlationにより古いpage／distribution／export応答が現在stateを上書きしない。
+- loading、empty、error、未実行、非data connectorを区別して表示する。
+- `ui.fields.js`と`ui.node.detail.js`に旧`node-data-table` preview rendererおよびDataViewerと同一責務のschema rendererが残らない。
+
+Constraints:
+- libraryへBridge object、file path、DataFrame、node／connector固有objectを渡さない。
+- schema保存形式とConnector入口を変更しない。
+
+Tests:
+- Adapter Unit: schema mapping、query state、request correlation、distribution cache。
+- Browser Integration: execute／page／sort／filter／schema／distribution round-trip。
+- repeated mount/unmountとout-of-order response Test。
+
+Codex Verification:
+- library/Application責務境界、schema diff、旧renderer参照0、直接Bridge参照0を確認する。
+
+#### WP-7E DataViewer migration verification
+
+Owner: Codex
+
+Assignment Reason: upstream、vendor、Python、Frontendを横断し、実装担当と独立してAcceptance CriteriaとWorktree状態を判定するため。
+
+Task: WP-7の自動Gateを実行し、Windows実画面のmanual smoke項目をProject ownerへ提示して結果をEvidenceへ記録する。
+
+Dependencies:
+- WP-7B～WP-7D GREEN。
+
+Read Scope:
+- WP-7全差分
+- upstream／Application Test結果
+- `docs/features/frontend-libraries.md`
+
+Edit Scope:
+- Test修正が必要な場合は承認範囲内のtestだけ
+- TASK-016 Evidence／status
+
+Acceptance Criteria:
+- schema edit／save／reopen、全件sort／filter、前後page、lazy distributionを確認する。
+- CSV／Excel／clipboard操作がTASK-022完了前に表示されないことを確認する。
+- 5,000行browser表示でDOM row数がboundedであり、100,000行backend fixtureでBridge payloadがboundedである。
+- rapid queryとnode/tab切替でstale response、menu、listener、timerが残らない。
+- non-data connector、未実行、0件、error、native dialog cancelが回帰しない。
+- full required／e2e GateとWindows manual smokeがPASSする。
+
+Tests:
+- upstream full Test。
+- focused Python／JS／Playwright Test。
+- `tests/run-verification.ps1 -Gate required`。
+- `tests/run-verification.ps1 -Gate e2e`。
+- Project owner Windows manual smoke。
+
+Codex Verification:
+- Test結果、manual evidence、large payload boundary、旧renderer参照0、Worktree cleanlinessを最終照合する。
 
 ### WP-8 WorkflowDesigner migration
 
@@ -1084,15 +1564,24 @@ Codex Verification:
 - WP-6D embedded coordinate fix（2026-08-27）: NodeForm Host Adapterが利用可能なBridgeと同じwindowをevent targetとして解決し、attach／detachで同一targetを使用するよう修正した。実AppShell親windowにだけ相関済み`mouse.coordinateCapture.selected`を送る回帰Testを追加し、X／Yの`node.form`と表示input更新を固定した。TDDでRED `1 failed, 8 passed`からfocused `9 passed`へGREEN化し、関連Playwright `45 passed`、`tests/static` `108 passed`、JavaScript構文確認PASSをCodexが独立確認した。
 - WP-6D Windows manual follow-up（2026-08-27）: 初回修正後もボタンが座標取得中のままになる事象をProject ownerが確認した。境界traceによりBridge requestとoverlay表示は成功し、overlayの`mousePressEvent`だけが未到達と特定した。Qtのtranslucent windowでは未描画pixelがmouse inputを受けない仕様に合わせ、overlay全面を描画し既存window opacity `0.01`で視覚影響を抑える修正を追加した。Project ownerがX／Y反映をWindows実画面で確認し、一時traceを全削除した。最終確認は関連Playwright `45 passed`、`tests/static` `108 passed`、Python構文確認PASS。
 - WP-6 Project owner manual Gate（2026-08-27）: CSV／Excelアシスタントの確定反映・cancel非変更、file／folder picker、通常field編集・validation、変数候補、Google認証、mouse coordinate取得をWindows実画面で確認し、全項目PASS。WP-6 NodeForm migrationを完了扱いとした。
+- WP-7I-A DataViewer generic feature／lifecycle controls（2026-08-28）: upstream一時cloneの`codex/task-016-data-viewer-initial`で、`report`／`columns`／`json`／`distribution`／`execute`／`export`の汎用feature option、`activeTab` fallback、無効機能のDOM非生成、root内export menu、idempotent `destroy()`をClaude SonnetがTest-firstで実装した。Codexがexport menu CSSのroot scope不足を検出して追加修正を依頼し、独立再実行でbrowser Test `50 passed, 0 failed`。Application Worktreeのコード、Bridge、Connector、Workflow Engineは未変更で、upstream commit／pushも未実施。
+- WP-7I-B DataViewer lossless schema editing（2026-08-29）: Project owner判断により複雑実装をCodex Sol（xhigh）subagentへ割り当て、`origin_name`／`new_name`／`description`／`ziz_datatype`の非破壊保持、未知型の文字列表示fallback、空`new_name`の表示限定fallback、Enter／blur確定・Escape取消・type即時確定、JSON明示Apply、不正JSON保持とschema tab lockを汎用library機能としてTest-firstで実装した。確定RED `48 passed, 9 failed`からGREEN `57 passed, 0 failed`。Codex主agentが全差分を要件別にreviewし、fresh browser Test `57 passed, 0 failed`、JavaScript構文、`git diff --check`を独立確認した。Applicationコード、Bridge、Connector、Workflow Engineは未変更で、upstream commit／pushも未実施。
+- WP-7I-C local commit boundary（2026-08-29）: WP-7I-A／Bの対象9 fileだけをDataViewer一時cloneの`codex/task-016-data-viewer-initial`へlocal commitした。commitは`6a0171cf9110703e08d9ee142305b78c78763320`（`feat: add configurable lossless schema editing`）。commit直前のfresh browser Testは`57 passed, 0 failed`、JavaScript構文とstaged diff checkはPASS、commit後のupstream working treeはclean。remote pushとApplication再vendorは未実施。
+- WP-7I-C remote publish boundary（2026-08-29）: Project ownerの明示承認後、DataViewer branch `codex/task-016-data-viewer-initial`をGitHubへpushした。local HEADとremote tracking refはいずれも`6a0171cf9110703e08d9ee142305b78c78763320`、push直前のfresh browser Testは`57 passed, 0 failed`、working treeはclean。PR作成／mergeとApplication再vendorは未実施。
+- WP-7I-C exact re-vendor（2026-08-29）: GitHub反映済みcommit `6a0171cf9110703e08d9ee142305b78c78763320`の`src/report-viewer.css`／`src/report-viewer.js`をApplicationへbyte-identicalに再vendorし、vendor READMEとpinned revision Testを同SHAへ更新した。CSS／JS／LICENSEのsource一致、JavaScript構文、diff check、vendor contract `50 passed`、upstream browser Test `57 passed, 0 failed`をCodexが確認した。Application統合コード、Bridge、Connector、Workflow Engineは未変更。全static Testは`107 passed, 1 failed`で、失敗は今回新設・削除していない既存test source 9件が`tracked-test-sources.json`へ未掲載のために発生するmanifest不一致であり、WP-7I-Cのvendor contractはPASSしている。
+- WP-7I-D DataViewer Application integration（2026-08-29）: Project owner承認によりClaudeを使用せず、Codex Terra（xhigh）subagentがTDDでApplication Adapter、asset load、node detail統合、pane内CSS、Playwright回帰を実装し、Codex主agentが全差分とTestを独立検証した。schema nodeは帳票／カラム設定／JSONを表示してカラム設定から開始し、schemaなしdata nodeは帳票だけを表示する。execute／export／distribution／pagingは非表示。Bridge preview配列からlossless schema列への変換、`new_name`列alias、falsy値、空local schema fallback、production BQ `schema_autoextract`のlossless append、schema保存後rerender、destroy、遅延応答無効化を固定した。主agent reviewの4 findingは2 fix roundで解消し、最終Playwright `14 passed`、vendor contract `50 passed`、変更JS構文、diff checkはPASS。全static Testは既知のtracked-source manifest不一致だけが残り`107 passed, 1 failed`。Bridge、Connector、Workflow Engine、vendor sourceは変更しておらず、Windows実画面確認はWP-7I-Eで行う。
+- WP-7I-E DataViewer presentation follow-up（2026-08-29）: Project owner承認により、正常取得後の重複`プレビュー N 行`をApplicationから除去し、DataViewer sourceでhost CSSに影響されないcheckbox寸法と、帳票／カラム設定の明示列幅を固定した。Playwrightで正常表示／checkbox／右端列resizeのRED `2 failed`からGREEN `2 passed`、DataViewer結合全体 `16 passed`、vendor contract `50 passed`、upstream browser Test `59 passed, 0 failed`を確認した。型別filterと数値表示は変更していない。library修正はcommit `07ed40e496ddf5795811260b48f71d0d3a6ef527`としてbranch `codex/task-016-data-viewer-layout-fix`へpushし、Application vendorも同SHAへ更新した。
 
 ## Remaining
 
-- WP-6以降も各libraryの利用spaceをProject ownerが順次決定し、承認されたspaceだけを移行する。
+- WP-7I-EでDataViewer統合の自動回帰とWindows実画面Gateを完了する。superseded WP-7A～WP-7Eは実行しない。
+- Action単位のPattern A〜F、schema編集可否、列除外、型別filter／数値表示の個別改修はTASK-025へ分離し、TASK-016へ追加しない。
+- WP-8以降も各libraryの利用spaceをProject ownerが順次決定し、承認されたspaceだけを移行する。
 - SQL editor header余白、BigQueryを基準とするshortcut／selection／部分実行、予約語／column suggestは、同一releaseへ含めずTASK-020で初回release後に検討する。
 
 ## Exact next action
 
-WP-7 DataViewer migrationの着手前reviewとして、承認space、変更方針、影響範囲をProject ownerへ提示する。
+WP-7I-Eとして、DataViewer統合のfocused回帰範囲を確認し、Project owner向けWindows実画面確認手順を提示する。全件出力、paging、distribution、executeは初期Gateへ含めない。
 
 ## Termination condition
 
