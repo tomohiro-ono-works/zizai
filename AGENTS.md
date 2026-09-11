@@ -40,6 +40,7 @@
 ## 実装前レビュー
 
 - いきなり改修せず、作業認識・変更方針・影響範囲をユーザーに提示してレビューを受ける。
+- 実装計画を作成または更新するときは、`.agents/skills/implementation-planning/SKILL.md` を使用し、計画作成時の1回で全Work Package（1件の場合を含む）へ `Owner: Codex` または `Owner: claude-assist` を割り当てる。
 - 実装前に `docs/features/architecture.md` と `docs/features/coding-rules.md` を確認し、システム設計・コーディング規約に合っているか確認する。
 - 要件や期待挙動に不明点がある場合は、実装前にユーザーへ質問する。
 - ユーザーが実装着手を明示した後に、コード変更を行う。
