@@ -4,6 +4,7 @@ import faulthandler
 import getpass
 import json
 import logging
+import math
 import os
 import re
 import shutil
@@ -48,6 +49,8 @@ MODE_EXTENSIONS = {
     "dataflow": ".zizd",
 }
 
+CONNECTOR_ACTION_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")
+
 
 def _iso_now():
     return datetime.now(timezone.utc).isoformat()
@@ -55,6 +58,10 @@ def _iso_now():
 
 def _safe_text(value):
     return str(value or "").strip()
+
+
+def _is_finite_number(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
 
 
 def _is_hidden_ref(value):
@@ -331,6 +338,7 @@ class BridgeRuntime:
             },
             "file_icon_map": self._load_file_icon_map(),
             "runtime_context_defaults": self._build_runtime_context_defaults(),
+            "catalog_samples": self._load_catalog_samples(),
         }
 
     def _load_file_icon_map(self):
@@ -354,6 +362,175 @@ class BridgeRuntime:
             normalized[key] = value
         if not normalized.get("default"):
             return {}
+        return normalized
+
+    def _load_catalog_samples(self):
+        catalog_path = self.source_config_root / "catalog_samples.json"
+        if not catalog_path.exists():
+            return {}
+        try:
+            raw = json.loads(catalog_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, json.JSONDecodeError):
+            logger.warning("[bridge] invalid catalog samples: %s", catalog_path)
+            return {}
+        if not isinstance(raw, dict):
+            return {}
+        if raw.get("version") != 1:
+            return {}
+        extensions_raw = raw.get("extensions")
+        if not isinstance(extensions_raw, dict):
+            return {}
+
+        extensions = {}
+        for extension_name in ("zizd", "sql", "md"):
+            extension_raw = extensions_raw.get(extension_name)
+            sanitized = self._sanitize_catalog_extension(extension_raw)
+            if sanitized is not None:
+                extensions[extension_name] = sanitized
+
+        return {"version": 1, "extensions": extensions}
+
+    def _sanitize_catalog_extension(self, extension_raw):
+        if not isinstance(extension_raw, dict):
+            return None
+
+        folders_raw = extension_raw.get("folders", [])
+        items_raw = extension_raw.get("items", [])
+        if folders_raw is None:
+            folders_raw = []
+        if items_raw is None:
+            items_raw = []
+        if not isinstance(folders_raw, list) or not isinstance(items_raw, list):
+            return None
+
+        folders = []
+        seen_folder_ids = set()
+        for folder_raw in folders_raw:
+            folder = self._sanitize_catalog_folder(folder_raw)
+            if folder is None:
+                continue
+            if folder["id"] in seen_folder_ids:
+                continue
+            seen_folder_ids.add(folder["id"])
+            folders.append(folder)
+
+        items = []
+        seen_item_ids = set()
+        for item_raw in items_raw:
+            item = self._sanitize_catalog_item(item_raw)
+            if item is None:
+                continue
+            if item["id"] in seen_item_ids:
+                continue
+            folder_id = item.get("folderId")
+            if folder_id is not None and folder_id not in seen_folder_ids:
+                continue
+            seen_item_ids.add(item["id"])
+            items.append(item)
+
+        return {"folders": folders, "items": items}
+
+    def _sanitize_catalog_folder(self, folder_raw):
+        if not isinstance(folder_raw, dict):
+            return None
+        folder_id = folder_raw.get("id")
+        if not isinstance(folder_id, str) or not folder_id.strip():
+            return None
+        label = folder_raw.get("label")
+        if not isinstance(label, str) or not label.strip():
+            return None
+        if "order" in folder_raw and not _is_finite_number(folder_raw.get("order")):
+            return None
+
+        folder = {"id": folder_id, "label": label}
+        if "order" in folder_raw:
+            folder["order"] = folder_raw.get("order")
+        icon = self._sanitize_catalog_icon(folder_raw.get("icon"))
+        if icon is not None:
+            folder["icon"] = icon
+        return folder
+
+    def _sanitize_catalog_item(self, item_raw):
+        if not isinstance(item_raw, dict):
+            return None
+        kind = item_raw.get("kind")
+        if kind not in ("text", "node"):
+            return None
+
+        if kind == "node":
+            allowed_keys = {
+                "id", "folderId", "label", "description", "icon", "order", "kind",
+                "connector", "action", "descriptionAuto", "form",
+            }
+            if set(item_raw.keys()) - allowed_keys:
+                return None
+            connector = item_raw.get("connector")
+            action = item_raw.get("action")
+            form = item_raw.get("form")
+            if not isinstance(connector, str) or not CONNECTOR_ACTION_PATTERN.fullmatch(connector):
+                return None
+            if not isinstance(action, str) or not CONNECTOR_ACTION_PATTERN.fullmatch(action):
+                return None
+            if not isinstance(form, dict):
+                return None
+            description_auto_raw = item_raw.get("descriptionAuto", True)
+            if not isinstance(description_auto_raw, bool):
+                return None
+
+        item_id = item_raw.get("id")
+        if not isinstance(item_id, str) or not item_id.strip():
+            return None
+        label = item_raw.get("label")
+        if not isinstance(label, str) or not label.strip():
+            return None
+        if "order" in item_raw and not _is_finite_number(item_raw.get("order")):
+            return None
+        if "description" in item_raw and not isinstance(item_raw.get("description"), str):
+            return None
+        folder_id = None
+        if "folderId" in item_raw:
+            folder_id_raw = item_raw.get("folderId")
+            if not isinstance(folder_id_raw, str) or not folder_id_raw.strip():
+                return None
+            folder_id = folder_id_raw
+
+        item = {"id": item_id, "label": label, "kind": kind}
+        if folder_id is not None:
+            item["folderId"] = folder_id
+        if "description" in item_raw:
+            item["description"] = item_raw.get("description")
+        if "order" in item_raw:
+            item["order"] = item_raw.get("order")
+        icon = self._sanitize_catalog_icon(item_raw.get("icon"))
+        if icon is not None:
+            item["icon"] = icon
+
+        if kind == "text":
+            allowed_keys = {"id", "folderId", "label", "description", "icon", "order", "kind", "text"}
+            if set(item_raw.keys()) - allowed_keys:
+                return None
+            text = item_raw.get("text")
+            if not isinstance(text, str):
+                return None
+            item["text"] = text
+            return item
+
+        item["connector"] = item_raw.get("connector")
+        item["action"] = item_raw.get("action")
+        item["descriptionAuto"] = item_raw.get("descriptionAuto", True)
+        item["form"] = item_raw.get("form")
+        return item
+
+    def _sanitize_catalog_icon(self, icon_raw):
+        if not isinstance(icon_raw, str):
+            return None
+        text = _safe_text(icon_raw)
+        if not text:
+            return None
+        normalized = text.replace("\\", "/")
+        parsed = urlparse(normalized)
+        if parsed.scheme or normalized.startswith("/") or ".." in Path(normalized).parts:
+            return None
         return normalized
 
     def _handle_app_get_suggest_index(self, payload):

@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="./css/01_base.css?v=20260619-1">
   <link rel="stylesheet" href="./css/05_sidebar.css?v=20260512-1">
   <link rel="stylesheet" href="./css/06_workspace.css?v=20260619-1">
+  <link rel="stylesheet" href="./css/07_catalog.css?v=20260902-1">
   <link rel="stylesheet" href="./css/10_header.css?v=20260619-1">
   <link rel="stylesheet" href="./css/15_dialog.css?v=20260406-3">
   <link rel="stylesheet" href="./css/20_node-detail.css?v=20260419-5">
@@ -20,10 +21,12 @@
   <link rel="stylesheet" href="./modal/excel_modal.css">
   <link rel="stylesheet" href="./vendor/zizai-app-shell/src/00_tokens.css">
   <link rel="stylesheet" href="./vendor/zizai-app-shell/src/ui-shell.css">
+  <link rel="stylesheet" href="./vendor/zizai-catalog-panel/src/catalog-panel.css">
   <link rel="stylesheet" href="./vendor/zizai-highlighter-sql/src/sql-highlighter.css">
   <link rel="stylesheet" href="./vendor/zizai-editor-markdown/src/markdown_editor.css">
   <link rel="stylesheet" href="./vendor/zizai-form/src/node-form.css">
   <link rel="stylesheet" href="./vendor/zizai-data-viewer/src/report-viewer.css">
+  <link rel="stylesheet" href="./vendor/zizai-workflow-designer/src/workflow_designer.css">
 </head>
 <body
   data-shell-page="dataflow"
@@ -136,10 +139,10 @@
   <script src="./modal/modal_core.js?v=20260407-1"></script>
   <script src="./js/ui.fields.js?v=20260419-2"></script>
   <script src="./js/ui.node.shared.js?v=20260411-2"></script>
-  <script src="./js/ui.node.canvas.layout.js?v=20260419-1"></script>
-  <script src="./js/ui.node.canvas.draw.js?v=20260419-20"></script>
-  <script src="./js/ui.node.canvas.hit.js?v=20260419-2"></script>
-  <script src="./js/ui.node.canvas.js?v=20260419-4"></script>
+  <script src="./js/workflow-command.facade.js"></script>
+  <script src="./js/workflow-display.projector.js"></script>
+  <script src="./vendor/zizai-workflow-designer/src/workflow_designer.js"></script>
+  <script src="./js/workflow-designer.adapter.js"></script>
   <script src="./vendor/zizai-form/src/node-form.js"></script>
   <script src="./js/node-form.adapter.js?v=20260826-1"></script>
   <script src="./vendor/zizai-data-viewer/src/report-viewer.js"></script>
@@ -157,12 +160,15 @@
   <script src="./vendor/zizai-app-shell/src/shell_activitybar.js"></script>
   <script src="./vendor/zizai-app-shell/src/shell_shortcuts.js"></script>
   <script src="./vendor/zizai-app-shell/src/app_shell.js"></script>
+  <script src="./vendor/zizai-catalog-panel/src/catalog-store.js"></script>
+  <script src="./vendor/zizai-catalog-panel/src/catalog-panel.js"></script>
   <script src="./vendor/zizai-highlighter-sql/src/sql-highlighter.js"></script>
   <script src="./vendor/zizai-highlighter-sql/src/dictionaries/bigquery.js"></script>
   <script src="./vendor/zizai-highlighter-sql/src/dictionaries/duckdb.js"></script>
   <script src="./vendor/zizai-editor-markdown/src/markdown_editor.js"></script>
   <script src="./js/app-shell.js?v=20260825-1"></script>
   <script src="./js/workspace.shell.js?v=20260825-1"></script>
+  <script src="./js/catalog.adapter.js?v=20260902-1"></script>
   <script src="./js/workspace.manager.js?v=20260825-1"></script>
   <script src="./js/app.js?v=20260518-1"></script>
 </body>

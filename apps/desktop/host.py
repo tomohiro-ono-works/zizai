@@ -528,6 +528,11 @@ def run_webview_app(form_html_path, *, repository_root, debug=False):
     settings.setAttribute(QWebEngineSettings.WebAttribute.ErrorPageEnabled, True)
     settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanOpenWindows, False)
     settings.setAttribute(QWebEngineSettings.WebAttribute.PluginsEnabled, False)
+    # Catalog SQL/Markdown items copy text via navigator.clipboard.writeText() (see
+    # apps/gui/js/catalog.adapter.js). QtWebEngine blocks that async Clipboard API by
+    # default, so without this attribute the write silently rejects in the real
+    # Desktop WebEngine even though it succeeds under a Playwright-granted permission.
+    settings.setAttribute(QWebEngineSettings.WebAttribute.JavascriptCanAccessClipboard, True)
 
     def to_qt_filter_text(filters, fallback="すべてのファイル (*)"):
         if not filters:

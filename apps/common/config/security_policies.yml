@@ -24,6 +24,12 @@ web:
     - domain: "www.google.com"
       path_prefixes:
         - /
+    - domain: "zenn.dev"
+      path_prefixes:
+        - /
+    - domain: "github.com"
+      path_prefixes:
+        - /
     - domain: "note.com/"
       path_prefixes:
         - /

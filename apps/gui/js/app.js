@@ -530,6 +530,7 @@
   function applyRightSidebarVisibility(visible) {
     if (!splitDetailLayout || !rightSidebar) return;
     const nextCollapsed = !visible;
+    rightSidebar.hidden = nextCollapsed;
     if (rightSidebarCollapsed === nextCollapsed) return;
     rightSidebarCollapsed = nextCollapsed;
     shellApi.setRightSidebarCollapsed?.(nextCollapsed, () => {
@@ -3262,6 +3263,13 @@
         return true;
       },
       getFlowName: () => String(state?.flowName || ""),
+      // node templateは内部clipboardへ入るだけで、workflow stateとhistoryを変えない。
+      setNodeTemplate: (template) => {
+        const facade = ((window.zizPackages || {}).ui || {}).workflowCommandFacade
+          || window.zizWorkflowCommandFacade
+          || null;
+        return !!facade?.setNodeTemplate?.(template);
+      },
       isRunning: () => !!activeFlowRunId,
       isDirty: () => getEmbeddedDirtyState(),
       getWorkspaceTabId: () => resolveWorkspaceTabId(),

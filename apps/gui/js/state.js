@@ -163,6 +163,14 @@ const stateOps = {
     return sanitizeSelectedNodeIdsInternal(state, options);
   },
 
+  setNodeCanvasPosition(state, nodeId, position, options = {}) {
+    const normalizedId = normalizeNodeIdValue(nodeId);
+    const node = (Array.isArray(state?.nodes) ? state.nodes : [])
+      .find((item) => normalizeNodeIdValue(item?.id) === normalizedId);
+    if (!node) return null;
+    return applyNodeCanvasPosition(node, position, options);
+  },
+
   removeNodesByIds(state, nodeIds) {
     const ids = new Set((Array.isArray(nodeIds) ? nodeIds : []).map((id) => String(id || "").trim()).filter(Boolean));
     if (!ids.size) return false;
@@ -311,6 +319,19 @@ const stateOps = {
     return created;
   },
 
+  normalizeNodeTemplate(template) {
+    return normalizeNodeTemplateValue(template);
+  },
+
+  createNodeFromTemplateAtAnchor(state, anchorId, template, options = {}) {
+    const normalizedTemplate = normalizeNodeTemplateValue(template);
+    if (!normalizedTemplate) return null;
+    const created = stateOps.createNodeAtAnchor(state, anchorId, options);
+    if (!created) return null;
+    applyNodeTemplateToNode(state, created, normalizedTemplate);
+    return created;
+  },
+
   createParallelNodeAtAnchor(state, anchorId, options = {}) {
     const normalizedAnchorId = normalizeAnchorId(anchorId, null);
     const created = addParallelAtAnchor(state, normalizedAnchorId, options);
@@ -445,16 +466,48 @@ function sanitizeNodeIdsForOperation(state, nodeIds) {
 }
 
 const CANVAS_COORD_RULES = {
-  START_X: 44,
+  START_X: 28,
+  GRID_ORIGIN_X: 44,
   START_Y: 40,
   GRID_SIZE: 32,
   MIN_COORD: 8,
-  INSERT_DX: 96,
+  NODE_WIDTH: 106,
+  NODE_HEIGHT: 88,
+  NODE_VISUAL_SIZE: 48,
+  NODE_ICON_SIZE: 26,
+  INSERT_DX: 112,
   INSERT_DY: 0,
-  PARALLEL_DX: 64,
-  PARALLEL_DY: 60,
-  PARALLEL_COLLISION_DY: 64
+  PARALLEL_DX: 112,
+  PARALLEL_DY: 96,
+  PARALLEL_COLLISION_DY: 96
 };
+
+stateOps.getCanvasLayoutContract = () => ({
+  nodeMetrics: {
+    width: CANVAS_COORD_RULES.NODE_WIDTH,
+    height: CANVAS_COORD_RULES.NODE_HEIGHT,
+    visualSize: CANVAS_COORD_RULES.NODE_VISUAL_SIZE,
+    iconSize: CANVAS_COORD_RULES.NODE_ICON_SIZE
+  },
+  nodeGrid: {
+    enabled: true,
+    size: CANVAS_COORD_RULES.GRID_SIZE,
+    origin: {
+      x: CANVAS_COORD_RULES.GRID_ORIGIN_X,
+      y: CANVAS_COORD_RULES.START_Y
+    }
+  },
+  projector: {
+    NODE_W: CANVAS_COORD_RULES.NODE_WIDTH,
+    NODE_H: CANVAS_COORD_RULES.NODE_HEIGHT,
+    LEVEL_MARGIN: CANVAS_COORD_RULES.INSERT_DX,
+    MIN_SIBLING_GAP: CANVAS_COORD_RULES.PARALLEL_COLLISION_DY - CANVAS_COORD_RULES.NODE_HEIGHT,
+    START_X: CANVAS_COORD_RULES.START_X,
+    GRID_ORIGIN_X: CANVAS_COORD_RULES.GRID_ORIGIN_X,
+    START_Y: CANVAS_COORD_RULES.START_Y,
+    GRID_SIZE: CANVAS_COORD_RULES.GRID_SIZE
+  }
+});
 
 function normalizeCanvasPositionValue(value) {
   if (!value || typeof value !== "object") return null;
@@ -507,7 +560,7 @@ function resolveNodeCanvasPosition(nodeLike) {
   const gridPos = normalizeCanvasGridPositionValue(nodeLike?.canvasGridPosition);
   if (gridPos) {
     return normalizeCanvasPositionValue({
-      x: toCanvasFromGrid(gridPos.x, CANVAS_COORD_RULES.START_X),
+      x: toCanvasFromGrid(gridPos.x, CANVAS_COORD_RULES.GRID_ORIGIN_X),
       y: toCanvasFromGrid(gridPos.y, CANVAS_COORD_RULES.START_Y)
     });
   }
@@ -519,13 +572,13 @@ function applyNodeCanvasPosition(node, position, options = {}) {
   const snap = options.snap !== false;
   const raw = normalizeCanvasPositionValue(position);
   if (!raw) return null;
-  const nextX = snap ? snapToCanvasGrid(raw.x, CANVAS_COORD_RULES.START_X) : raw.x;
+  const nextX = snap ? snapToCanvasGrid(raw.x, CANVAS_COORD_RULES.GRID_ORIGIN_X) : raw.x;
   const nextY = snap ? snapToCanvasGrid(raw.y, CANVAS_COORD_RULES.START_Y) : raw.y;
   const next = normalizeCanvasPositionValue({ x: nextX, y: nextY });
   if (!next) return null;
   node.canvasPosition = next;
   node.canvasGridPosition = {
-    x: toGridFromCanvas(next.x, CANVAS_COORD_RULES.START_X),
+    x: toGridFromCanvas(next.x, CANVAS_COORD_RULES.GRID_ORIGIN_X),
     y: toGridFromCanvas(next.y, CANVAS_COORD_RULES.START_Y)
   };
   return next;
@@ -554,7 +607,7 @@ function resolveParallelInsertPosition(state, anchorId) {
   const basePos = getAnchorBasePosition(state, anchorId);
   const stepY = Math.max(1, Number(CANVAS_COORD_RULES.PARALLEL_COLLISION_DY) || 64);
   let candidate = {
-    x: snapToCanvasGrid(basePos.x + CANVAS_COORD_RULES.PARALLEL_DX, CANVAS_COORD_RULES.START_X),
+    x: snapToCanvasGrid(basePos.x + CANVAS_COORD_RULES.PARALLEL_DX, CANVAS_COORD_RULES.GRID_ORIGIN_X),
     y: snapToCanvasGrid(basePos.y + CANVAS_COORD_RULES.PARALLEL_DY, CANVAS_COORD_RULES.START_Y)
   };
   let guard = 0;
@@ -1119,6 +1172,48 @@ function getLoopNodeDefaults(appMode) {
   const connectorId = getPreferredConnectorId(appMode, defaults.loopConnectorId || "WindowsConnector");
   const actionId = getPreferredActionId(connectorId, defaults.loopActionId || "loop_tasks");
   return { connectorId, actionId };
+}
+
+// node templateはconnector/action/description/descriptionAuto/formだけを持つ。
+// ID、step名、位置、parent/edge/loop/merge等の構造情報はApplicationが決める。
+const NODE_TEMPLATE_FIELDS = ["connector", "action", "description", "descriptionAuto", "form"];
+const NODE_TEMPLATE_ID_PATTERN = /^[A-Za-z0-9_]+$/;
+
+function isNodeTemplateObject(value) {
+  return !!value && Object.prototype.toString.call(value) === "[object Object]";
+}
+
+function normalizeNodeTemplateValue(template) {
+  if (!isNodeTemplateObject(template)) return null;
+  if (Object.keys(template).some((key) => !NODE_TEMPLATE_FIELDS.includes(key))) return null;
+  const connector = template.connector;
+  const action = template.action;
+  if (typeof connector !== "string" || !NODE_TEMPLATE_ID_PATTERN.test(connector)) return null;
+  if (typeof action !== "string" || !NODE_TEMPLATE_ID_PATTERN.test(action)) return null;
+  if (!isNodeTemplateObject(template.form)) return null;
+  const hasDescription = Object.prototype.hasOwnProperty.call(template, "description");
+  if (hasDescription && typeof template.description !== "string") return null;
+  const hasDescriptionAuto = Object.prototype.hasOwnProperty.call(template, "descriptionAuto");
+  if (hasDescriptionAuto && typeof template.descriptionAuto !== "boolean") return null;
+  const description = hasDescription ? template.description : "";
+  return {
+    connector,
+    action,
+    description,
+    form: cloneStateValue(template.form) || {},
+    descriptionAuto: hasDescriptionAuto ? template.descriptionAuto : !description.trim()
+  };
+}
+
+function applyNodeTemplateToNode(state, node, template) {
+  node.connector = template.connector;
+  node.action = template.action;
+  node.description = template.description;
+  node.descriptionAuto = template.descriptionAuto;
+  const sourceForm = cloneStateValue(template.form) || {};
+  const hiddenRefMap = buildHiddenRefReplacements(state, sourceForm, String(node.stepName || "global"));
+  node.form = applyHiddenRefReplacements(sourceForm, hiddenRefMap);
+  applyHiddenBindingMetaCopies(state, hiddenRefMap);
 }
 
 function allocateStepName(state) {

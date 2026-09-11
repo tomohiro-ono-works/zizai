@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
@@ -11,6 +12,18 @@ import pytest
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 STATIC_ROOT = REPOSITORY_ROOT / "apps" / "gui"
 LAYOUT_PATH = REPOSITORY_ROOT / "tests" / "fixtures" / "contracts" / "repository-layout.json"
+LEGACY_CANVAS_SOURCES = (
+    STATIC_ROOT / "js" / "ui.node.canvas.js",
+    STATIC_ROOT / "js" / "ui.node.canvas.layout.js",
+    STATIC_ROOT / "js" / "ui.node.canvas.draw.js",
+    STATIC_ROOT / "js" / "ui.node.canvas.hit.js",
+)
+LEGACY_CANVAS_REFERENCE = re.compile(
+    r"ui\.node\.canvas"
+    r"|\b(?:uiNodeCanvasParts|uiNodeCanvas|nodeCanvasParts|nodeCanvas|executeLegacyAction)\b"
+    r"|__(?:flowView|flowRuntime)\b"
+    r"|flow-(?:canvas|context-menu|sticky-toolbar|sticky-note-editor)"
+)
 
 pytestmark = [pytest.mark.static_analysis, pytest.mark.risk_web_001]
 
@@ -58,3 +71,26 @@ def test_production_html_uses_existing_local_assets_only() -> None:
     assert missing == []
     assert external_scripts_or_frames == []
     assert custom_elements == []
+
+
+def test_legacy_canvas_implementation_and_references_are_absent() -> None:
+    violations = [
+        f"legacy source remains: {path.relative_to(REPOSITORY_ROOT).as_posix()}"
+        for path in LEGACY_CANVAS_SOURCES
+        if path.exists()
+    ]
+
+    production_sources = [
+        path
+        for pattern in ("*.html", "*.js", "*.css")
+        for path in STATIC_ROOT.rglob(pattern)
+        if "vendor" not in path.relative_to(STATIC_ROOT).parts
+        and path not in LEGACY_CANVAS_SOURCES
+    ]
+    for path in production_sources:
+        relative_path = path.relative_to(REPOSITORY_ROOT).as_posix()
+        for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if LEGACY_CANVAS_REFERENCE.search(line):
+                violations.append(f"legacy reference remains: {relative_path}:{line_number}")
+
+    assert violations == []

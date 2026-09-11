@@ -2,7 +2,7 @@
 
 ## Status
 
-Blocked — TASK-011
+Completed — 2026-09-07
 
 ## Goal
 
@@ -18,7 +18,7 @@ Target外資産をTASK-005で承認された場所・tracking状態へ整理す�
 
 ## Scope
 
-承認済みの`template`、`scripts`、企画資料、personal/tool資産に対してKEEP/MOVE/ARCHIVE/IGNOREを適用する。
+承認済みの`template`、`scripts`、企画資料、personal/tool資産に対してDispositionを適用する。
 
 ## Out of scope
 
@@ -78,18 +78,27 @@ Required
 
 - Task Decompositionが承認され、本Task定義を作成した。
 - TASK-005が完了し、全Dispositionと所有Taskが確定した。
+- 2026-09-07にProject ownerがDispositionを更新し、root `template/`は`.gitkeep`だけを残してsample `.zizd`を削除、`tableau-mcp/`、`scripts/requirements_inventory.csv`、local-only個人資産5件を不要と確定した。削除済みtracked資産もTASK-014のReference Gate対象から除外しない。
+- root `template/`を維持し、Application Pathやlauncher/tool scriptを変更しなかった。
+- root `scripts/`にtracked sourceが残らないため、READMEのdirectory treeから同directoryを除外した。
+- `.gitignore`の実変更・全体見直しは、Project ownerとの合意どおりTASK-015へ保留した。
+- Application code、Test code、`.gitignore`は変更せず、追加の資産削除も行わなかった。
 
 ## Evidence
 
-- TASK-005とTASK-009は完了済みであり、TASK-011が残る依存条件である。
+- TASK-005、TASK-009、TASK-011、TASK-012、TASK-016は完了済みであり、本Taskの依存条件を満たす。
+- 指定Worktreeではlocal-only個人資産5件（`memo.md`、`test.ipynb`、`.obsidian/`、`無題のファイル.base`、`tmp_staged_files_release_202606.txt`）が不在であることを、内容を参照せず確認した。
+- 承認済みtracked削除差分は、`scripts/requirements_inventory.csv`、`tableau-mcp/`の2件、`template/`のsample `.zizd` 2件である。
+- `template/.gitkeep`はtrackedのまま残り、root `template/`を維持している。
+- 内容を失うMOVE、未承認削除、Application code変更はない。
 
 ## Remaining
 
-- TASK-011完了後、承認済みDispositionだけを適用する。
+- なし。tracked削除差分の5区分Reference GateはTASK-014、`.gitignore`全体レビューはTASK-015が所有する。
 
 ## Exact next action
 
-TASK-011の最終Application Pathと承認済みDispositionを照合し、実行対象を固定する。
+TASK-014で承認済みtracked削除差分のReference Gateとlegacy/generated residue整理を行う。
 
 ## Termination condition
 

@@ -55,7 +55,7 @@ def test_three_frontend_entries_are_served_from_apps_gui(entry_name: str, goal: 
     assert entry_path.is_file(), f"frontend entry is missing under apps/gui: {entry_path}"
 
 
-def test_all_99_current_frontend_assets_relocate_to_apps_gui_with_identical_relative_paths(
+def test_all_current_frontend_assets_relocate_to_apps_gui_with_identical_relative_paths(
     goal: dict,
 ) -> None:
     assert len(goal["assets"]) == goal["expected_asset_count"]

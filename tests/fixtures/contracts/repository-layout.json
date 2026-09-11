@@ -24,6 +24,7 @@
     "apps/common/config/security_policies.yml",
     "apps/common/config/rename.csv",
     "apps/common/config/file_icon_map.json",
+    "apps/common/config/catalog_samples.json",
     "apps/common/config/suggest_index/suggest_index_BQConnector.yml",
     "apps/common/config/suggest_index/suggest_index_PythonConnector.yml",
     "apps/gui/home.html",

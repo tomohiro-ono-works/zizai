@@ -2,14 +2,14 @@
   const packages = window.zizPackages || {};
   const uiPkg = packages.ui || {};
   const shared = uiPkg.nodeShared || window.uiNodeShared || {};
-  const canvas = uiPkg.nodeCanvas || window.uiNodeCanvas || {};
+  const adapter = uiPkg.workflowDesignerAdapter || window.zizWorkflowDesignerAdapter || {};
   const detail = uiPkg.nodeDetail || window.uiNodeDetail || {};
   const uiNode = {
     normalizeSteps: shared.normalizeSteps,
-    renderFlowChart: canvas.renderFlowChart,
+    renderFlowChart: adapter.renderFlowChart,
     renderNodeDetail: detail.renderNodeDetail,
-    destroyFlowCanvas: canvas.destroyFlowCanvas,
-    refreshFlowStatus: canvas.refreshFlowStatus
+    destroyFlowCanvas: adapter.destroyFlowCanvas,
+    refreshFlowStatus: adapter.refreshFlowStatus
   };
   window.uiNode = uiNode;
   const packagesOut = window.zizPackages = window.zizPackages || {};

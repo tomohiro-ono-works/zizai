@@ -108,9 +108,9 @@ Tests・runner・CIは「Migrationを機械的に判定可能にする」とい�
 
 ## Deferred requirements
 
-- TASK-012でallowlist適用後に`RISK-CONFIG-001`を再実行し、12 passedへする。
-- TASK-015でユーザーが管理者PowerShellから`RISK-FS-001`だけを実行する。それまではexit `2`のBlockedを維持する。
-- 上記解消後、`required`と12 Riskの最終結果をfreshに取得する。
+- `RISK-CONFIG-001`はTASK-019でallowlist／scheme境界を適用後に再実行し、2026-08-24にPASSした。
+- `RISK-FS-001`はTASK-014でユーザー承認済みの管理者PowerShellから実行し、2026-09-07にPASSした。
+- `required`の最終結果はTASK-014でfreshに取得し、全GateがPASSした。release candidateで関連境界が変わった場合の再実行はTASK-015が判定する。
 
 ## Remaining
 

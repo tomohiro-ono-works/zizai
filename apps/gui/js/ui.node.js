@@ -9,24 +9,44 @@
       isReady: () => typeof ((uiPkg.nodeShared || window.uiNodeShared || {}).normalizeSteps) === "function"
     },
     {
-      key: "canvas-layout",
-      src: "./js/ui.node.canvas.layout.js?v=20260426-2",
-      isReady: () => typeof ((uiPkg.nodeCanvasParts || window.uiNodeCanvasParts || {}).buildFlowModel) === "function"
+      key: "workflow-command-facade",
+      src: "./js/workflow-command.facade.js",
+      isReady: () => typeof ((uiPkg.workflowCommandFacade || window.zizWorkflowCommandFacade || {}).handleCommand) === "function"
     },
     {
-      key: "canvas-draw",
-      src: "./js/ui.node.canvas.draw.js?v=20260426-1",
-      isReady: () => typeof ((uiPkg.nodeCanvasParts || window.uiNodeCanvasParts || {}).drawFlowCanvas) === "function"
+      key: "workflow-display-projector",
+      src: "./js/workflow-display.projector.js",
+      isReady: () => typeof ((uiPkg.workflowDisplayProjector || {}).buildFlowModel) === "function"
     },
     {
-      key: "canvas-hit",
-      src: "./js/ui.node.canvas.hit.js?v=20260426-1",
-      isReady: () => typeof ((uiPkg.nodeCanvasParts || window.uiNodeCanvasParts || {}).hitControl) === "function"
+      key: "workflow-designer-library",
+      src: "./vendor/zizai-workflow-designer/src/workflow_designer.js",
+      isReady: () => typeof ((packages.workflowDesigner || {}).createWorkflowDesigner) === "function"
     },
     {
-      key: "canvas",
-      src: "./js/ui.node.canvas.js?v=20260426-3",
-      isReady: () => typeof ((uiPkg.nodeCanvas || window.uiNodeCanvas || {}).renderFlowChart) === "function"
+      key: "workflow-designer-adapter",
+      src: "./js/workflow-designer.adapter.js",
+      isReady: () => typeof ((uiPkg.workflowDesignerAdapter || window.zizWorkflowDesignerAdapter || {}).renderFlowChart) === "function"
+    },
+    {
+      key: "node-form-library",
+      src: "./vendor/zizai-form/src/node-form.js",
+      isReady: () => typeof ((window.NodeForm || {}).mount) === "function"
+    },
+    {
+      key: "node-form-adapter",
+      src: "./js/node-form.adapter.js?v=20260826-1",
+      isReady: () => typeof ((uiPkg.nodeFormAdapter || window.uiNodeFormAdapter || {}).mountNodeForm) === "function"
+    },
+    {
+      key: "data-viewer-library",
+      src: "./vendor/zizai-data-viewer/src/report-viewer.js",
+      isReady: () => typeof window.ReportViewer === "function"
+    },
+    {
+      key: "data-viewer-adapter",
+      src: "./js/data-viewer.adapter.js",
+      isReady: () => typeof ((uiPkg.dataViewerAdapter || window.uiDataViewerAdapter || {}).mountDataViewer) === "function"
     },
     {
       key: "detail",

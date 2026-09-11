@@ -7,7 +7,7 @@
     "dataflow.html",
     "settings.html"
   ],
-  "expected_asset_count": 99,
+  "expected_asset_count": 95,
   "assets": [
     "config/config.js",
     "css/00_tokens.css",
@@ -85,10 +85,6 @@
     "js/packages/ui.package.js",
     "js/state.js",
     "js/ui.fields.js",
-    "js/ui.node.canvas.draw.js",
-    "js/ui.node.canvas.hit.js",
-    "js/ui.node.canvas.js",
-    "js/ui.node.canvas.layout.js",
     "js/ui.node.detail.js",
     "js/ui.node.js",
     "js/ui.node.runtime.js",

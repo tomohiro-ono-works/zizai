@@ -49,7 +49,7 @@
     constructor(target, options) {
       this.root = typeof target === 'string' ? document.querySelector(target) : target;
       if (!this.root) throw new Error('CatalogPanel target was not found');
-      this.options = Object.assign({ title: 'カタログ', resolveIcon: null, defaultItemIcon: null }, options || {});
+      this.options = Object.assign({ title: 'カタログ', resolveIcon: null, defaultItemIcon: null, onActivateItem: null }, options || {});
       this.store = new globalScope.CatalogStore(this.options.data || {});
       this._openFolders = new Set(this.store.getData().folders.map(folder => folder.id));
       this._query = '';
@@ -57,6 +57,7 @@
       this._contextMenu = null;
       this._overlay = null;
       this._tagDropdown = null;
+      this._toastTimer = null;
       this._onRootClick = this._handleRootClick.bind(this);
       this._onRootContextMenu = this._handleRootContextMenu.bind(this);
       this._onRootInput = this._handleRootInput.bind(this);
@@ -85,7 +86,7 @@
     destroy() {
       if (this._destroyed) return;
       this._destroyed = true;
-      this._closeContextMenu(); this._closeTagDropdown(); this._closeOverlay();
+      this._closeContextMenu(); this._closeTagDropdown(); this._closeOverlay(); this._clearToastTimer();
       this.root.removeEventListener('click', this._onRootClick);
       this.root.removeEventListener('contextmenu', this._onRootContextMenu);
       this.root.removeEventListener('input', this._onRootInput);
@@ -214,7 +215,18 @@
     }
 
     _getDefaultItemIcon(){ const icon=this.options?this.options.defaultItemIcon:null; return typeof icon==='string'&&icon.trim()?icon.trim():null; }
-    async _copyItem(id){ const item=this.store.getData().items.find(entry=>entry.id===id); if(!item)return; try{ await navigator.clipboard.writeText(item.clipboard.value); this._showToast('「'+(item.label||item.id)+'」をコピーしました'); this.root.dispatchEvent(new CustomEvent('catalog:copy',{detail:{item,text:item.clipboard.value},bubbles:true})); }catch(error){this._emitError(error);} }
+    _getActivationHook(){ const hook=this.options?this.options.onActivateItem:null; return typeof hook==='function'?hook:null; }
+    _normalizeActivation(result){ const handled=result===true||Boolean(result&&typeof result==='object'&&result.handled===true); const message=handled&&result&&typeof result==='object'&&typeof result.message==='string'?result.message.trim():''; return {handled,message}; }
+    async _copyItem(id){
+      const item=this.store.getData().items.find(entry=>entry.id===id); if(!item)return;
+      const text=item.clipboard.value; const hook=this._getActivationHook();
+      if(hook){
+        let activation;
+        try{ activation=this._normalizeActivation(await hook(item,{text})); }catch(error){ this._emitError(error); return; }
+        if(activation.handled){ this._showToast(activation.message||'「'+(item.label||item.id)+'」を処理しました'); this.root.dispatchEvent(new CustomEvent('catalog:activate',{detail:{item,text,message:activation.message},bubbles:true})); return; }
+      }
+      try{ await navigator.clipboard.writeText(text); this._showToast('「'+(item.label||item.id)+'」をコピーしました'); this.root.dispatchEvent(new CustomEvent('catalog:copy',{detail:{item,text},bubbles:true})); }catch(error){this._emitError(error);}
+    }
     _filterItems(items){ const parsed=parseSearch(this._query); if(!parsed.tags.length&&!parsed.words.length)return items; return items.filter(item=>{const text=((item.label||'')+' '+(item.description||'')).toLocaleLowerCase('ja'); const tags=extractTags(item.description||'').map(tag=>tag.toLocaleLowerCase('ja')); return parsed.words.every(word=>text.includes(word))&&parsed.tags.every(tag=>tags.includes(tag));}); }
     _collectTagCounts(){ const counts=new Map(); for(const item of this.store.getData().items){for(const tag of extractTags(item.description||'')){const key=tag.toLocaleLowerCase('ja');const current=counts.get(key)||{tag,count:0};current.count+=1;counts.set(key,current);}} return [...counts.values()].sort((a,b)=>b.count-a.count||a.tag.localeCompare(b.tag,'ja')); }
     _openTagDropdown(input){ this._closeTagDropdown(); const tags=this._collectTagCounts(); if(!tags.length)return; const fragment=this._currentTagFragment(input.value); const matches=tags.filter(entry=>!fragment||entry.tag.toLocaleLowerCase('ja').includes(fragment.toLocaleLowerCase('ja'))); if(!matches.length)return; const dropdown=document.createElement('div'); dropdown.className='cp-tag-dropdown'; dropdown.setAttribute('role','listbox'); for(const entry of matches){const button=document.createElement('button');button.type='button';button.dataset.action='tag-option';button.dataset.tag=entry.tag;button.className='cp-tag-option';button.innerHTML=`<span>${this._escape(entry.tag)}</span><span class="cp-tag-count">${entry.count}件</span>`;dropdown.appendChild(button);} input.parentElement.appendChild(dropdown);this._tagDropdown=dropdown; }
@@ -224,7 +236,8 @@
     _closeOverlay(){if(this._overlay)this._overlay.remove();this._overlay=null;}
     _closeContextMenu(){if(this._contextMenu)this._contextMenu.remove();this._contextMenu=null;}
     _closeTagDropdown(){if(this._tagDropdown)this._tagDropdown.remove();this._tagDropdown=null;}
-    _showToast(message){const toast=this.root.querySelector('.cp-toast');if(!toast)return;toast.textContent=message;toast.classList.add('cp-toast-visible');clearTimeout(this._toastTimer);this._toastTimer=setTimeout(()=>toast.classList.remove('cp-toast-visible'),1800);}
+    _clearToastTimer(){if(this._toastTimer)clearTimeout(this._toastTimer);this._toastTimer=null;}
+    _showToast(message){const toast=this.root.querySelector('.cp-toast');if(!toast)return;toast.textContent=message;toast.classList.add('cp-toast-visible');this._clearToastTimer();this._toastTimer=setTimeout(()=>toast.classList.remove('cp-toast-visible'),1800);}
     _formError(form,message){let error=form.querySelector('.cp-form-error');if(!error){error=document.createElement('p');error.className='cp-form-error';form.insertBefore(error,form.querySelector('footer'));}error.textContent=message;}
     _requirePermission(action){if(this.store.can(action))return true;this._emitError(new Error('operation is not permitted: '+action));return false;}
     _changed(action,entityType,entityId){this.root.dispatchEvent(new CustomEvent('catalog:change',{detail:{action,entityType:entityType||null,entityId:entityId||null,data:this.getData()},bubbles:true}));}

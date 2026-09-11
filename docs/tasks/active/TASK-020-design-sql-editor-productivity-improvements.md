@@ -44,7 +44,7 @@ WP-1、WP-2、WP-3の限定調査は並行可能。統合したinteractionと実
 
 - `docs/features/frontend-libraries.md`
 - `docs/features/coding-rules.md`
-- `docs/tasks/active/TASK-016-adopt-approved-frontend-libraries.md`
+- `docs/tasks/done/TASK-016-adopt-approved-frontend-libraries.md`
 - TASK-016のWindows実画面確認（2026-08-26）
 - TASK開始時点のBigQuery公式editor shortcut／query execution仕様
 

@@ -107,6 +107,7 @@
       { id: "home", label: "トップ画面へ戻る", icon: "./icons/ziz_one.svg" },
       { id: "project-select", label: "プロジェクト選択", icon: "./icons/launch_project.svg" },
       { id: "explorer", label: "エクスプローラー", icon: "./icons/folder_open.svg" },
+      { id: "catalog", label: "カタログ", icon: "./icons/block.svg" },
       { id: "settings", label: "設定", icon: "./icons/settings.svg" },
     ]);
 

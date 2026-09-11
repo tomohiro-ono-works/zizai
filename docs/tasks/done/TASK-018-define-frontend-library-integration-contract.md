@@ -21,7 +21,7 @@ Completed
 - `docs/decisions/ADR-frontend-library-vendoring.md`
 - `docs/handoffs/TASK-010-frontend-library-integration-audit.md`
 - `docs/handoffs/TASK-017-migration-goal-backward-audit.md`
-- `docs/tasks/active/TASK-016-adopt-approved-frontend-libraries.md`
+- `docs/tasks/done/TASK-016-adopt-approved-frontend-libraries.md`
 
 ## Scope
 
@@ -76,7 +76,7 @@ TASK-016旧WP-1を本Taskへ移管し、config MOVEやFrontend物理MOVEより�
 - `docs/features/frontend-libraries.md`
 - `docs/decisions/ADR-frontend-library-vendoring.md`
 - `docs/handoffs/v23-migration-verification-contract.md`
-- `docs/tasks/active/TASK-016-adopt-approved-frontend-libraries.md`
+- `docs/tasks/done/TASK-016-adopt-approved-frontend-libraries.md`
 - `docs/tasks/done/TASK-018-define-frontend-library-integration-contract.md`
 
 ## Acceptance criteria
@@ -132,13 +132,13 @@ Read Scope:
 - `docs/decisions/`
 - `docs/handoffs/TASK-010-frontend-library-integration-audit.md`
 - `docs/handoffs/TASK-017-migration-goal-backward-audit.md`
-- `docs/tasks/active/TASK-016-adopt-approved-frontend-libraries.md`
+- `docs/tasks/done/TASK-016-adopt-approved-frontend-libraries.md`
 
 Edit Scope:
 - `docs/features/`
 - `docs/decisions/`
 - `docs/handoffs/v23-migration-verification-contract.md`
-- `docs/tasks/active/TASK-016-adopt-approved-frontend-libraries.md`
+- `docs/tasks/done/TASK-016-adopt-approved-frontend-libraries.md`
 - `docs/tasks/done/TASK-018-define-frontend-library-integration-contract.md`
 
 Acceptance Criteria:
@@ -171,6 +171,17 @@ None.
 - vendor配置、GitHub直参照不採用、同梱許諾を`docs/decisions/ADR-frontend-library-vendoring.md`へ記録した。
 - Workflow Document正本と各libraryの利用spaceを移管直前のProject owner判断として明記した。
 - TASK-016固有GateをTASK-015の最終suiteへ追跡可能にした。
+
+## Post-completion amendment
+
+- TASK-018完了時点では候補8 libraryの共通contractを定義した。その後、Project ownerが現行Applicationに対応機能のない`zizai-sqlflow-designer`をTASK-016／TASK-015から除外したため、現行の承認対象は7 libraryである。
+- 現行正本は`docs/features/frontend-libraries.md`、同梱判断は`docs/decisions/ADR-frontend-library-vendoring.md`、実装EvidenceはTASK-016を参照する。本節は完了時点の8件記録を削除せず、後続決定による差分を明示する。
+
+## Evidence
+
+- `docs/features/frontend-libraries.md`に承認済み7 library、Application Adapter境界、space decision protocolが記録されている。
+- `docs/decisions/ADR-frontend-library-vendoring.md`に7 libraryのlocal vendoring許諾と`zizai-sqlflow-designer`除外が記録されている。
+- TASK-016のWP-11 Evidenceが7 libraryのsource URL、exact commit、LICENSE、runtime load orderと各Integration Gateの完了を記録している。
 
 ## Termination condition
 

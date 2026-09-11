@@ -42,7 +42,7 @@
 ### zizai-catalog-panel
 
 - Source: https://github.com/tomohiro-ono-works/zizai-catalog-panel
-- Commit: 3141ba66d583eaa6d6947d42e572f31428eefc69
+- Commit: 7221e4f5c970a221c1c6b8d50b19eeb8962413ea
 - License: `apps/gui/vendor/zizai-catalog-panel/LICENSE`
 - Runtime load order (`file://`, in order):
   1. `apps/gui/vendor/zizai-catalog-panel/src/catalog-panel.css`
@@ -92,7 +92,7 @@
 ### zizai-workflow-designer
 
 - Source: https://github.com/tomohiro-ono-works/zizai-workflow-designer
-- Commit: a8d1713dac14e29aa18f4723cb7c8c058e74beb2
+- Commit: d6bebd11368138222b81346f724944ab29077f4b
 - License: `apps/gui/vendor/zizai-workflow-designer/LICENSE`
 - Runtime load order (`file://`, in order):
   1. `apps/gui/vendor/zizai-workflow-designer/src/workflow_designer.css`

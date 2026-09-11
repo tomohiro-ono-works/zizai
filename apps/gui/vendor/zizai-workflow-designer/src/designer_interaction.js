@@ -62,6 +62,13 @@
         : null;
     }
 
+    function edgeFromElement(element) {
+      const key = element?.dataset?.edgeKey;
+      return key
+        ? renderer.getModel()?.edges.find((item) => item.key === key) || null
+        : null;
+    }
+
     function selectedNodeKeys() {
       return new Set(controller.getSelection().nodes.map(modules.nodeRefKey));
     }
@@ -108,7 +115,9 @@
 
     function beginLeftGesture(event, targets) {
       const model = renderer.getModel();
+      const annotationMode = controller.getAnnotationMode();
       if (targets.noteElement) {
+        if (!annotationMode) return;
         const note = noteFromElement(targets.noteElement);
         if (!note) return;
         if (event.target.closest("[data-note-resize]")) {
@@ -120,6 +129,9 @@
         }
         return;
       }
+      // Annotation mode is note-edit only: nodes and edges are inert, while a
+      // blank-canvas drag still pans the viewport.
+      if (annotationMode && (targets.nodeElement || targets.edgeElement)) return;
       if (targets.nodeElement) {
         const node = nodeFromElement(targets.nodeElement);
         if (!node) return;
@@ -160,9 +172,21 @@
 
     function beginRightGesture(event, targets) {
       suppressContextMenu = false;
+      if (controller.getAnnotationMode()) {
+        // Note-edit only: no connection gesture and no node box selection.
+        gesture = {
+          kind: "right-noop",
+          button: 2,
+          pointerId: event.pointerId,
+          startClient: clientPoint(event),
+          activated: false
+        };
+        return;
+      }
       if (targets.nodeElement) {
         const node = nodeFromElement(targets.nodeElement);
         if (!node) return;
+        if (controller.isReadonly()) return;
         const selectedPort = String(
           targets.portElement?.dataset?.zwdPortRole || ""
         );
@@ -318,6 +342,7 @@
     }
 
     function finishConnect(event, current) {
+      if (controller.isReadonly()) return;
       const snapped = controller.findConnectionTarget(
         clientPoint(event),
         current.source
@@ -329,7 +354,19 @@
       const targetElement = document.elementFromPoint(event.clientX, event.clientY)
         ?.closest?.("[data-node-key]");
       const target = nodeFromElement(targetElement);
-      if (target) controller.requestConnect(current.source, target);
+      if (target) {
+        controller.requestConnect(current.source, target);
+        return;
+      }
+      const edgeElement = document.elementFromPoint(event.clientX, event.clientY)
+        ?.closest?.("[data-edge-key]");
+      const edge = edgeFromElement(edgeElement);
+      const drop = {
+        kind: edge ? "edge" : "canvas",
+        position: worldPoint(event)
+      };
+      if (edge) drop.edge_ref = modules.cloneValue(edge.ref);
+      controller.requestConnectDrop(current.source, drop);
     }
 
     function rectangleNodes(current) {
@@ -403,20 +440,23 @@
         controller.executeCommand(command, null, worldPoint(event));
         return;
       }
-      const contextCommand = event.target.closest("[data-context-command]")
-        ?.dataset.contextCommand;
-      if (contextCommand) {
+      const contextItem = event.target.closest("[data-context-command]");
+      if (contextItem) {
         renderer.hideContextMenu();
         controller.executeCommand(
-          contextCommand,
+          contextItem.dataset.contextCommand,
           commandInteraction.getContextTarget(),
-          worldPoint(event)
+          worldPoint(event),
+          contextItem.dataset.contextValue
         );
         return;
       }
       const external = event.target.closest("[data-external-url]")?.dataset.externalUrl;
       if (external) {
         event.preventDefault();
+        // Annotation mode is note-edit only, so note editing takes priority
+        // over following a link.
+        if (controller.getAnnotationMode()) return;
         controller.emit("external-link:open-request", { url: external });
       }
     }

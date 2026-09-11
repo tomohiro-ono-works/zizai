@@ -604,6 +604,22 @@
     }
   }
 
+  // Catalog activity independently reads the active tab's extension and (for a flow
+  // tab) its embedded API through window.zizWorkspace; this event lets a mounted
+  // CatalogPanel refresh live without polling or reaching into Workspace internals.
+  function activeTabCatalogExtension() {
+    const tab = activeTab();
+    if (!tab) return '';
+    const ext = fileExtensionFromPath(tab.relPath || tab.name || '');
+    return (ext === 'zizd' || ext === 'sql' || ext === 'md') ? ext : '';
+  }
+
+  function notifyCatalogContextChanged() {
+    window.dispatchEvent(new CustomEvent('ziz:workspace-catalog-context-changed', {
+      detail: { extension: activeTabCatalogExtension() },
+    }));
+  }
+
   function activateTab(tabId) {
     const tab = getTab(tabId);
     if (!tab) return;
@@ -614,6 +630,7 @@
       syncGlobalFlowNameInput(tab);
       void ensureFlowTabLoaded(tab);
     }
+    notifyCatalogContextChanged();
   }
 
   async function saveTab(tabId, options = {}) {
@@ -784,6 +801,7 @@
     if (isFlowTab(nextActive)) {
       void ensureFlowTabLoaded(nextActive);
     }
+    notifyCatalogContextChanged();
     return true;
   }
 
@@ -1068,6 +1086,18 @@
   function getFlowTabApi(tab) {
     const frameWindow = tab?.iframeEl?.contentWindow;
     return frameWindow?.zizEmbeddedApi || null;
+  }
+
+  // Catalog activation only sets the internal node-template clipboard (see
+  // catalog.adapter.js); it never moves keyboard focus itself, which would otherwise
+  // leave it on the Catalog's own <button> item. An immediate Ctrl+V needs the active
+  // flow iframe's own workflow-designer shell (its keydown-driven "selection.paste"
+  // command) to hold focus instead.
+  function focusActiveFlowCanvas() {
+    const canvas = activeTab()?.iframeEl?.contentDocument?.querySelector('[data-workflow-designer]') || null;
+    if (!canvas || typeof canvas.focus !== 'function') return false;
+    canvas.focus();
+    return true;
   }
 
   function createFlowLoadError(message, code = 'E_FLOW_LOAD') {
@@ -2141,6 +2171,8 @@
     const body = shell.leftAreaBody;
     if (!title || !body) return;
 
+    body.classList.toggle('workspace-global-left-area__body--catalog', state.globalStore.leftMode === 'catalog');
+
     if (!state.globalStore.leftMode) {
       appShell.setLayout({ sidebarVisible: false });
       title.textContent = 'サイドエリア';
@@ -2165,13 +2197,19 @@
       return;
     }
 
+    if (state.globalStore.leftMode === 'catalog') {
+      title.textContent = 'カタログ';
+      window.zizCatalogAdapter?.mount?.(body);
+      return;
+    }
+
     title.textContent = 'サイドエリア';
     body.innerHTML = '<div class="workspace-empty">未対応メニューです。</div>';
   }
 
   function setLeftMode(mode) {
     const normalized = String(mode || '').trim();
-    if (normalized !== 'project-select' && normalized !== 'explorer') {
+    if (!['project-select', 'explorer', 'catalog'].includes(normalized)) {
       state.globalStore.leftMode = '';
     } else {
       state.globalStore.leftMode = normalized;
@@ -2324,6 +2362,9 @@
         if (!tab || tab.kind !== 'text') return false;
         return saveTab(tab.id);
       },
+      getActiveCatalogExtension: activeTabCatalogExtension,
+      getActiveFlowEmbeddedApi: () => getFlowTabApi(activeTab()),
+      focusActiveFlowCanvas,
     };
   }
 

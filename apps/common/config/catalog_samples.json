@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "extensions": {
+    "zizd": {
+      "folders": [
+        {
+          "id": "workflow-nodes",
+          "label": "ワークフローノード",
+          "order": 1
+        }
+      ],
+      "items": [
+        {
+          "id": "define-values",
+          "folderId": "workflow-nodes",
+          "label": "変数定義",
+          "kind": "node",
+          "connector": "WindowsConnector",
+          "action": "define_values",
+          "description": "変数を定義する",
+          "descriptionAuto": true,
+          "order": 1,
+          "form": {
+            "define_values": []
+          }
+        }
+      ]
+    },
+    "sql": {
+      "folders": [
+        {
+          "id": "sql-samples",
+          "label": "SQLサンプル",
+          "order": 1
+        }
+      ],
+      "items": [
+        {
+          "id": "select-one",
+          "folderId": "sql-samples",
+          "label": "SELECT 1",
+          "kind": "text",
+          "text": "SELECT 1 AS value;",
+          "order": 1
+        }
+      ]
+    },
+    "md": {
+      "folders": [
+        {
+          "id": "markdown-samples",
+          "label": "Markdownサンプル",
+          "order": 1
+        }
+      ],
+      "items": [
+        {
+          "id": "document-outline",
+          "folderId": "markdown-samples",
+          "label": "文書のひな形",
+          "kind": "text",
+          "text": "# タイトル\n\n## セクション\n\n本文",
+          "order": 1
+        }
+      ]
+    }
+  }
+}

@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation in progress — WP-7I-D implementation complete; WP-7I-E verification next
+Completed — WP-11 required/e2e/WebEngine/manual/offline Gates GREEN (2026-09-07)
 
 ## Goal
 
@@ -38,7 +38,7 @@ WP-2AとWP-2Bはrepositoryが独立しているが、Claude利用枠とWorktree�
 ## Deferred Decisions
 
 - 各libraryの利用space: Project ownerが該当WP着手直前に決定する。
-- Workflow Document正本: WP-8着手直前に`zizai-workflow-designer`の状態入出力APIだけを調査し、Project ownerが決定する。
+- Workflow Document正本: 決定済み。Project ownerが2026-08-29にApplicationのcurrent workflow stateを唯一の正本とし、Adapterがlibrary用Document projectionを都度生成する方針を承認した（WP-8、`docs/features/frontend-libraries.md`）。
 - SQL flow表示機能と利用space: 本Taskでは決めず、新機能を検討する将来TaskでProject ownerが決定する。
 
 ## Source
@@ -116,7 +116,7 @@ TASK-015は「Investigationから追加された全Task」を依存条件に持�
 
 - `docs/features/frontend.md`または承認された専用Frontend library specification
 - `docs/decisions/`
-- `docs/tasks/active/TASK-016-adopt-approved-frontend-libraries.md`
+- `docs/tasks/done/TASK-016-adopt-approved-frontend-libraries.md`
 - `apps/gui/`
 - `apps/common/contracts/`
 - `tests/static/`
@@ -319,7 +319,7 @@ Tests:
 - library upstream test commandsとoffline asset smoke。
 
 Codex Verification:
-- vendor記録と同梱内容を照合し、8 commit identifier、LICENSE、runtime load順を確認する。
+- vendor記録と同梱内容を照合し、7 commit identifier、LICENSE、runtime load順を確認する。
 
 ### WP-3 AppShell migration
 
@@ -579,7 +579,7 @@ Read Scope:
 
 Edit Scope:
 - `docs/features/frontend-libraries.md`
-- `docs/tasks/active/TASK-016-adopt-approved-frontend-libraries.md`
+- `docs/tasks/done/TASK-016-adopt-approved-frontend-libraries.md`
 
 Acceptance Criteria:
 - 3画面がlocal AppShellを使用し、旧shell／tab描画0、Application固有語のlibrary流入0である。
@@ -1370,44 +1370,543 @@ Codex Verification:
 
 ### WP-8 WorkflowDesigner migration
 
-Owner: claude-assist
+End State: 現行workflow canvasの表示・pan／zoom・選択・node／edge／loop／note操作を`zizai-workflow-designer`が所有し、Applicationは唯一のworkflow state、保存、実行、Bridge、履歴、node設定を所有する。既存操作を欠落させず、旧canvas UI実装を重複して残さない。
 
-Assignment Reason: CodexとProject ownerが単一Document正本を決定した後は、Document Adapter、Designer統合、round-trip Testの完了条件を明確に限定できるため。
+Goal Traceability:
+- library優先のcanvas UIと操作 → WP-8C、WP-8E、WP-8F
+- 既存node／edge／loop／note操作の維持 → WP-8B、WP-8C、WP-8E
+- 単一stateと明確なAdapter境界 → WP-8A、WP-8E
+- upstream／vendor一致とApplication固有語0 → WP-8C、WP-8D
+- 旧canvas UI重複0とWindows実画面PASS → WP-8F、WP-8G-A、WP-8G-B
 
-Task: 承認spaceのworkflow editingを`zizai-workflow-designer`へ移行し、単一Document正本とApplication request Adapterを確立する。
+Critical Path: `WP-8A境界契約 → WP-8B現行回帰基準 → WP-8C upstream汎用event追加 → WP-8D publish／再vendor → WP-8E Application Adapter接続 → WP-8F旧UI整理 → WP-8G-A表示幾何／icon修復 → WP-8G-B統合検証`。
+
+Parallel Work: なし。現行挙動を固定してからlibrary contractを拡張し、その確定SHAへApplicationを接続する。
+
+Task Graph Changes: 既存の単一WP-8を、境界決定、回帰基準、upstream、vendor、Application統合、旧UI整理、最終検証へ分割する。SQLFlowDesignerは引き続き対象外。
+
+Deferred Decisions: なし。Project ownerはcurrent workflow canvasを対象spaceとし、library標準design／pan／zoomを採用、loop機能は維持しloop枠だけを非表示、既存操作に不足する汎用eventをlibraryへ追加する方針を承認した。
+
+#### WP-8A WorkflowDesigner boundary contract
+
+Owner: Codex
+
+Assignment Reason: Applicationとlibraryの責務、単一state、既存操作維持を横断して確定する設計判断のため。
+
+Task: capability matrixを一次コードへ照合し、library UI／eventとApplication state／command Adapterの境界をCurrent Specificationへ記録する。
 
 Dependencies:
-- TASK-018、WP-2。
-- WP-8着手直前に状態入出力APIだけを調査した上でのWorkflow Document Decision。
-- 対象spaceのProject owner決定。
+- TASK-018、WP-2、Project ownerのWP-8方針承認。
 
 Read Scope:
-- `docs/features/data-contract.md`
-- `apps/gui/`のstate/app/workflow/canvas/detail
-- WorkflowDesigner source/sample/test
-- Bridge/run/internal frame contracts
+- `AGENTS.md`、`docs/features/`、本Task
+- `apps/gui/vendor/zizai-workflow-designer/src/`
+- `apps/gui/js/app.js`、`state.js`、`ui.node.canvas*.js`、`ui.node.detail.js`、`bridge.js`、`workspace.manager.js`
 
 Edit Scope:
-- 承認されたworkflow state/adapter/view領域
-- data contractの承認済み更新先
-- 対応Unit/Integration/E2EとTask evidence
+- `docs/features/frontend-libraries.md`
+- 本Task
 
 Acceptance Criteria:
-- `.zizd` load/edit/save/runが単一正本でround-tripする。
-- Patch、Undo/Redo、selection、node/edge/loop/note、status/validationがlibrary contractで動作する。
-- 旧canvas/graph editing重複が0である。
+- library、Application、Adapterの所有責務と禁止される二重stateが明記される。
+- loop枠非表示、library pan／zoom採用、既存操作維持、不足event追加が明記される。
 
 Constraints:
-- 二重stateを作らない。
-- `.zizd`互換またはBridge Protocolを暗黙に変更しない。
+- codeを変更しない。
+- `.zizd` schemaやBridge Protocolを暗黙に変更しない。
 
 Tests:
-- Document transform/patch property tests。
-- WorkflowDesigner unit/browser tests。
-- full workflow open/edit/save/run/loop E2EとWindows WebEngine Gate。
+- capability／boundary plan review。
 
 Codex Verification:
-- representative `.zizd` round-trip diff、history inverse、run payload、旧graph参照0を確認する。
+- Claude Opusの読取専用gap reviewを一次コードへ照合し、採用／不採用を分類する。
+
+#### WP-8B Existing canvas regression baseline
+
+Owner: Codex（Terra xhigh implementer、Luna reviewer）
+
+Assignment Reason: 複雑な現行canvas操作を実装非依存の回帰Testへ固定するまとまったTest作業であるため。
+
+Task: 現行実装でnode／edge／loop／note、selection、context操作、空白drop追加、undo／redo、status／validation、外部linkのobservable behaviorをPlaywrightへ固定する。
+
+Dependencies:
+- WP-8A。
+
+Read Scope:
+- `AGENTS.md`、`docs/features/coding-rules.md`、`docs/features/frontend-libraries.md`、本Task
+- `apps/gui/js/app.js`、`state.js`、`ui.node*.js`
+- `tests/playwright/`
+
+Edit Scope:
+- `tests/playwright/specs/`のWP-8専用spec
+- 必要なtest fixtureだけ
+
+Acceptance Criteria:
+- production code変更0で、移管後も維持する操作が現行実装上GREENになる。
+- loop枠の存在を期待せず、loop nodeと関連操作だけを保護する。
+
+Constraints:
+- production code、仕様、既存testを変更しない。
+- screenshotだけでなく状態／event／DOMのobservable behaviorを検証する。
+
+Tests:
+- 新規focused Playwright spec。
+
+Codex Verification:
+- diff scopeとTestの実装非依存性を確認し、focused specを独立再実行する。
+
+#### WP-8C Generic WorkflowDesigner event completion
+
+Owner: Codex（Sol xhigh initial implementer、Terra xhigh fix implementer、Luna reviewer）
+
+Assignment Reason: upstream libraryのdocument／interaction／event／browser Testを横断する複雑実装であるため。
+
+Task: configurable context action、空白／edge drop要求、loop内／loop後追加要求、合流解除要求、history undo／redo要求、annotation mode等の不足eventをApplication非依存の公開contractとしてTest-firstで追加する。
+
+Dependencies:
+- WP-8B。
+
+Read Scope:
+- WorkflowDesigner repositoryのsource、README、test
+- WP-8A boundary contractとWP-8B behavior baseline
+
+Edit Scope:
+- WorkflowDesigner repositoryの承認source／test／READMEだけ
+
+Acceptance Criteria:
+- 既存操作に必要なevent payloadが汎用語で表現され、Application固有Connector／Bridge／`.zizd`語を含まない。
+- library標準design／pan／zoomを維持し、loop枠を描画しない。
+- upstream browser／unit TestがGREENになる。
+
+Constraints:
+- Application repositoryを変更しない。
+- state、保存、実行、履歴をlibraryが所有しない。
+- commit、pushしない。
+
+Tests:
+- upstream unit／browser TestのRED→GREEN。
+
+Codex Verification:
+- public API、payload、Application固有語0、listener cleanup、full upstream Testを独立確認する。
+
+#### WP-8D Publish and exact re-vendor
+
+Owner: Codex
+
+Assignment Reason: GitHub反映、SHA固定、source一致、権利／vendor contractの確定操作を行うため。
+
+Task: 承認後にWP-8Cをcommit／pushし、確定SHAのruntime sourceだけをApplicationへ再vendorする。
+
+Dependencies:
+- WP-8C GREEN、Project ownerのcommit／push承認。
+
+Read Scope:
+- WP-8C差分／Test結果、vendor policy
+
+Edit Scope:
+- `apps/gui/vendor/zizai-workflow-designer/`
+- `apps/gui/vendor/README.md`
+- vendor contract Test
+
+Acceptance Criteria:
+- upstreamとvendorがbyte-identicalで、exact SHAとload orderが記録される。
+
+Constraints:
+- Application統合codeを変更しない。
+
+Tests:
+- upstream full Test、vendor contract、hash照合、remote asset 0。
+
+Codex Verification:
+- local／remote SHA、vendor hash、staged scopeを独立確認する。
+
+#### WP-8E Application controlled Adapter integration
+
+Owner: Codex（complex/debugはSol、通常実装・TestはTerra／Luna）
+
+Assignment Reason: current state、library document projection、全event Adapter、history、run／Bridge境界を横断する複雑実装であるため。
+
+Task: current Application stateを唯一の正本としてlibraryをcontrolled componentでmountし、表示用Documentを都度生成して全公開eventを既存Application commandへ接続する。
+
+Dependencies:
+- WP-8D。
+
+Read Scope:
+- WP-8A contract、WP-8B Test、確定WorkflowDesigner API
+- `apps/gui/js/app.js`、`state.js`、`ui.node*.js`、`bridge.js`、`workspace.manager.js`
+- 関連HTML／CSS／Playwright
+
+Edit Scope:
+- 承認されたWorkflowDesigner Adapter／asset load／canvas host領域
+- WP-8専用Application Test
+
+Acceptance Criteria:
+- libraryがcanvas UIを描画し、Application state以外の永続・独立workflow stateを作らない。
+- save／reopen／run payload、undo／redo、node detail、status／validation、loop／noteが維持される。
+- library eventだけがApplication commandを呼び、libraryがBridgeへ直接依存しない。
+
+Constraints:
+- `.zizd` schema、Bridge Protocol、Connector処理を暗黙に変更しない。
+- 旧canvas codeはこのPackageで削除しない。
+- commit、pushしない。
+
+Tests:
+- WP-8B baseline、新Adapter integration、save／run／history focused Test。
+
+Codex Verification:
+- state所有、event mapping、stale listener、round-trip、run payloadを独立確認する。
+
+##### WP-8E-R1 表示用データ変換処理の分離
+
+Owner: Codex（実装はTerra、主担当が差分とTestを確認）
+
+Task: ワークフローの保存データをWorkflowDesignerの表示形式へ変換する処理を、旧Canvasの内部処理からApplication共通処理へ分離する。旧CanvasとAdapterは同じ変換処理を利用する。
+
+Acceptance Criteria:
+- Application stateだけを正本として扱い、変換処理が保存データを書き換えない。
+- 未知のmetadata、node ID、接続、loop、noteが変換前後で失われない。
+- 旧CanvasとAdapterが同じ共通処理を利用する。
+
+##### WP-8E-R2 操作処理の共通化確認と修正
+
+Owner: Codex（複雑な調査・修正はSol、主担当が差分とTestを確認）
+
+Task: ノードの追加・削除・接続、copy／paste、実行、undo／redoをApplication共通の操作処理へ集約し、Adapterと旧Canvasから利用できる状態へ整える。
+
+Acceptance Criteria:
+- library eventがApplication共通処理へ接続され、libraryがBridgeや保存処理を直接扱わない。
+- ID採番、参照書換え、validation、run payload、historyが既存仕様を維持する。
+
+##### WP-8E-R3 テスト専用Canvasの除去
+
+Owner: Codex（実装はTerra、主担当が差分とTestを確認）
+
+Task: production DOMに追加された非表示・非操作の互換Canvasを削除し、WP-8B baselineを実際のWorkflowDesigner画面に対する操作と確認へ変更する。
+
+Acceptance Criteria:
+- production DOMにテスト専用Canvasを残さない。
+- 操作可能なCanvasはWorkflowDesignerだけであり、WP-8Bの15 behaviorを弱めない。
+
+##### WP-8E-R4 統合検証と証跡更新
+
+Owner: Codex（Test実行はLuna／Terra、最終判定は主担当）
+
+Task: Adapter Test、WP-8B baseline、関連画面回帰、構文、vendor契約を実行し、現行結果でWP-8E reportとTASK-016 Evidenceを更新する。
+
+Acceptance Criteria:
+- 古いBLOCKED記録と最新Test結果の矛盾がない。
+- 自動Testと未実施のWindows実画面確認を区別して記録する。
+
+Critical Path: `WP-8E-R1 → WP-8E-R2 → WP-8E-R3 → WP-8E-R4`。
+
+Parallel Work: なし。同じAdapterとbaselineを扱うため、順番に実施する。
+
+Deferred Decisions:
+- 旧Canvas描画・hit・interaction codeの削除はWP-8Fで実施する。
+- Windows実画面の最終確認はWP-8Gで実施する。
+
+#### WP-8F Remove duplicate legacy canvas UI
+
+Owner: Codex（複雑な境界調査・実装はGPT Sol、独立reviewはGPT Terra）
+
+Assignment Reason: 旧Canvas2Dの描画／hit／interaction依存を安全に除去する高risk cleanupであるため。
+
+Task: WP-8B／EがGREENの状態で、libraryと重複する旧canvas描画・hit・interactionだけを削除し、Application command／state／detail責務を残す。
+
+Dependencies:
+- WP-8E GREEN。
+
+Read Scope:
+- WP-8全差分、旧canvas source、参照元、関連Test
+
+Edit Scope:
+- `apps/gui/js/ui.node.canvas*.js`と直接参照元
+- 関連static／Playwright Test
+
+Acceptance Criteria:
+- libraryと同一UI責務の旧実装・load・selector参照が0になる。
+- Application所有command／state／detail／Bridge責務が残る。
+
+Constraints:
+- Testで未到達を証明できないApplication責務を削除しない。
+- commit、pushしない。
+
+Tests:
+- WP-8B／E focused、static reference gate、required regression。
+
+Codex Verification:
+- 削除scope、残存参照0、Application責務保全、全回帰を独立確認する。
+
+##### WP-8F-A 旧Canvas責務と削除境界の確定
+
+Owner: Codex（調査はGPT Sol、主担当が判断を確認）
+
+Task: 旧Canvas関連の各ファイル・関数・参照を、libraryと重複する「描画・クリック位置判定・画面操作」と、Applicationに残す「command・state・detail・Bridge」に分類し、削除対象と保持対象を確定する。
+
+Acceptance Criteria:
+- 各対象を削除／保持／移動不要に分類し、根拠と参照元を記録する。
+- Testで利用されているだけのproduction責務と、実画面で必要なApplication責務を混同しない。
+- このWork Packageではproduction codeを変更しない。
+
+##### WP-8F-B 旧Canvas描画・クリック位置判定・画面操作の削除
+
+Owner: Codex（実装はGPT Sol、主担当が差分を確認）
+
+Task: WP-8F-Aで削除対象と確定した旧Canvasの描画・クリック位置判定・画面操作だけを削除し、WorkflowDesigner AdapterとApplication共通処理を唯一の実行経路にする。
+
+Acceptance Criteria:
+- libraryと重複する旧Canvas UI処理がproduction経路から除去される。
+- Application所有のcommand・state・detail・Bridgeと、WP-8Eで分離したprojector／facadeは残る。
+- WP-8B／E focused TestがGREENを維持する。
+
+##### WP-8F-C 読込・selector・Test参照の整理
+
+Owner: Codex（実装はGPT Sol、主担当が差分を確認）
+
+Task: WP-8F-Bで不要になったscript読込、CSS selector、旧Canvas専用Test参照を整理し、旧UI参照が復活しないstatic gateを追加する。
+
+Acceptance Criteria:
+- 削除済み旧Canvas実装へのproduction load・selector・呼出参照が0になる。
+- legacy専用Testを単純削除せず、必要な挙動はWorkflowDesigner Adapter／baseline Testへ残す。
+
+##### WP-8F-D 統合検証と証跡更新
+
+Owner: Codex（独立reviewはGPT Terra、Test再実行と最終判定は主担当）
+
+Task: focused／関連画面／static gateを実行し、削除範囲、残存参照0、Application責務保全を照合してWP-8Fの証跡を更新する。
+
+Acceptance Criteria:
+- WP-8B／E focused、関連画面回帰、vendor contract、static reference gateがPASSする。
+- 既知の無関係な失敗とWP-8Fによる回帰を分離して記録する。
+- Windows実画面確認はWP-8Gへ残し、未確認をPASS扱いにしない。
+
+Critical Path: `WP-8F-A → WP-8F-B → WP-8F-C → WP-8F-D`。
+
+Parallel Work: なし。同じ旧Canvas参照を段階的に削除するため、前段の判定とGREENを確認してから次へ進む。
+
+#### WP-8G-A WorkflowDesigner geometry and icon repair
+
+Owner: Codex（Claude Opusは既存差分を保護するため読取専用plan review、実装と最終判定はCodex）
+
+Assignment Reason: libraryの汎用描画寸法とApplicationのstate／projection境界を横断し、現在の未commit差分と同じfileを変更するため、Claudeへ直接編集させずCodexが帰属を管理する。
+
+Task: Windows実画面で確認したnode過大、STARTと先頭stepの重なり、START／ENDのgrid不整合、step icon非表示を、library汎用contractとApplication Adapterの責務を分離したまま修正する。follow-upとしてstep外形106×88px、visual 48px、icon 26px、横方向level間隔112px、node名12px、80% arrow marker、淡色edgeへ調整する。
+
+Dependencies:
+- WP-8F GREEN。
+- Project ownerが2026-08-31に、step visualを現行の約半分とし、memo modeを本修正から除外する方針を承認。
+
+Read Scope:
+- `AGENTS.md`、`docs/features/frontend-libraries.md`、本Task
+- `apps/gui/vendor/zizai-workflow-designer/src/`
+- `apps/gui/js/workflow-designer.adapter.js`、`workflow-display.projector.js`、`state.js`、`ui.node.shared.js`
+- WP-8 Playwright／vendor contract Test
+
+Edit Scope:
+- WorkflowDesigner upstream repositoryの汎用node metrics／grid source、CSS、Test、README
+- `apps/gui/vendor/zizai-workflow-designer/`のupstream一致copyとrevision記録
+- `apps/gui/js/workflow-designer.adapter.js`、`workflow-display.projector.js`、必要な共有配置定義
+- WP-8 focused Playwrightと本Task／`docs/features/frontend-libraries.md`
+
+Acceptance Criteria:
+- step外形106×88px、visual 48px、icon 26pxとなり、port／edge anchor／hit領域が同じmetricsから整合する。
+- START、最初のstep、後続step、ENDが同じgrid原点と配置間隔を使い、矩形が重ならず、単一路では同じY基準へ揃う。
+- 全stepでApplication config由来のconnector iconが表示され、未知connectorは既存fallbackを使う。
+- node外形106×88px内にvisual、node名、descriptionが収まり、通常edge／arrowは`#94a3b8`、arrow markerは6.4pxで表示される。選択中edgeの強調色は維持する。
+- Application stateを唯一の正本とし、`.zizd` schema、Bridge、memo／annotation mode、旧Canvas互換を変更しない。
+
+Constraints:
+- Application固有のConnector／Action概念をlibraryへ追加しない。
+- CSSだけの縮小、vendor copyだけの修正、旧Canvas復活、Claudeによる編集／commit／pushを行わない。
+- 既存の未commit変更を上書き、削除、正規化しない。
+
+Tests:
+- libraryで任意node metricsとgrid原点に対するmodel anchor／CSS variable／snapのRED→GREEN Test。
+- Playwrightでnode実寸、矩形非交差、START／step／END整列、icon可視、drag後の描画位置と保存位置一致を確認。
+- WP-8 Adapter／baseline、vendor contract、関連Frontend回帰、JavaScript構文、diff check。
+
+Codex Verification:
+- Claude Opusの読取専用review各指摘を一次コードへ照合し、採用範囲が4不具合に限定されることを確認する。
+- focused Testを独立再実行し、upstream source／vendor runtime bundle／revision記録の一致とWorktree差分scopeを確認する。
+
+Critical Path: `library RED → generic metrics／grid GREEN → local upstream確定 → exact re-vendor → Adapter projection／icon RED→GREEN → related regression → Windows manual smoke`。
+
+Parallel Work: なし。同じgeometry contractをlibrary、vendor、Adapterが順に共有するため直列で実施する。
+
+Task Graph Changes: 失敗したWP-8G manual smokeを、修復WP-8G-Aと再検証WP-8G-Bへ分割する。
+
+Deferred Decisions:
+- None。memo／annotation modeの期待挙動は2026-09-01にProject ownerが確定し、WP-8G-Cへ分離した。
+
+#### WP-8G-C Annotation mode exclusivity and context actions
+
+End State: 付箋モードOFFではnode編集と付箋linkのOS browser表示、ONでは付箋だけの編集と右click作成／色変更が動作し、両modeの操作責務が混在しない。
+
+Goal Traceability:
+- ON時のnode操作／詳細表示禁止、canvas右click作成、付箋右click色変更、toolbar作成button削除、OFF時だけの外部link発火 → WP-8G-C1、WP-8G-C2。
+- upstream／vendor一致とApplication security boundary維持 → WP-8G-C2、WP-8G-C3。
+
+Critical Path: `WP-8G-C0仕様記録 → WP-8G-C1 upstream RED／GREEN → WP-8G-C2 exact vendor／Application RED／GREEN → WP-8G-C3 Codex独立検証 → WP-8G-B`。
+
+Parallel Work: なし。同じinteraction、context menu、standalone bundleを直列で確定する。
+
+Task Graph Changes: WP-8G-Aで保留したannotation mode follow-upをWP-8G-CとしてWP-8G-B前へ追加する。
+
+Deferred Decisions: None。色変更はlibraryの`noteColors`候補をmenu表示する方式、候補初期値は既存sampleの黄・緑・青とする。2026-09-01のProject owner判断により、付箋からOS browserで開く外部linkとして`zenn.dev`と`github.com`の全pathを既存domain allowlistへ追加する。
+
+Work Package: WP-8G-C0 Canonical specification
+
+Owner: Codex
+
+Assignment Reason: Project ownerとの仕様確定とTask graph更新はCodexが所有するため。
+
+Task: mode別のnode／note／link／context menu挙動とApplication／library境界を正本へ記録する。
+
+Dependencies:
+- 2026-09-01のProject owner承認。
+
+Read Scope:
+- `AGENTS.md`、`docs/features/frontend-libraries.md`、本Task。
+
+Edit Scope:
+- `docs/features/frontend-libraries.md`、本Task。
+
+Acceptance Criteria:
+- mode別の許可／禁止操作、menu内容、link発火条件、責務境界が曖昧なく記録される。
+
+Constraints:
+- 未承認の色、Bridge、保存schema、node geometryを追加変更しない。
+
+Tests:
+- 文書内の矛盾、placeholder、旧toolbar作成仕様を検索する。
+
+Codex Verification:
+- Project ownerの確定内容と文書を項目単位で照合する。
+
+Work Package: WP-8G-C1 Generic library interaction
+
+Owner: claude-assist（Claude Opus）
+
+Assignment Reason: pointer gesture、selection、command、context menu、note editing、standalone bundleを横断するinteraction修正であり、期待挙動と編集範囲が明確なため。
+
+Task: upstream libraryへmode排他、ON時のcanvas／note context menu、`noteColors` palette、OFF時だけのexternal link event、toolbar作成button削除をTest-firstで実装する。
+
+Dependencies:
+- WP-8G-C0完了。
+
+Read Scope:
+- upstreamの`README.md`、`src/`、`test/`、`sample/`。
+- `docs/features/frontend-libraries.md`と本Work Package。
+
+Edit Scope:
+- upstreamの`src/`、`test/`、`sample/`、必要なREADME。
+
+Acceptance Criteria:
+- ON時はnode選択／詳細／drag／connect／node context action／keyboard編集が発火しない。
+- ON時のcanvas／node右clickは`annotation.add`だけ、付箋右clickは黄・緑・青の候補色だけを表示する。
+- toolbarに`annotation.add`を表示せず、右click以外から新規付箋を作成しない。
+- ONでは付箋linkを発火せず編集を優先し、OFFでは`http://`／`https://`だけを`external-link:open-request`へ渡す。
+- OFFでnode編集、ONで付箋本文編集／移動／resize／色変更／削除を維持する。
+
+Constraints:
+- Application、Bridge、`.zizd`、vendor copyを変更しない。Application固有語をlibraryへ追加しない。
+- branch切替、commit、push、publishを行わず、既存未commit変更を上書きしない。
+
+Tests:
+- `test_sticky_note_mode.js`、`test_generic_events.js`のRED→GREEN。
+- 関連Node Test、sample static、standalone bundle parity、JavaScript構文。
+
+Codex Verification:
+- upstream差分scope、汎用API、mode matrix、Test結果を一次コードで確認する。
+
+Work Package: WP-8G-C2 Vendor and Application integration
+
+Owner: claude-assist（Claude Sonnet）
+
+Assignment Reason: upstreamで確定した汎用挙動をApplicationへ接続する通常規模の同期／Test作業であるため。
+
+Task: C1 runtime sourceをvendorへ一致させ、Application Adapterから既存`noteColors`と外部link security boundaryを接続し、mode別PlaywrightをGREENにする。
+
+Dependencies:
+- WP-8G-C1 GREEN。
+
+Read Scope:
+- upstream変更source、`apps/gui/vendor/zizai-workflow-designer/`、`apps/gui/js/workflow-designer.adapter.js`、WP-8 Playwright、vendor static Test。
+
+Edit Scope:
+- `apps/gui/vendor/zizai-workflow-designer/`、必要な`apps/gui/js/workflow-designer.adapter.js`、WP-8 Playwright、vendor contract、正本のEvidence欄。
+
+Acceptance Criteria:
+- Application実画面でもC1のmode matrixが成立し、OFF時linkだけが既存AdapterからOS browser要求へ変換される。
+- vendor runtimeはupstream sourceと一致し、Application側へ付箋UIの重複実装を追加しない。
+
+Constraints:
+- Bridge、`.zizd`、保存／実行、node geometry、旧Canvasを変更しない。
+- branch切替、commit、push、publishを行わない。
+
+Tests:
+- WorkflowDesigner Adapter／baseline Playwright、vendor／asset／boundary static、JavaScript構文。
+
+Codex Verification:
+- Claude実行前後statusを比較し、Edit Scope、upstream／vendor一致、focused Testを独立確認する。
+
+Work Package: WP-8G-C3 Independent verification
+
+Owner: Codex
+
+Assignment Reason: Claude成果物を独立判定し、Application／library境界とdirty Worktreeを保全するため。
+
+Task: C1／C2差分をreviewし、自動GateとProject owner向けmanual smoke項目を確定する。
+
+Dependencies:
+- WP-8G-C2 GREEN。
+
+Read Scope:
+- C1／C2全差分、関連仕様、Test結果。
+
+Edit Scope:
+- 本TaskのEvidence／status。明確な軽微修正が必要な場合だけ承認済みEdit Scope内。
+
+Acceptance Criteria:
+- mode matrix、外部link security boundary、upstream／vendor一致、既存node／note操作回帰がすべて検証される。
+
+Constraints:
+- Claudeの完了報告だけでPASS判定しない。未確認をPASS扱いにしない。
+
+Tests:
+- C1／C2のfocused／related Test再実行、`git diff --check`、Windows manual smoke。
+
+Codex Verification:
+- Acceptance criteriaをTestと一次diffへ対応付け、残存riskを明示する。
+
+#### WP-8G-B Integrated verification
+
+Owner: Codex
+
+Assignment Reason: upstream、vendor、Application、Windows実画面を横断して最終Acceptanceを判定するため。
+
+Task: 自動GateとProject owner manual smokeを実行し、WP-8 EvidenceとTask状態を確定する。
+
+Dependencies:
+- WP-8G-A、WP-8G-C GREEN。
+
+Read Scope:
+- WP-8全差分、仕様、Test結果
+
+Edit Scope:
+- 本TaskのEvidence／status
+
+Acceptance Criteria:
+- WP-8 AcceptanceとWindows manual smokeがPASSし、未確認事項が明示される。
+
+Constraints:
+- 未確認をPASS扱いにしない。
+
+Tests:
+- upstream full、focused Unit／Playwright、required／e2e Gate、Windows manual smoke。
+
+Codex Verification:
+- capability traceability、単一state、旧UI重複0、Worktree scopeを最終照合する。
 
 ### Deferred from this Task: SQLFlowDesigner
 
@@ -1415,40 +1914,367 @@ Codex Verification:
 
 ### WP-10 CatalogPanel migration
 
-Owner: claude-assist
+Project owner approved the detailed WP-10 design and model split on 2026-09-01.
 
-Assignment Reason: Project ownerが用途、space、data source、保存先、permissionを決定した後は、Catalog Adapterと回帰Testの境界が明確になるため。
+End State: AppShell左sidebarのCatalog activityがactive tabの`.zizd`／`.sql`／`.md`に対応する読取専用sampleを表示し、text copyまたは既存node Pasteへ安全に接続される。未対応tabは空状態となり、Bridge command/event数、Source／Runtime／Workspace境界、既存workflow copy／paste／historyを変更しない。
 
-Task: Project ownerが承認した用途とspaceへ`zizai-catalog-panel`を導入し、load/save/icon/permissionをApplication Adapterへ接続する。
+Goal Traceability:
+- Application非依存のCatalogPanel host hookと既存consumer互換 → WP-10A
+- Source設定の検証済み一方向配信、Bridge 31／8維持 → WP-10B
+- `.zizd` node templateの内部clipboardと既存Paste／history維持 → WP-10C
+- AppShell activity、active extension切替、read-only UI、text clipboard → WP-10D、WP-10D-R1～R4
+- local asset、lifecycle、統合Gate、Evidence → WP-10E
+
+Critical Path: `WP-10A → WP-10C → WP-10D → WP-10D-R1 → WP-10D-R2 → WP-10D-R3 → WP-10D-R4 → WP-10E`。WP-10BはWP-10Aと並行可能だが、同じdirty Worktreeの帰属を明確にするため本sessionでは直列実行とする。
+
+Parallel Work: Architecture上はWP-10AとWP-10Bが独立する。実行はWorktree混線防止のため直列化する。
+
+Task Graph Changes: 旧WP-10をWP-10A～WP-10Eへ分割し、WP-10Dの独立reviewで確認した境界／回復／lifecycle／test不足をWP-10D-R1～R4としてWP-10E前へ挿入する。新TaskやBridge commandは追加しない。
+
+Deferred Decisions: なし。spaceはAppShell左sidebar、data sourceは読取専用Source設定、保存先は無し、permissionは作成／編集／削除／保存すべて無効、未対応拡張子は空状態と決定済み。
+
+#### WP-10A CatalogPanel upstream host activation hook
+
+Owner: claude-assist（Model: Opus）
+
+Assignment Reason: 公開API互換、非同期clipboard、error／lifecycleを同時に守る難しいupstream境界であるため。
+
+Task: `zizai-catalog-panel` upstreamへ汎用host activation hookを追加し、host処理済み時は既定clipboard書込みを抑止し、hook未指定consumerの現行挙動を維持する。
 
 Dependencies:
-- WP-2。
-- 用途、space、data source、保存先、permissionのProject owner決定。
+- Project ownerによるWP-10詳細設計承認。
 
 Read Scope:
-- 承認spaceと関連data/persistence contract
-- CatalogPanel source/sample/test
-- icon/security policy
+- upstream repositoryのREADME、source、sample、test
+- `docs/features/frontend-libraries.md`
 
 Edit Scope:
-- 承認されたcatalog/adapter領域
-- 対応testとTask evidence
+- upstream repositoryのCatalogPanel source、test、必要最小限のREADME API記録
 
 Acceptance Criteria:
-- catalog dataがvalidationされ、change/copy/errorがAdapterへ通知される。
-- persistenceとpermissionが承認contractに従う。
-- iconはlocal allowlisted assetだけを使用する。
+- hook未指定時のclipboard、toast、`catalog:copy`が現行互換である。
+- host処理済み時はlibraryがOS clipboardへ書かない。
+- hook errorは`catalog:error`となり二重処理しない。
+- destroy／remountでlistener、menu、timerを残さない。
 
 Constraints:
-- Workspace Explorerやconnector catalogへ推測で割り当てない。
-- library memory stateを永続化正本にしない。
+- Application、Bridge、connector、拡張子の概念をlibraryへ追加しない。
+- vendor copyを先行修正しない。commit／pushしない。
 
 Tests:
-- Catalog store/panel/event/permission/validation test。
-- persistence/icon policy/approved-space integration。
+- upstream host-handled／default／error／lifecycle focused test。
 
 Codex Verification:
-- owner決定との一致、保存round-trip、権限制御、external icon 0を確認する。
+- upstream diff、公開契約、focused testを独立確認し、確定操作とvendor SHA更新はCodexが担当する。
+
+#### WP-10B Source catalog configuration and Bridge payload
+
+Owner: claude-assist（Model: Sonnet）
+
+Assignment Reason: Source設定、既存`app.getStatus`追加field、fixture追随の境界が明確であるため。
+
+Task: `catalog_samples.json`を追加し、Python/Application Adapterで許可拡張子、item種別、local icon、node許可fieldを検証して、既存status payloadへpath無しで配信する。
+
+Dependencies:
+- Project ownerによるWP-10詳細設計承認。
+
+Read Scope:
+- `AGENTS.md`、Source設定ADR、`apps/desktop/bridge.py`、`apps/common/config/`
+- TASK-010 layout fixture／test、Bridge contract／test
+
+Edit Scope:
+- `apps/common/config/catalog_samples.json`
+- `apps/desktop/bridge.py`
+- 直接関係するSource config／Bridge／repository layout testとfixture
+
+Acceptance Criteria:
+- `.zizd`／`.sql`／`.md`だけがsanitized payloadへ残る。
+- Source path、root、scopeをpayloadへ含めない。
+- malformed itemだけを安全に除外し、取得不能時は空payloadとする。
+- Bridge command 31／event 8を維持する。
+
+Constraints:
+- 根拠のない文字数、件数、payload上限を追加しない。
+- 新Bridge command、Workspace scope、Runtime保存を追加しない。commit／pushしない。
+
+Tests:
+- Source config validation unit、Bridge config integration、TASK-010 path contract、Bridge count regression。
+
+Codex Verification:
+- payload、path非露出、31／8、focused testを独立確認する。
+
+#### WP-10C Workflow node-template internal clipboard
+
+Owner: claude-assist（Model: Opus）
+
+Assignment Reason: iframe境界、既存node clipboard、ID／接続採番、history／undoを同時に維持する複雑なstate変更であるため。
+
+Task: 内部clipboardを既存node選択またはnode templateの排他的stateへ拡張し、Catalog item選択ではworkflow stateを変えず、既存Pasteで初めて検証済みnodeを生成する。
+
+Dependencies:
+- WP-10A。
+
+Read Scope:
+- WorkflowDesigner正本仕様
+- `apps/gui/js/workflow-command.facade.js`、`state.js`、`app.js`、`workspace.manager.js`
+- copy／paste／history関連test
+
+Edit Scope:
+- 上記内部clipboard／state／embedded APIの必要最小限箇所
+- node-template clipboard focused test
+
+Acceptance Criteria:
+- 既存node copy／paste挙動が不変である。
+- template選択時にnode／historyを変更せず、Pasteで1 nodeだけ生成する。
+- connector／action／許可field／form形状を検証し、不正時は無変更で拒否する。
+- ID、step名、位置、parent／edge／loop／merge情報はtemplateから受け取らない。
+- Paste後のundo／redoが既存history経路で動作する。
+
+Constraints:
+- `.zizd` schema、Bridge、WorkflowDesigner library Documentを変更しない。
+- loop templateは初期版対象外。commit／pushしない。
+
+Tests:
+- template set／reject／Paste／anchor／undo／redoと既存copy／paste回帰。
+
+Codex Verification:
+- state mutation時点、許可field、history、focused regressionを独立確認する。
+
+#### WP-10D Catalog Adapter and AppShell integration
+
+Owner: claude-assist（Model: Sonnet）
+
+Assignment Reason: 10A～10Cで契約固定後は、activity、tab切替、mount／destroy、projectionを限定範囲で実装できるため。
+
+Task: Catalog Adapterを追加し、AppShell左activity、active extension切替、read-only projection、SQL／Markdown clipboard、`.zizd`内部clipboard受渡しを統合する。
+
+Dependencies:
+- WP-10A、WP-10B、WP-10C。
+
+Read Scope:
+- AppShell、WorkspaceManager、CatalogPanel、Frontend library仕様、local icon／CSS規約
+
+Edit Scope:
+- `apps/gui/dataflow.html`、`apps/gui/js/catalog.adapter.js`、`app-shell.js`、`workspace.manager.js`
+- 必要最小限のscoped CSS／local SVG、adapter Playwright test
+- vendor copy／README／pinned contractは確定upstream revisionに限る
+
+Acceptance Criteria:
+- Catalog activityの開閉とactive表示が既存activityと整合する。
+- `.zizd`／`.sql`／`.md` tab切替で同一instanceのdataが更新され、未対応は空状態になる。
+- 作成／編集／削除／保存UIとwrite Bridgeを持たない。
+- text itemはOS clipboard、node itemは内部clipboardへ排他的に渡る。
+- Catalog↔他activity往復でlistener、menu、timer、DOMを重複させない。
+- external asset、runtime fetch、iframe、localhost APIを追加しない。
+
+Constraints:
+- Workspace Explorer、Workflow canvas、Bridge Protocolを再設計しない。
+- Application責務をvendorへ入れない。commit／pushしない。
+
+Tests:
+- activity／extension／empty／read-only／text copy／node→Paste／lifecycle Playwright、static vendor／asset contract。
+
+Codex Verification:
+- 変更scope、Adapter境界、focused Playwright、local asset、lifecycleを独立確認する。
+
+##### WP-10D-R1 Clipboard ownership correction
+
+Owner: claude-assist（Model: Sonnet）
+
+Assignment Reason: native clipboard責務の所在と期待挙動が正本・reviewで確定しており、Adapterとfocused testへ限定できるため。
+
+Task: SQL／Markdown text itemのOS clipboard操作をApplication Adapterへ移し、`.zizd`内部clipboardとの排他性と失敗表示を維持する。
+
+Dependencies:
+- WP-10D初稿と独立review H1。
+
+Read Scope:
+- `AGENTS.md`、Frontend library正本、TASK-016、Catalog Adapter／CatalogPanel、Workspace／Workflow clipboard seam、Catalog Playwright
+
+Edit Scope:
+- `apps/gui/js/catalog.adapter.js`
+- `tests/playwright/specs/catalog-panel-adapter.spec.js`
+
+Acceptance Criteria:
+- text itemはAdapterがOS clipboardへ書込み、library既定clipboard経路を通らない。
+- node itemはOS clipboardへ書かず、既存内部clipboardだけを更新する。
+- clipboard失敗が利用者へ通知される。
+
+Constraints:
+- vendor、Bridge、Source設定、WP-10C内部clipboard契約を変更しない。commit／pushしない。
+
+Tests:
+- text／node排他、clipboard成功／失敗、write Bridge未使用のfocused Playwright。
+
+Codex Verification:
+- ownership call flowとfocused Playwrightを独立確認する。
+
+##### WP-10D-R2 Catalog source retry
+
+Owner: claude-assist（Model: Sonnet）
+
+Assignment Reason: 一時失敗を永続cacheしない修正と再取得testをAdapter内へ限定できるため。
+
+Task: `app.getStatus`初回失敗またはBridge未ready時に空表示へ縮退し、次のactivity再表示／tab切替で再取得できるようにする。
+
+Dependencies:
+- WP-10D-R1。
+
+Read Scope:
+- `AGENTS.md`、Frontend library正本、TASK-016、Catalog Adapter、Bridge ready pattern、Catalog Playwright
+
+Edit Scope:
+- `apps/gui/js/catalog.adapter.js`
+- `tests/playwright/specs/catalog-panel-adapter.spec.js`
+
+Acceptance Criteria:
+- 成功結果だけを再利用し、失敗結果は次回refreshで再取得される。
+- 未処理rejection、重複同時取得、Source path露出を追加しない。
+
+Constraints:
+- Bridge command／payload、Python、Source設定を変更しない。commit／pushしない。
+
+Tests:
+- 初回rejectまたは未ready後、再表示／tab切替で回復するfocused Playwright。
+
+Codex Verification:
+- failure state transitionと呼出回数を独立確認する。
+
+##### WP-10D-R3 Catalog lifecycle cleanup
+
+Owner: claude-assist（Model: Sonnet）
+
+Assignment Reason: upstreamの既存`destroy()`をApplication teardownへ接続する限定修正であるため。
+
+Task: Catalog Adapterへ冪等な`destroy()`を追加し、`pagehide`でlistener、menu、timer、DOM参照を解放する。
+
+Dependencies:
+- WP-10D-R2。
+
+Read Scope:
+- `AGENTS.md`、Frontend library正本、TASK-016、Catalog Adapter／CatalogPanel、AppShell teardown、Catalog／UI Shell Playwright
+
+Edit Scope:
+- `apps/gui/js/catalog.adapter.js`
+- `apps/gui/js/app-shell.js`
+- `tests/playwright/specs/catalog-panel-adapter.spec.js`
+- 必要時のみ`tests/playwright/specs/ui-shell.spec.js`
+
+Acceptance Criteria:
+- `pagehide`でCatalogPanelの`destroy()`が1回呼ばれ、Adapter参照を解放する。
+- 複数activity往復でroot、listener、menu、timerを重複させない。
+
+Constraints:
+- activity通常切替では同一instance再利用を維持する。vendorを変更しない。commit／pushしない。
+
+Tests:
+- 複数往復、destroy冪等性、UI Shell teardown回帰のPlaywright。
+
+Codex Verification:
+- teardown経路とlifecycle testを独立確認する。
+
+##### WP-10D-R4 Catalog wiring regression coverage
+
+Owner: claude-assist（Model: Sonnet）
+
+Assignment Reason: 実装変更を増やさず、残るAcceptance配線を既存Playwrightへ限定追加できるため。
+
+Task: 実`.zizd`tabからCatalog data切替までの親Shell配線と、Catalog操作がwrite Bridgeを呼ばないことを回帰testで固定する。
+
+Dependencies:
+- WP-10D-R3。
+
+Read Scope:
+- `AGENTS.md`、Frontend library正本、TASK-016、Workspace tab配線、Catalog Adapter、既存Catalog／Workflow／UI Shell Playwright
+
+Edit Scope:
+- `tests/playwright/specs/catalog-panel-adapter.spec.js`
+- testability上不可欠な場合だけ`apps/gui/js/workspace.manager.js`
+
+Acceptance Criteria:
+- 実`.zizd`tab activationでCatalogが`.zizd`dataへ切り替わる。
+- activity open、tab切替、item操作後もwrite Bridge callが0件である。
+
+Constraints:
+- WP-10B／10C／upstreamの既存testを重複実装しない。Application挙動をtest都合で変更しない。commit／pushしない。
+
+Tests:
+- Catalog focused Playwrightと必要最小限のWorkflow／UI Shell回帰。
+
+Codex Verification:
+- testが実経路を通り、monkey patchだけで成立していないことを独立確認する。
+
+##### WP-10D-R5 Catalog manual-smoke clipboard corrections
+
+Owner: claude-assist（Model: Sonnet）
+
+Assignment Reason: Windows実機smokeで再現した2経路に限定し、原因調査、修正、回帰testを一つのPackageで完結できるため。
+
+Task: Catalog item操作後の`.zizd`貼り付けshortcutと、Desktop WebEngine上のSQL／Markdown text copyを修正する。
+
+Dependencies:
+- WP-10D-R4と2026-09-07のProject owner Windows manual smoke。
+
+Read Scope:
+- `AGENTS.md`、Frontend library正本、TASK-016
+- `apps/gui/js/catalog.adapter.js`、Workflow clipboard／focus Adapter、Workspace frame配線
+- `apps/desktop/host.py`のWebEngine clipboard permission設定
+- Catalog／Workflow関連Playwright
+
+Edit Scope:
+- `apps/gui/js/catalog.adapter.js`
+- 原因上不可欠な場合だけWorkflow clipboard／focus Adapterまたは`apps/desktop/host.py`
+- `tests/playwright/specs/catalog-panel-adapter.spec.js`
+- `tests/playwright/specs/workflow-designer-adapter.spec.js`
+- 本TaskのEvidence
+
+Acceptance Criteria:
+- `.zizd` Catalog itemを選んだ直後、通常の`Ctrl+V`で既存workflow paste経路からnodeを1件追加できる。
+- SQL／Markdown Catalog itemは、通常clickと右clickの`コピー`のどちらでもDesktop WebEngineのOS clipboardへtextをコピーできる。
+- create／edit／delete不可のread-only Catalog仕様を維持する。
+- `.zizd`内部clipboardとtext用OS clipboardを混在させず、Bridge Protocol `1.0`の31 Command／8 Eventを変更しない。
+
+Constraints:
+- Catalog libraryの汎用UI、Source catalog形式、workflow保存形式を変更しない。
+- unrelated dirty changeを上書きせず、commit／pushしない。
+
+Tests:
+- Catalog選択直後の`Ctrl+V`、通常click／右click text copy、read-only menuのfocused Playwright。
+- 関連Workflow Adapter回帰と変更sourceのsyntax check。
+
+Codex Verification:
+- Claude差分をbaselineと照合し、focused Playwrightを独立再実行する。Windows WebEngineの最終操作確認はProject ownerへ依頼する。
+
+#### WP-10E Integration verification and evidence
+
+Owner: Codex
+
+Assignment Reason: Package間の境界、Claude差分、最終Acceptance、dirty Worktreeの帰属、文書Evidenceを統合判断するため。
+
+Task: WP-10全変更を統合し、focused unit／integration／Playwright／staticとWindows手動確認項目を確定して、Task Evidenceを更新する。
+
+Dependencies:
+- WP-10A～WP-10D。
+
+Read Scope:
+- WP-10全変更領域、正本仕様、関連test／fixture、git差分
+
+Edit Scope:
+- `docs/features/frontend-libraries.md`、本Task、vendor README／pinned contract、直接関係するtest manifest
+
+Acceptance Criteria:
+- WP-10A～WP-10DのAcceptance CriteriaがEvidenceへ対応する。
+- Source／Runtime／Workspace、library／Application、parent／iframe境界が維持される。
+- Codex独立testと未確認のWindows手動項目が区別される。
+
+Constraints:
+- unrelated dirty change、WP-11課題、将来TaskをWP-10へ混在させない。
+
+Tests:
+- focused unit／integration／Playwright／static、`git diff --check`、変更JavaScript syntax。Windows実画面は定義済みchecklistでProject ownerが確認する。
+
+Codex Verification:
+- 本Package自体が最終Codex Verificationである。
 
 ### WP-11 Cross-library cleanup and final acceptance
 
@@ -1469,7 +2295,7 @@ Read Scope:
 Edit Scope:
 - shared Frontend Adapter/theme/manifestの統合箇所
 - test/CI/documentation
-- `docs/tasks/active/TASK-016-adopt-approved-frontend-libraries.md`
+- `docs/tasks/done/TASK-016-adopt-approved-frontend-libraries.md`
 
 Acceptance Criteria:
 - Task Acceptance criteriaが全件PASSする。
@@ -1490,6 +2316,32 @@ Codex Verification:
 
 ## Completed
 
+- WP-11 final acceptance（2026-09-07）: 7 libraryの承認済みspaceをCurrent Specificationへ照合し、記録漏れだったWP-6 NodeFormの既決配置だけを追記した。`apps/gui/vendor/README.md`の7 source URL／exact commit／runtime load order、各directoryの`LICENSE`、Project owner許諾済みADRを確認した。追加NOTICE義務はなく、runtime remote／CDN dependency 0、unscoped root selector 0をvendor contractで再確認した。
+- WP-11 cross-library boundary（2026-09-07）: AppShell、SQL Highlighter、Markdown Editor、NodeForm、DataViewer、WorkflowDesigner、CatalogPanelの各spaceについて、libraryはUI、Application AdapterはBridge／config／保存／実行／external URL／native操作を所有する境界をCurrent Specificationと全E2Eへ照合した。WorkflowはApplication stateを唯一の正本とし、旧Canvas4 sourceは削除状態、他spaceも旧UIを同時描画しないことをstatic／Playwrightで確認した。
+- WP-11 required Gate（2026-09-07）: 追跡済みtest source 9件を`tracked-test-sources.json`へ追加し、`nlp_connector`／`NLPConnector`をconnector inventoryへ登録した。UAC付きWindows環境でsymlink security 3件を含め、static-analysis `113 passed`、unit `98 passed`、integration `46 passed`。失敗・skip 0。既存のPandas deprecated API warningだけを確認した。詳細logは`.tmp/wp11-required-elevated.log`（SHA-256 `C6899ED84F7D6129B5D1140A355306323C4CEC5C2925B1095D6821CA2B3905FF`）。
+- WP-11 e2e／offline Gate（2026-09-07）: QtWebEngineでlocal `file://` asset、QWebChannel round-trip、external navigation／popup blockを含むPython E2E `4 passed`、全Frontend Playwright `137 passed`。各componentのWindows手動GateはWP-3～WP-8、WP-10のProject owner確認を統合し、実flow実行だけは承認済みどおりTASK-015 `WP-EXEC`へ残した。release installer生成ではなく、TASK-016対象のlocal vendor snapshotとDesktop同梱Frontendがnetwork不要で起動する配布境界をPASSと判定した。詳細logは`.tmp/wp11-e2e.log`（SHA-256 `15AFC7883A5043E81BF0E9B89E16DE8E43C7FDE34B2A694019BC17C1D5619CEF`）。
+- WP-10E Integration verification（2026-09-07）: WP-10D-R5のWindows手動PASS後、CodexがCatalog／WorkflowDesigner／baseline／AppShell結合Playwright `65 passed`、Catalog source／Bridge／Frontend vendor・asset・TASK-012 boundaryのPython unit／static `111 passed`を独立再実行した。変更JavaScript構文、Desktop host Python compile、repository diff checkもPASSし、Bridge command／event、Catalog read-only、内部node clipboard／OS text clipboard、library／Application境界に未解決の回帰を検出しなかった。WP-10A～WP-10DのEvidenceと手動確認を統合し、WP-10をGREENと判定した。
+- WP-10D-R5 Catalog manual-smoke clipboard corrections（2026-09-07）: Windows実機で確認された`.zizd` Catalog item選択直後の`Ctrl+V`不達を、ApplicationのWorkspace Adapterがactive flow iframe内WorkflowDesignerへfocusを戻すことで修正した。SQL／MarkdownのOS clipboard書込は、同梱内部Frontendだけを表示するDesktop WebEngineで`JavascriptCanAccessClipboard`を有効化し、既存`navigator.clipboard.writeText()`経路を実機で利用可能にした。Catalogのread-only、`.zizd`内部clipboard、既存paste／history／anchor、Bridge Protocolを維持している。Claude Sonnetが原因調査・実装・回帰test追加を担当し、Claude環境ではcommand権限不足でTest未実行。Codex独立検証はCatalog／Workflow Playwright `41 passed`、Bridge contract `19 passed`、変更JavaScript syntax、Python compile、対象diff checkがPASSした。QtWebEngine固有のclipboard動作はProject ownerのWindows手動確認を残す。
+- WP-10D-R5 Windows manual Gate（2026-09-07）: Project ownerがアプリ再起動後の実画面で`.zizd` Catalog選択直後の`Ctrl+V`貼り付けと、SQL／Markdownのclipboard操作を確認し、PASSと判断した。
+- WP-10D-R4 Catalog wiring regression coverage（2026-09-02）: Claude Sonnetが実`.zizd`のExplorer→`openWorkspaceFile`→`openFlowFile`→`activateTab`→Catalog refresh配線と、Catalog activity／対応・未対応tab切替／SQL・Markdown・ZIZD item操作でwrite Bridge callが0件であることをPlaywrightへ追加した。新規testは既存実装でfocused `4 passed`となり、本番コード変更なし。Claude結合回帰 `48 passed`、Codex独立再実行も同じ `48 passed`、spec構文PASS。`workspace.manager.js`は変更前SHA-256を維持した。
+- WP-10D-R3 Catalog lifecycle cleanup（2026-09-02）: Claude SonnetがTDDでCatalog Adapterへ冪等な`destroy()`を追加し、vendor `CatalogPanel.destroy()`、Adapter参照／cache解放、clean remount、`pagehide` 1回実行を接続した。通常activity切替では同一instanceを維持する。Claude RED `8 passed / 1 failed`、Catalog GREEN `9 passed`、Catalog＋UI Shell `18 passed`。Codex独立検証はCatalog＋UI Shell＋WP-10C Workflow Adapter回帰 `46 passed`、関連JavaScript構文PASS。
+- WP-10D-R2 Catalog source retry（2026-09-02）: Claude SonnetがTDDをやり直し、`app.getStatus`の失敗／空結果だけをcache解除して次回activity再表示で再取得し、成功結果と進行中Promiseの共有を維持した。Claude RED `7 passed / 1 failed`、GREEN `8 passed`。Codex独立検証はCatalog＋WP-10C Workflow Adapter回帰 `36 passed`、Application／spec JavaScript構文PASS。
+- WP-10D-R1 Clipboard ownership correction（2026-09-02）: Claude SonnetがTDDでSQL／Markdownのnative clipboard操作をApplication Adapterへ移し、library既定clipboard経路と`.zizd`内部clipboardを排他化した。clipboard失敗は既存Catalog toastで利用者へ通知し、write Bridgeを呼ばない。Claude RED `2 failed / 5 passed`、GREEN `7 passed`。Codex独立検証はCatalog＋WP-10C Workflow Adapter回帰 `35 passed`、JavaScript構文PASS。
+- WP-8G-C annotation mode exclusivity（2026-09-01）: Project owner承認仕様に従い、WorkflowDesignerを既定OFFのnode編集modeとONの付箋編集modeへ排他的に分離した。ONではnode選択／詳細／移動／接続／context／keyboard編集を停止し、canvas／node右clickは`付箋作成`だけ、付箋右clickはlibraryの黄・緑・青paletteだけを表示する。toolbarの付箋作成buttonを削除し、OFFでは付箋を背面・編集不可とし、`http://`／`https://`だけを既存Application external-browser policyへ渡す。mode変更通知を選択解除より先に発行してcontrolled hostの再入を安全にし、Applicationは明示的な空選択を維持して右詳細panelを実際に非表示にする。Bridge、`.zizd`、保存／実行、node geometryは変更していない。Claude Opusがupstream初期実装、Claude SonnetがApplication統合初稿を担当し、Codexがevent順序と右panel漏出をTest-firstで修正・独立検証した。
+- WP-8G-C automated Gate（2026-09-01）: upstream Node Test全件、sample static verification、standalone bundle parity、upstream／Application JavaScript構文、Application WorkflowDesigner Adapter／baseline Playwright `39 passed`、frontend vendor／asset／boundary static `60 passed`、両Worktreeの`git diff --check`がPASSした。upstream runtime 19 filesとApplication vendor `src/`はSHA-256不一致0で、Application側へ付箋menu／paletteの重複実装を追加していない。Windows実画面manual smokeは未実施である。
+- WP-8G-C external-link allowlist follow-up（2026-09-01）: Windows manual smokeのBridge logで`zenn.dev`と`github.com`がdomain allowlist不一致により`E_ACCESS_DENIED`となることを確認した。Project owner承認により両domainの全pathをSource security policyへ追加し、実production policyを使うBridge regression TestをRED `2 failed`からGREEN `2 passed`にした。security policy／Bridge／QWebChannel関連Testは`42 passed`、`git diff --check`もPASSした。http／https以外のscheme拒否と既存domain allowlist方式は維持している。
+- WP-8G-C Windows manual Gate（2026-09-01）: Project ownerがmode切替、node／付箋操作、context menu、色変更、外部link起動を確認し、WorkflowDesignerの基本操作を一旦PASSとした。実flowの実行確認は未実施であり、初期release候補固定後のTASK-015 `WP-EXEC`へ必須Gateとして移管した。未実施の実行確認をWP-8G-CのPASS根拠には含めない。
+- WP-8G-C upstream publication（2026-09-01）: WorkflowDesignerのnode geometry／grid／icon、annotation mode排他制御、context action、外部link requestの汎用変更をcommit `d6bebd11368138222b81346f724944ab29077f4b`（`feat: refine workflow layout and annotation mode`）としてupstream `main`へpushした。commit直前にNode Test全件、sample static verification、Windows Edgeによるlibrary CSS／minimal／sample browser smoke、JavaScript構文、`git diff --check`がPASSし、local `HEAD`と`origin/main`のSHA一致を確認した。Application vendor `src/` 19 filesは同commitのupstream `src/`とSHA-256不一致0で、vendor revision記録と固定revision Testを同SHAへ更新した。
+- WP-8G-B integrated verification（2026-09-01）: WorkflowDesigner focused Playwright `39 passed`、frontend vendor／asset／boundary static `60 passed`、E2E Python `4 passed`、Playwright全体 `120 passed`を確認した。DataViewer移管前の旧schema rendererを期待していたNodeForm routing Test 4件はproductionを変更せず現責務へ更新し、focused `7 passed`からE2E全体GREENを確認した。Project ownerのWindows manual Gate、upstream commit／push、vendor source 19 files一致と合わせてWP-8のcomponent acceptanceをGREENとした。Repository全体の`required` Gateは未PASSであり、staticは既存test source 9件のmanifest未掲載 `1 failed, 112 passed`、unitはWindows symlink作成権限不足の3件を除き`63 passed`、integrationは未登録`nlp_connector`によるinventory不一致1件を除き`45 passed`だった。これら3分類をWP-8のPASS根拠には含めず、WP-11の横断cleanup／最終Gateへ残す。
+- 2026-09-01のProject owner承認値に従い、step外形を106×88px（直前値の約1.1倍）、visualを48px、iconを26px、水平level間隔を112pxへ変更した。保存済みstepの`ui_position`とgrid原点44pxは維持し、STARTだけを一時Document上の28pxへ投影することで、START／step／ENDを同じY座標・112px間隔に整列した。Application WorkflowDesigner Playwright `36 passed`、frontend vendor／asset／boundary static Test `60 passed`、変更JavaScript構文、`git diff --check`がPASSした。`.zizd` schema、Bridge、upstream library sourceは変更していない。
+- 2026-08-31のProject owner承認に基づき、WorkflowDesigner付箋モードをupstream-firstで改修した。既定OFF／背面表示／全編集禁止、ON時の前面表示と全編集許可、`annotation.add`だけの新規作成、空白click・duplicate・pasteでの作成禁止をlibrary contractへ追加した。OFF時も付箋内external link閲覧は維持し、ApplicationはAdapter表記とvendor接続だけを担当する。
+- 上記付箋follow-upはupstream focused／関連Node Testとsample static verification、Application WorkflowDesigner Playwright `36 passed`、vendor／asset／frontend boundary static `60 passed`、関連JavaScript構文をCodexが再実行した。変更したupstream runtime 6 filesとvendor copyは改行差を除き一致し、Application state、Bridge、`.zizd` schemaは変更していない。
+- WP-8DでWorkflowDesigner PR `#2`を`main`へmergeし、remote／local確定SHA `fc2e75005020afaa0644c5e0cde44c0f67261313`のruntime `src/` 19 filesをApplicationへ再vendorした。名前差分0、SHA-256不一致0、remote asset load 0、vendor contract `50 passed`を確認した。
+- WP-8D後のApplication全staticは`107 passed, 1 failed`。FAILは今回未変更のcanonical verification source manifestと既存追跡file一覧の不一致であり、WP-8D必須vendor contractとvendor source一致はGREENである。Application統合code、Bridge、`.zizd` schemaは変更していない。
+- WP-8CでWorkflowDesigner upstreamへApplication非依存の汎用interaction contractをTest-firstで追加した。host供給context actions、blank／edge connection drop、既存`command:execute`によるloop内／loop後追加とmerge解除、Undo／Redo、annotation mode／blank配置、readonly connection抑止を公開契約化した。loop枠は有効化していない。
+- WP-8Cはgeneric event 14契約を含むNode 7 scripts、static sample、JS／Python構文、diff checkがPASSした。Windows Edgeでlibrary CSS、minimal full-editing、sample `file://` browser smoke 3件もPASSし、Luna最終reviewは仕様PASS／品質APPROVED。Application code、Bridge、`.zizd` schema、vendorは未変更である。
+- WP-8AでWorkflowDesignerとApplicationの責務境界を仕様化した。Application stateを唯一の正本とし、libraryはCanvas UI／interaction、Adapterは一時Document投影とgeneric event変換を担当する。loop機能は維持し、loop枠は表示しない。
+- WP-8Bで現行Workflow Canvasのobservable behaviorを新規Playwright 15件へ固定した。Claude Opusの初稿後、Terra xhighが2件の失敗とLuna review 3件を修正し、Codex独立再実行は`15 passed`。production code、既存test、Bridge、`.zizd` schemaの変更は0である。
 - 8 public repositoryのREADME、source tree、public API、dependency、test、LICENSE、tag/releaseを調査した。
 - 現行Frontendの重複責務、Workflow Document不一致、lifecycle/theme/security blockerを照合した。
 - 当初候補8 libraryのsourceと統合条件を調査し、配置は既存画面の移行時にProject ownerが決定する方針を確認した。
@@ -1571,17 +2423,36 @@ Codex Verification:
 - WP-7I-C exact re-vendor（2026-08-29）: GitHub反映済みcommit `6a0171cf9110703e08d9ee142305b78c78763320`の`src/report-viewer.css`／`src/report-viewer.js`をApplicationへbyte-identicalに再vendorし、vendor READMEとpinned revision Testを同SHAへ更新した。CSS／JS／LICENSEのsource一致、JavaScript構文、diff check、vendor contract `50 passed`、upstream browser Test `57 passed, 0 failed`をCodexが確認した。Application統合コード、Bridge、Connector、Workflow Engineは未変更。全static Testは`107 passed, 1 failed`で、失敗は今回新設・削除していない既存test source 9件が`tracked-test-sources.json`へ未掲載のために発生するmanifest不一致であり、WP-7I-Cのvendor contractはPASSしている。
 - WP-7I-D DataViewer Application integration（2026-08-29）: Project owner承認によりClaudeを使用せず、Codex Terra（xhigh）subagentがTDDでApplication Adapter、asset load、node detail統合、pane内CSS、Playwright回帰を実装し、Codex主agentが全差分とTestを独立検証した。schema nodeは帳票／カラム設定／JSONを表示してカラム設定から開始し、schemaなしdata nodeは帳票だけを表示する。execute／export／distribution／pagingは非表示。Bridge preview配列からlossless schema列への変換、`new_name`列alias、falsy値、空local schema fallback、production BQ `schema_autoextract`のlossless append、schema保存後rerender、destroy、遅延応答無効化を固定した。主agent reviewの4 findingは2 fix roundで解消し、最終Playwright `14 passed`、vendor contract `50 passed`、変更JS構文、diff checkはPASS。全static Testは既知のtracked-source manifest不一致だけが残り`107 passed, 1 failed`。Bridge、Connector、Workflow Engine、vendor sourceは変更しておらず、Windows実画面確認はWP-7I-Eで行う。
 - WP-7I-E DataViewer presentation follow-up（2026-08-29）: Project owner承認により、正常取得後の重複`プレビュー N 行`をApplicationから除去し、DataViewer sourceでhost CSSに影響されないcheckbox寸法と、帳票／カラム設定の明示列幅を固定した。Playwrightで正常表示／checkbox／右端列resizeのRED `2 failed`からGREEN `2 passed`、DataViewer結合全体 `16 passed`、vendor contract `50 passed`、upstream browser Test `59 passed, 0 failed`を確認した。型別filterと数値表示は変更していない。library修正はcommit `07ed40e496ddf5795811260b48f71d0d3a6ef527`としてbranch `codex/task-016-data-viewer-layout-fix`へpushし、Application vendorも同SHAへ更新した。
+- WP-7I-E Windows manual Gate（2026-08-29）: Project ownerが実画面で帳票、filter、カラム設定、JSON編集、右端を含む列幅変更、重複preview見出しの非表示を確認し、操作性を含めてPASSと判断した。初期版から除外した型別表示、数値format、全件出力、paging、distribution、executeは本Gateの未完了項目として扱わない。WP-7Iを完了扱いとする。
+- WP-8E Application controlled Adapter integration（R4統合検証確定: 2026-08-31）: R1で表示用データ変換処理を`workflow-display.projector.js`として旧CanvasとAdapter共通のApplication処理へ分離した。R2で`workflow-command.facade.js`によりノード追加・削除、edge接続・削除、loop内／loop後追加、copy/paste、node実行、workflow実行、undo/redoをApplication共通処理へ集約し、Adapterと旧Canvasの双方が同一Facadeを利用するようにして、loop entry／loop-back構造線への誤った削除action表示を`canDeleteEdge`共通判定で修正した。R3でproduction DOMに残っていた非表示・非操作の互換Canvas（`ensureCompatibilitySurface`）と関連CSSを削除し、WP-8B baselineの`canvasGeometry`を実WorkflowDesigner `.zwd-viewport`基準へ移行した。R4でこれらの現行差分を統合検証し、Adapter `18 passed`、WP-8B baseline `15 passed`、同時実行`33 passed`、変更Application／vendor JavaScriptの構文確認PASS、`tests/static/test_frontend_library_vendor_contract.py` `50 passed`、AppShell／node-detail／data-panel関連Playwright（`ui-shell.spec.js`、`detail-panel-left-gap.spec.js`、`node-form.spec.js`、`node-form-field-kinds.spec.js`）`35 passed`を確認した。`tests/static`全体は`1 failed, 103 passed, 4 errors`で、failureは既存test source 9件（WP-4／WP-6／WP-7で追加済み）が`tracked-test-sources.json`へ未掲載であることによるmanifest不一致、errorsはlocal Windows環境のTemp directory `PermissionError`によるもので、いずれもWP-8E差分と無関係と特定した。production DOMに互換Canvas生成処理・関連CSS・外部配信asset参照は残っていない。一時reportの結論は本Evidenceへ統合済みで、旧Canvas UIの重複描画・hit・interaction削除はWP-8F、Windows実画面の目視確認はWP-8Gへ引き継いだ。
+- WP-8F-B/C legacy Canvas removal（2026-08-31）: `ui.node.canvas.js`、`ui.node.canvas.layout.js`、`ui.node.canvas.draw.js`、`ui.node.canvas.hit.js`と旧Canvas専用CSS／load／global／runtime fallback／互換Test参照を削除し、WorkflowDesigner Adapterを唯一の描画経路にした。Application所有の`state.js`、node detail、Bridgeと、WP-8Eのprojector／command Facade／Adapterは保持した。static gateは旧source／参照が残る状態でRED `1 failed`を確認後GREEN `1 passed`、Adapter `18 passed`、baseline `15 passed`、同時実行`33 passed`、frontend asset `2 passed`、TASK-012 boundary `8 passed`、vendor contract `50 passed`、変更JavaScript 13 filesの構文確認PASS。WP-8F-D統合確認とWindows実画面WP-8Gは未実施。
+
+- WP-8F review follow-up（2026-08-31）: WP-8F独立reviewの指摘3件を実コードで再確認し、妥当な3件をTest-firstで修正した。(1) `ui.node.js`の動的loaderがdataflow.htmlと異なりNodeForm／DataViewerのlibrary＋Adapterを読み込まず、evaluation時にAdapterを捕捉する`ui.node.detail.js`が空Adapterを掴む順序欠落を確認し、`vendor/zizai-form/src/node-form.js`、`js/node-form.adapter.js`、`vendor/zizai-data-viewer/src/report-viewer.js`、`js/data-viewer.adapter.js`をdetailより前へ追加した。production挙動の重複実装とremote assetは追加していない。(2) WP-8決定済みのApplication current workflow state正本に対し、`docs/features/frontend-libraries.md`の`Workflow Document decision`と本TaskのDeferred Decisionが「未決」のまま残っていたため、該当2箇所だけを決定済み記述へ書き換えた。承認済みarchitectureは変更していない。(3) loop edge coverageは既存のFacade契約assertionを保持したまま、実描画されたWorkflowDesigner SVGの`data-edge-key`線を右クリックする観測可能なcoverageを追加し、loop entry／loop-back構造線でcontext menuが出ないこと、loop内通常線とmerge線が削除actionを提示すること、merge削除後もloop構造が不変であることを固定した。hit座標はpath長を等間隔走査し`elementFromPoint`で最前面一致を検証する方式で、固定sleepとblind retryを使用していない。Claude OpusのTest結果はloader順序契約でRED `1 failed`からGREEN、Adapter `19 passed`、baseline `15 passed`、同時実行`34 passed`、新規／変更2 testの`--repeat-each=5` `10 passed`、`node --check`によるui.node.jsとspecの構文確認PASS。
+- WP-8F-D integrated verification（2026-08-31）: Codexがreview follow-up後の現行差分を独立再実行し、WorkflowDesigner Adapter／baselineとAppShell／node-detail／DataViewer関連Playwright `69 passed`、frontend asset／TASK-012 boundary／vendor contract static Test `60 passed`を確認した。変更JavaScript構文、`git diff --check`、production旧Canvas source／load／global／runtime fallback／selector参照0もPASSした。Application state／command／detail／Bridge責務は保持され、旧Canvas4 JSだけが削除対象であることを差分確認した。WP-8FをGREENとして完了し、Windows実画面確認はWP-8Gへ残す。
+- WP-8G-A automated implementation checkpoint（2026-08-31）: Windows manual smokeで判明したnode過大、STARTと先頭stepの重なり、START／ENDのgrid不一致、icon非表示を対象に、Claude Opusの読取専用reviewを一次コードへ照合した。採用した指摘はgeneric `nodeMetrics`、grid原点、terminal projection、Application-owned icon renderer、旧60px配置間隔の統一であり、未使用projector出力の全面整理とmemo modeはscope外とした。WorkflowDesigner一時cloneでgrid／metrics／standalone bundleをREDからGREEN化し、Node unit 8 command、sample static、Windows Edgeのlibrary CSS smokeがPASS。Applicationは`state.js`の配置contractをprojector／Adapterへ共有し、`.zizd`／Bridgeを変えずSTART／ENDを一時Documentへ投影、既存connector configからiconを供給した。Application Playwrightはfocused RED `2 failed`から、Adapter `20 passed`、baseline `15 passed`、AppShell／node detail／DataViewerを含む統合 `70 passed`へGREEN化し、vendor contract `50 passed`、変更JavaScript構文、`git diff --check`もPASS。local upstreamの変更4 runtime sourceとvendor copyはSHA-256一致。Project ownerのWindows実画面確認、upstream commit／push、確定SHAへのvendor revision更新は未実施であり、WP-8G-A完了とは扱わない。
+- WP-8G-A visual follow-up（2026-08-31）: Project owner承認値に従い、Application node全高を80px、library node名を12px／16px line-height、通常edge／arrowを`#94a3b8`、arrow markerを6.4pxへ変更した。実表示PlaywrightはRED `2 failed`からfocused `2 passed`、Adapter／baseline `36 passed`へGREEN化し、upstream Node unit 9 scripts、sample static、Windows Edge library CSS smoke、Application static `52 passed`、変更JavaScript構文、両Worktreeの`git diff --check`がPASSした。変更したupstream／vendor runtime 5 filesはSHA-256一致。選択中edge色、memo、`.zizd`／Bridge、複数top-level flowは変更していない。
+- WP-10B Source catalog configuration and Bridge payload（2026-09-01）: Claude Sonnet中断後の不整合をCodexが引き継ぎ、`.zizd`／`.sql`／`.md`のsampleへCatalogPanel用folder／item metadataを追加し、nodeの`descriptionAuto`をboolean、connector／actionを英数字・underscore、orderを有限数として検証するSource sanitizerを完成させた。Source path／root／scope、新Bridge command、Runtime／Workspace保存は追加していない。専用TestはRED `11 failed, 21 passed`からGREEN `32 passed`、TASK-010／Bridge関連focused Testは`67 passed`。Bridge command 31／event 8、Python構文、JSON構文、対象diff checkもPASSした。
+- WP-10C Workflow node-template internal clipboard（2026-09-02）: Claude Opusが既存node copyまたは検証済みnode templateを排他的に保持するApplication内部clipboard、`zizEmbeddedApi.setNodeTemplate`の最小iframe seam、既存Paste／anchor／history経路での1 node生成を実装した。templateは`connector`／`action`／`description`／`descriptionAuto`／`form`だけを許可し、ID、step名、位置、parent／edge／loop／merge等の構造情報を拒否する。Claude環境ではPlaywright command権限不一致によりTest未実行だったため、Codexが新規4件を実行し、選択済みstep1を再clickしてcopy対象を解除するTest設定誤り1件だけを既存成功patternへ修正した。新規focused `4 passed`、Adapter全体 `28 passed`、baseline同時実行 `43 passed`、変更JavaScript／spec構文と対象diff checkがPASSした。最初のAdapter全体実行で既存context menu 1件が一度timeoutしたが、単独再実行と全体再実行で再現せずPASSした。`.zizd` schema、Bridge、WorkflowDesigner library／vendor、WorkspaceManagerは変更していない。
+- WP-10E Integration verification evidence（Claude実行分、2026-09-02）: Claude Sonnetが許可された自動検証コマンドのみを実行した。combined Playwright `.\tests\playwright\node_modules\.bin\playwright.cmd test tests/playwright/specs/catalog-panel-adapter.spec.js tests/playwright/specs/workflow-designer-adapter.spec.js tests/playwright/specs/workflow-designer-baseline.spec.js tests/playwright/specs/ui-shell.spec.js --config tests/playwright/playwright.config.js --project=chromium`は、本session権限設定がBashからのPlaywright実行（`.cmd`直接呼び出し、node CLI経由の代替呼び出しとも）を拒否したため未実行であり、結果は不明である。以降Claude実行分の結論はこのcombined Playwright結果に依存しない。targeted pytest `python -m pytest tests/unit/test_catalog_samples_source_config.py tests/static/test_frontend_library_vendor_contract.py tests/static/test_frontend_asset_contract.py tests/static/test_task012_frontend_boundary_contract.py -q`は`63 passed, 29 errors`で、29件は全て`test_catalog_samples_source_config.py`の`tmp_path`固定によるWindows `AppData\Local\Temp\pytest-of-tomoh`への`PermissionError`（既出のWindows Temp権限問題）であり、catalog assertion自体の失敗は0件である。`node --check apps/gui/js/catalog.adapter.js`、`node --check apps/gui/js/app-shell.js`、`node --check apps/gui/js/workspace.manager.js`、`node --check tests/playwright/specs/catalog-panel-adapter.spec.js`の4件は全てPASS。upstream一時clone`.tmp/zizai-catalog-panel-wp10a`（branch `codex/task-016-catalog-panel-host-activation`、local HEADと`origin`追跡refがともに`7221e4f5c970a221c1c6b8d50b19eeb8962413ea`で一致し、`apps/gui/vendor/README.md`記載のpinned commitとも一致）の`src/catalog-panel.js`と`apps/gui/vendor/zizai-catalog-panel/src/catalog-panel.js`は`cmp`でbyte一致、`sha256sum`は両者とも`cca56039e347ce1020c6c8f056105c0982e729447e8b74a1b9423e1f04e4598b`で一致した。`git diff --check`はCRLF変換警告のみでtrailing whitespace／conflict marker違反0、`git status`は本WorktreeがWP-10A～WP-10D-R4に加え他Task（TASK-022～026 draft、`nlp_connector.py`等）のdirty changeを含んだ未整理状態のままであることを確認した。Windows実機WebEngineでのCatalog手動smokeは本WP-10Eでは未実施である。以上はClaude Sonnetによる読取専用の自動検証実行記録であり、combined Playwrightの独立実行、Codexによる本Evidenceの照合、dirty Worktree帰属の整理、Windows手動smokeを含む最終AcceptanceはCodexが別途行う。
+
+## Deferred / transferred items
+
+- 2026-09-08のTASK-015 release stagingで、正本仕様・Task・専用Testを持たず未追跡だった`nlp_connector.py`をProject owner判断により初期releaseから除外し、connector inventory登録も削除した。WP-11の登録・Test件数は当時の履歴Evidenceとして維持し、現行release contractには使用しない。
+
+- 1つのYAML（`.zizd`）に複数の独立flowを保存・切替・実行する要件は初期releaseへ含めない。初期release後の独立設計Taskで、YAML schema、flow切替UI、変数／結果境界、実行対象選択を検討する。
+- Action単位のPattern A〜F、schema編集可否、列除外、型別filter／数値表示の個別改修はTASK-025へ分離し、TASK-016へ追加しない。
+- Claude Codeへの通信経路、sandbox外実行、権限承認、再試行・error報告方法の再検討はTASK-026へ分離し、TASK-016の完了条件へ追加しない。
+- SQL editor header余白、BigQueryを基準とするshortcut／selection／部分実行、予約語／column suggestは、同一releaseへ含めずTASK-020で初回release後に検討する。
+- step実行feedback／cancelはTASK-021、exportはTASK-022、paged result deliveryはTASK-023、Windows connector分割はTASK-024へ分離した。
+- BigQuery実接続検証はTASK-027へ分離した。
 
 ## Remaining
 
-- WP-7I-EでDataViewer統合の自動回帰とWindows実画面Gateを完了する。superseded WP-7A～WP-7Eは実行しない。
-- Action単位のPattern A〜F、schema編集可否、列除外、型別filter／数値表示の個別改修はTASK-025へ分離し、TASK-016へ追加しない。
-- WP-8以降も各libraryの利用spaceをProject ownerが順次決定し、承認されたspaceだけを移行する。
-- SQL editor header余白、BigQueryを基準とするshortcut／selection／部分実行、予約語／column suggestは、同一releaseへ含めずTASK-020で初回release後に検討する。
+None.
 
 ## Exact next action
 
-WP-7I-Eとして、DataViewer統合のfocused回帰範囲を確認し、Project owner向けWindows実画面確認手順を提示する。全件出力、paging、distribution、executeは初期Gateへ含めない。
+None. 実flowの実行確認はrelease candidate固定後にTASK-015 `WP-EXEC`で行う。
 
 ## Termination condition
 

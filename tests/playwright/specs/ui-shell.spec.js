@@ -308,8 +308,19 @@ test("dataflow right-click Close on a dirty tab shows the unsaved confirmation a
 
 test("dataflow pagehide synchronously destroys the mounted AppShell", async ({ page }) => {
   // Catches: app-shell.js never listens for `pagehide`, so AppShell.destroy() is never
-  // invoked on page teardown and `.zui-shell` (with its listeners) stays mounted.
+  // invoked on page teardown and `.zui-shell` (with its listeners) stays mounted. Also
+  // catches the Catalog Adapter (apps/gui/js/catalog.adapter.js) not tearing itself down
+  // alongside AppShell, or doing so more than once, on the same `pagehide`.
   await gotoDataflowWithWorkspace(page, {});
+
+  await page.evaluate(() => {
+    window.__catalogDestroyCalls = 0;
+    const originalDestroy = window.zizCatalogAdapter.destroy;
+    window.zizCatalogAdapter.destroy = (...args) => {
+      window.__catalogDestroyCalls += 1;
+      return originalDestroy.apply(window.zizCatalogAdapter, args);
+    };
+  });
 
   const removedImmediately = await page.evaluate(() => {
     window.dispatchEvent(new Event("pagehide"));
@@ -317,6 +328,7 @@ test("dataflow pagehide synchronously destroys the mounted AppShell", async ({ p
   });
 
   expect(removedImmediately).toBe(true);
+  expect(await page.evaluate(() => window.__catalogDestroyCalls)).toBe(1);
 });
 
 

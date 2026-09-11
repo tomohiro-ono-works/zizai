@@ -101,7 +101,7 @@ test("real SeleniumConnector.dom_action: generic combo/checkbox/number fields mo
 });
 
 
-test("real BQConnector.execute_sql: google-auth-login and codeLanguage/schema-autoextract fields call the real legacy renderField, while the combo project_id field never does", async ({ page }) => {
+test("real BQConnector.execute_sql: google-auth-login and codeLanguage stay on the legacy renderer while schema is owned by DataViewer", async ({ page }) => {
   await page.goto("/gui/dataflow.html");
   await installRenderFieldRecorder(page);
 
@@ -124,17 +124,15 @@ test("real BQConnector.execute_sql: google-auth-login and codeLanguage/schema-au
   expect(result.legacyKeys).toEqual(["google_auth", "sql"]);
   expect(result.renderFieldCalls.filter((call) => call === "google_auth").length).toBe(1);
   expect(result.renderFieldCalls.filter((call) => call === "sql").length).toBe(1);
-  // The schema field is pulled out of the legacy field loop into the dedicated schema
-  // editor host (js/ui.node.detail.js), so it carries no data-field-key attribute --
-  // only the recorder proves js/ui.fields.js still renders it.
+  // The schema field is owned by DataViewer and must not return to the legacy renderer.
   expect(result.legacyKeys).not.toContain("schema");
-  expect(result.renderFieldCalls.filter((call) => call === "schema").length).toBe(1);
+  expect(result.renderFieldCalls).not.toContain("schema");
   expect(result.nodeFormKeys).toEqual(["project_id"]);
   expect(result.renderFieldCalls).not.toContain("project_id");
 });
 
 
-test("real BQConnector.execute_sql: schema_autoextract merges Bridge result.getSchema columns into the schema field, protecting this Application-only dynamic-schema behavior", async ({ page }) => {
+test("real BQConnector.execute_sql: opening the DataViewer tab merges result.getSchema columns into the schema field", async ({ page }) => {
   await page.goto("/gui/dataflow.html");
   await page.evaluate(() => {
     const bridgeApi = {
@@ -169,20 +167,19 @@ test("real BQConnector.execute_sql: schema_autoextract merges Bridge result.getS
     parallelOrder: 1,
   };
   await mountRealAction(page, { node });
+  await page.getByRole("tab", { name: "データ" }).click();
 
-  // The schema field starts empty, so the real schema editor's own blank placeholder
-  // row (js/ui.fields.js renderFormRows) is already present when the Bridge result
-  // arrives and merges the detected "amount" column in alongside it.
+  // DataViewer owns schema editing and persists only real schema columns. Its visual
+  // blank row is not Application schema data.
   await expect.poll(async () => {
     return page.evaluate(() => JSON.parse(window.__renderState.nodes[0].form.schema || "[]"));
   }).toEqual([
-    { origin_name: "", new_name: "", description: "", ziz_datatype: "STRING", is_disabled: false },
-    { origin_name: "amount", new_name: "amount", description: "amount", ziz_datatype: "FLOAT64", is_disabled: false },
+    { origin_name: "amount", new_name: "amount", ziz_datatype: "FLOAT64" },
   ]);
 });
 
 
-test("real BQConnector.load_data: input_data (LEGACY_ONLY key) and allowVars schema_add_description call the real legacy renderField, while combo fields never do, and schema autoload copies the upstream schema", async ({ page }) => {
+test("real BQConnector.load_data: input_data stays legacy, schema_add_description stays in DataViewer, and schema autoload copies the upstream schema", async ({ page }) => {
   await page.goto("/gui/dataflow.html");
   await installRenderFieldRecorder(page);
 
@@ -216,14 +213,13 @@ test("real BQConnector.load_data: input_data (LEGACY_ONLY key) and allowVars sch
   };
   const result = await mountRealAction(page, { node, priorNodes });
 
-  // schema_add_description is pulled out of the legacy field loop into the dedicated
-  // schema editor host (js/ui.node.detail.js) exactly like the "schema" key, so it
-  // carries no data-field-key attribute either -- only the recorder proves the call.
+  // schema_add_description is owned by DataViewer and does not use the legacy renderer.
   expect(result.legacyKeys).toEqual(["google_auth", "table_id", "input_data"]);
   expect(result.nodeFormKeys).toEqual(["project_id", "dataset_id", "write_disposition"]);
-  ["google_auth", "table_id", "input_data", "schema_add_description"].forEach((key) => {
+  ["google_auth", "table_id", "input_data"].forEach((key) => {
     expect(result.renderFieldCalls.filter((call) => call === key).length).toBe(1);
   });
+  expect(result.renderFieldCalls).not.toContain("schema_add_description");
   expect(result.renderFieldCalls).not.toContain("project_id");
   expect(result.renderFieldCalls).not.toContain("dataset_id");
   expect(result.renderFieldCalls).not.toContain("write_disposition");
@@ -350,7 +346,7 @@ test("real WindowsConnector.define_values mounts its define-values-editor field 
 });
 
 
-test("real DataintegrationConnector.filter_rows mounts its filter-builder field entirely through NodeForm (never the real legacy renderField), while input_data/schema stay on the real legacy renderField", async ({ page }) => {
+test("real DataintegrationConnector.filter_rows mounts its filter builder through NodeForm, keeps input_data legacy, and keeps schema in DataViewer", async ({ page }) => {
   await page.goto("/gui/dataflow.html");
   await installRenderFieldRecorder(page);
 
@@ -374,6 +370,6 @@ test("real DataintegrationConnector.filter_rows mounts its filter-builder field 
   expect(result.legacyKeys).toEqual(["input_data"]);
   expect(result.renderFieldCalls).not.toContain("conditions");
   expect(result.renderFieldCalls.filter((call) => call === "input_data").length).toBe(1);
-  // schema is pulled into the dedicated schema editor host, so only the recorder proves it.
-  expect(result.renderFieldCalls.filter((call) => call === "schema").length).toBe(1);
+  // schema is owned by DataViewer and must not return to the legacy renderer.
+  expect(result.renderFieldCalls).not.toContain("schema");
 });

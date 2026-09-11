@@ -207,7 +207,7 @@ TASK-012は既存`static/`を`apps/gui/`へ挙動維持で移すTaskであり、
 
 ### Dedicated task
 
-8 library統合・重複UI削除は`docs/tasks/active/TASK-016-adopt-approved-frontend-libraries.md`で追跡する。TASK-016はTASK-010/TASK-012完了後にspace単位で実施し、TASK-015の最終Migration Verificationより前に完了する。
+8 library統合・重複UI削除は`docs/tasks/done/TASK-016-adopt-approved-frontend-libraries.md`で追跡する。TASK-016はTASK-010/TASK-012完了後にspace単位で実施し、TASK-015の最終Migration Verificationより前に完了する。
 
 ## Recommended integration sequence
 

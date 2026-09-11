@@ -86,7 +86,6 @@ apps/
     modal/
 bin/
 config/
-scripts/
 template/
 workflows/
 zizai.py

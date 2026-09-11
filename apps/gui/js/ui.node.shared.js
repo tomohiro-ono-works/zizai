@@ -138,7 +138,12 @@
     state.nextStepSeq = next;
 
     if (!state.selectedNodeId && state.nodes.length) {
-      state.selectedNodeId = state.nodes[0].id;
+      if (Array.isArray(state.selectedNodeIds)) {
+        state.selectedNodeId = state.selectedNodeIds[0] || null;
+      } else {
+        state.selectedNodeId = state.nodes[0].id;
+        state.selectedNodeIds = [state.selectedNodeId];
+      }
     }
   }
 

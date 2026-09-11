@@ -35,7 +35,7 @@ PINNED_LIBRARIES: dict[str, dict[str, object]] = {
     },
     "zizai-catalog-panel": {
         "url": "https://github.com/tomohiro-ono-works/zizai-catalog-panel",
-        "commit": "3141ba66d583eaa6d6947d42e572f31428eefc69",
+        "commit": "7221e4f5c970a221c1c6b8d50b19eeb8962413ea",
         "entries": [
             "apps/gui/vendor/zizai-catalog-panel/src/catalog-panel.css",
             "apps/gui/vendor/zizai-catalog-panel/src/catalog-store.js",
@@ -78,7 +78,7 @@ PINNED_LIBRARIES: dict[str, dict[str, object]] = {
     },
     "zizai-workflow-designer": {
         "url": "https://github.com/tomohiro-ono-works/zizai-workflow-designer",
-        "commit": "a8d1713dac14e29aa18f4723cb7c8c058e74beb2",
+        "commit": "d6bebd11368138222b81346f724944ab29077f4b",
         "entries": [
             "apps/gui/vendor/zizai-workflow-designer/src/workflow_designer.css",
             "apps/gui/vendor/zizai-workflow-designer/src/workflow_designer.js",

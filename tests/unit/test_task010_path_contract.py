@@ -47,7 +47,7 @@ def test_resolver_matches_the_production_repository_root(goal_layout: dict) -> N
     assert Path(layout.workspace_default_root) == REPOSITORY_ROOT / goal_layout["workspace_default_root"]
 
 
-def test_source_config_root_contains_exactly_the_four_source_configuration_sets(goal_layout: dict) -> None:
+def test_source_config_root_contains_exactly_the_five_source_configuration_sets(goal_layout: dict) -> None:
     layout = resolve_repository_layout(REPOSITORY_ROOT)
     source_root = Path(layout.source_config_root)
 

@@ -2,7 +2,7 @@
 
 - Status: Current Specification
 - Decision: `docs/decisions/ADR-frontend-library-vendoring.md`
-- Implementation task: `docs/tasks/active/TASK-016-adopt-approved-frontend-libraries.md`
+- Implementation task: `docs/tasks/done/TASK-016-adopt-approved-frontend-libraries.md`
 
 ## Purpose
 
@@ -95,6 +95,15 @@ Applicationはlibraryごとの差をAdapter内へ閉じ込め、page codeから�
 - Application mode headerを使用するため、library toolbarはApplication CSSで非表示にする。既存save iconとmode切替をTab直下で画面内・クリック可能に維持する。
 - `MarkdownEditor.destroy()`が所有listenerとDOM参照を解放するupstream revisionを確定してからApplicationへ再vendorする。
 
+### WP-6 NodeForm
+
+- Project owner approved this space and implementation sequence on 2026-08-26.
+- ノード詳細の汎用field描画、値取得、`visible_if`、`exportKey`、validationを`zizai-form`へ移管する。
+- Application Adapterはfile／folder picker、mouse coordinate取得、Excel／CSV取込アシスタントをlibrary eventへ接続し、Bridgeとnative操作をlibraryへ渡さない。
+- schema autoload、reference warning、runtime default、Google認証、modal、code editor、Application固有fieldはApplication責務として維持する。
+- Excel／CSVアシスタントは`stepName`、対象field、現在値、hidden bindingを受け取り、確定時だけ`resultFieldMap`に従って`node.form`へ反映し、cancel時は変更しない。
+- 汎用fieldはNodeFormを単一rendererとし、Application固有fieldだけを既存rendererへ残す。
+
 ### WP-7 DataViewer
 
 - Project owner approved this space on 2026-08-27 and limited the initial data boundary on 2026-08-28.
@@ -116,6 +125,37 @@ Applicationはlibraryごとの差をAdapter内へ閉じ込め、page codeから�
 - Application Adapterが実行とBridgeを所有し、libraryへBridge、DataFrame、Connector、step等のApplication概念を渡さない。
 - `destroy()`はdocument listener、body menu、timer、DOM参照を解放する。upstream repositoryでschema description／unknown type／commit timing／lifecycle Testを通過したcommitだけを再vendorする。
 
+### WP-8 WorkflowDesigner
+
+- Project ownerは2026-08-29にcurrent workflow canvasを移管対象spaceとして承認した。canvasのvisual design、node／edge／note描画、selection、drag、接続gesture、context menu、pan／zoomは`zizai-workflow-designer`を優先し、Applicationが同一UIを上書き・再実装しない。
+- Applicationのcurrent workflow stateを唯一の正本とする。Adapterは正本からlibrary用Document projectionを都度生成し、libraryの`document:change`およびrequest eventをApplication commandへ変換して正本へ反映する。library内部snapshotや別の永続workflow stateをApplication正本と並行して保持しない。
+- libraryはUIと操作intentを所有する。Applicationはfile load／save、`.zizd` serialization、Workspace tab／dirty、undo／redo history、Connector／Action設定、node detail form、validation rule、実行／cancel／status、Bridge、外部link起動、ID採番と参照書換えを所有する。libraryからBridge、Connector、Application stateへ直接依存しない。
+- library DocumentとApplication state／保存schemaの差はAdapter mappingで吸収し、WP-8で`.zizd` schemaまたはBridge Protocolを暗黙変更しない。mappingはround-tripで未知fieldとApplication所有metadataを欠落させない。
+- 既存操作を維持するため、configurable context action、空白／edgeへの接続drop、loop内／loop後追加、合流解除、history undo／redo、annotation mode等の不足eventをApplication非依存の公開contractとしてupstreamへ追加する。event payloadはnode／edge／selection／position等の汎用語だけを使用する。
+- loop node、`loop_owner_id`、loop内部edge、enter／return／done／loop portは維持する。loop frameは表示せず、有効化もしない。
+- library標準のblank-canvas left-drag panとzoom controlを採用する。node dragはnode移動、right-dragはbox selectionとしてlibrary contractに従う。
+- 移管前に現行canvasのobservable behaviorをPlaywrightで固定し、Adapter接続後に同じGateを通過してからlibraryと重複する旧Canvas2D描画／hit／interactionを削除する。
+- current workflow canvasはWorkflowDesigner Adapterを唯一の描画経路とし、旧`ui.node.canvas*.js`、旧global／runtime fallback、旧Canvas専用selectorをproductionへ保持しない。
+- node外形、visual、port、anchor、icon等の描画寸法とgrid原点は、`zizai-workflow-designer`の汎用optionを唯一の幾何契約とする。Applicationは採用値をAdapterから渡すが、library内部のpixel値をCSSやprojectorへ重複実装しない。
+- START／ENDはApplication stateへ新しい保存fieldを追加せず、Adapterがstepと同じgrid／配置間隔から一時Documentへ投影する。connector／action iconはApplicationが既存configから解決し、libraryの汎用`nodeRenderers`へDOM要素として渡す。
+- 2026-08-31のWindows実画面確認で判明したnode寸法、先頭step重なり、START／END整列、icon非表示はWP-8G-Aで修正する。memo／annotation modeの追加要望は同Work Packageへ含めない。
+- WP-8G-Aの実画面follow-upでは、Applicationが渡すstep外形を106×88px、visualを48px、iconを26px、横方向level間隔を112pxとする。libraryのnode名は12px、edge／arrow色は`#94a3b8`、arrow markerは従来比80%を維持する。保存済み`ui_position`とgrid原点44pxは変更せず、STARTの一時表示Xだけ28pxへ分離してSTART／step／ENDを112px間隔・同一Y基準へ整列する。
+- 付箋モードは既定OFFとする。OFFはnode編集モードとしてnodeの選択、詳細表示、移動、接続、context actionを許可する一方、付箋をnode／edgeの背面へ置き、作成・本文編集・移動・resize・色変更・削除を禁止する。OFF時に付箋本文の`http://`／`https://` linkをclickした場合だけ`external-link:open-request`を発火し、Application Adapterのsecurity boundaryを通してOS browserへ委譲する。
+- 付箋モードONは付箋編集専用とし、nodeの選択、詳細表示、移動、接続、追加、削除、copy／paste、実行context actionを禁止する。canvasまたはnodeの右click menuは`annotation.add`だけを表示し、その位置へ新規付箋を作成する。付箋の右click menuはlibraryの`noteColors`候補だけを表示し、本文編集・移動・resize・色変更・削除を許可する。ON時の付箋link clickは外部遷移を発火せず本文編集を優先する。
+- toolbarには付箋モード切替だけを置き、`annotation.add` buttonを表示しない。新規付箋はON時の右click menuだけで作成し、空白canvas click、duplicate、pasteでは作成しない。候補色の初期値はlibrary既存sampleの黄・緑・青を使用し、Application固有の色変更UIを重複実装しない。
+
+### WP-10 CatalogPanel
+
+- Project ownerは2026-09-01に、AppShell左sidebarの独立した「カタログ」activityを利用spaceとして承認した。Workspace Explorerへ混在させず、activityは選択中tabの拡張子に応じて内容を切り替える。
+- 初期対応は`.zizd`、`.sql`、`.md`だけとし、未対応拡張子またはactive tab無しではerrorにせずlibraryの空状態を表示する。
+- catalog sampleは`apps/common/config/catalog_samples.json`の読取専用Source設定とする。Runtime state、Workspace file、library memoryを正本にせず、作成・編集・削除・保存機能を有効化しない。
+- Python/Application AdapterがSource設定を読込・検証し、既存`app.getStatus`の追加payloadとして必要値だけを渡す。Source path、root、汎用Source filesystem scopeはFrontendへ公開せず、Bridge Protocol 1.0の31 Command／8 Eventを変更しない。
+- `.sql`／`.md` itemは明示設定したtextをOS clipboardへコピーする。native clipboard操作はApplication Adapterが所有し、libraryはApplication概念やBridgeを参照しない。
+- `.zizd` itemはdrag-and-dropや即時node生成を行わず、明示設定した`connector`、`action`、`description`、`descriptionAuto`、`form`だけをApplication内部clipboardへ格納する。既存Pasteで初めてnodeを生成し、ID、step名、位置、parent／edge／loop／merge情報はApplication state operationが採番・接続する。
+- ApplicationはCatalog由来node templateの許可field、connector、action、form形状を検証する。不正templateはclipboardとworkflow stateを変更せず拒否し、既存node copy／paste、history、undo／redoを維持する。
+- CatalogPanelにはApplication非依存のhost activation hookをupstreamで追加する。hostが処理済みを返す場合はlibrary既定clipboard書込みを行わず、hook未指定consumerの現行clipboard挙動は維持する。
+- local allowlisted assetだけを使用し、CDN、runtime fetch、external iframe、localhost APIを追加しない。mount／destroyでlistener、menu、timer、DOM参照を残さない。
+
 ## Theme, CSS, namespace, and lifecycle
 
 - Applicationのcolor tokenを正本とし、library tokenはAdapterまたはlibrary側のaliasで接続する。
@@ -126,12 +166,14 @@ Applicationはlibraryごとの差をAdapter内へ閉じ込め、page codeから�
 
 ## Workflow Document decision
 
-Workflow Documentの管理主体を本Taskでは決めない。`zizai-workflow-designer`への移管Work Package直前に、同libraryの状態入出力APIだけを調査し、Project ownerが次のいずれかを決定する。
+Project ownerは2026-08-29にWP-8で、Applicationのcurrent workflow stateをWorkflow Documentの唯一の正本とすることを決定した。
 
-- JS Application stateを正本としてlibraryへ入出力する。
-- library側のDocumentをFrontend正本とし、Application Adapterが保存・読込・実行形式へ接続する。
+- Application stateを正本とし、Adapterが正本からlibrary用Document projectionを都度生成する。
+- libraryの`document:change`およびrequest eventはApplication commandへ変換し、正本へ反映する。
+- library内部snapshotや別の永続workflow stateをApplication正本と並行して保持しない。
+- library DocumentとApplication state／保存schemaの差はAdapter mappingで吸収し、`.zizd` schemaとBridge Protocolを暗黙変更しない。
 
-どちらの場合も正本は一つとし、JS Application stateとlibrary内部へ同じ永続データを二重管理しない。決定前にDocument変換や互換実装を開始しない。
+正本は一つとし、JS Application stateとlibrary内部へ同じ永続データを二重管理しない。
 
 ## Security boundary
 

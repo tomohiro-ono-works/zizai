@@ -1,0 +1,19 @@
+/* =========================================================
+   Catalog activity
+   CatalogPanel (zizai-catalog-panel) is mounted by
+   apps/gui/js/catalog.adapter.js inside the AppShell left sidebar body.
+   The rules below only size the host container; the panel's own visuals
+   are owned by the vendored `.cp-*` stylesheet.
+========================================================= */
+.workspace-global-left-area__body--catalog {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.catalog-adapter-host {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}

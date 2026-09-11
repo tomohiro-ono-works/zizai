@@ -16,10 +16,7 @@ env/
 .vscode/
 .DS_Store
 Thumbs.db
-*.ps1
-!.codex-harness/scripts/*.ps1
-!.agents/skills/**/scripts/*.ps1
-!/tests/run-verification.ps1
+
 # Python test / cache artifacts
 .pytest_cache/
 .mypy_cache/
@@ -29,9 +26,6 @@ htmlcov/
 
 # Local app/runtime artifacts
 logs/
-scripts/
-!.codex-harness/scripts/
-!.agents/skills/**/scripts/
 /workflows/
 static/old/
 *.log

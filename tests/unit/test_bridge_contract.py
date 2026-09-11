@@ -178,6 +178,37 @@ def test_allowlisted_external_url_is_delegated_to_the_browser_once(
     assert case["url"] in launcher.calls[0][0][0]
 
 
+@pytest.mark.risk_ext_001
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://zenn.dev/shava2c/articles/ae668b689be50d",
+        "https://github.com/tomohiro-ono-works/zizai/tree/main/static",
+    ],
+)
+def test_production_policy_delegates_approved_note_link_domains_once(
+    monkeypatch: pytest.MonkeyPatch, url: str
+) -> None:
+    launcher = LauncherSpy()
+    monkeypatch.setattr("apps.desktop.bridge.subprocess.Popen", launcher)
+    monkeypatch.setattr("apps.desktop.bridge.webbrowser.open", launcher)
+    monkeypatch.setattr(
+        BridgeRuntime,
+        "_resolve_chrome_executable",
+        lambda self: str(REPOSITORY_ROOT / "chrome.exe"),
+    )
+    runtime = BridgeRuntime(REPOSITORY_ROOT)
+
+    response = runtime.handle_message(
+        command("app.openExternal", {"url": url, "prefer": "chrome"})
+    )
+
+    assert response["payload"]["accepted"] is True
+    assert response["payload"]["url"] == url
+    assert len(launcher.calls) == 1
+    assert url in launcher.calls[0][0][0]
+
+
 def test_unexpected_handler_failure_maps_to_internal_error(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

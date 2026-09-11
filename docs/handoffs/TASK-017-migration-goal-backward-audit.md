@@ -1,7 +1,7 @@
 # TASK-017 Migration Goal Backward Audit
 
 - Status: Investigation Handoff — not Current Specification
-- Related task: [TASK-017](../tasks/active/TASK-017-audit-migration-goal-and-replan.md) WP-1
+- Related task: [TASK-017](../tasks/done/TASK-017-audit-migration-goal-and-replan.md) WP-1
 - Date: 2026-08-23
 - Author: claude-assist（限定Edit権限）
 - Verification: 静的読み取りのみ。Test/Gateは実行していない（本Sessionにshell実行手段なし）。

@@ -218,13 +218,28 @@
   function normalizeGrid(value) {
     const source = value && typeof value === "object" ? value : {};
     const size = Math.max(1, modules.asFiniteNumber(source.size, 22));
-    return {
+    const output = {
       enabled: source.enabled === true,
       size
     };
+    if (source.origin && typeof source.origin === "object") {
+      output.origin = modules.normalizePosition(source.origin);
+    }
+    return output;
   }
 
   function snapPosition(value, gridValue) {
+    const point = modules.normalizePosition(value);
+    const grid = normalizeGrid(gridValue);
+    if (!grid.enabled) return point;
+    const origin = modules.normalizePosition(grid.origin);
+    return {
+      x: origin.x + Math.round((point.x - origin.x) / grid.size) * grid.size,
+      y: origin.y + Math.round((point.y - origin.y) / grid.size) * grid.size
+    };
+  }
+
+  function snapDelta(value, gridValue) {
     const point = modules.normalizePosition(value);
     const grid = normalizeGrid(gridValue);
     if (!grid.enabled) return point;
@@ -232,10 +247,6 @@
       x: Math.round(point.x / grid.size) * grid.size,
       y: Math.round(point.y / grid.size) * grid.size
     };
-  }
-
-  function snapDelta(value, gridValue) {
-    return snapPosition(value, gridValue);
   }
 
   function nodeAnchor(node, port = "in") {
@@ -762,6 +773,35 @@
   const DEFAULT_GAP_X = 252;
   const DEFAULT_GAP_Y = 180;
 
+  function normalizeNodeMetrics(value) {
+    const source = value && typeof value === "object" ? value : {};
+    const visualSize = Math.max(
+      1,
+      modules.asFiniteNumber(source.visualSize, NODE_VISUAL_SIZE)
+    );
+    const width = Math.max(
+      visualSize,
+      modules.asFiniteNumber(source.width, NODE_WIDTH)
+    );
+    const height = Math.max(
+      visualSize,
+      modules.asFiniteNumber(source.height, NODE_HEIGHT)
+    );
+    const iconSize = Math.min(
+      visualSize,
+      Math.max(1, modules.asFiniteNumber(source.iconSize, 48))
+    );
+    return {
+      width,
+      height,
+      visualSize,
+      iconSize,
+      visualOffsetX: (width - visualSize) / 2,
+      loopUpperY: Math.round(visualSize * 26 / NODE_VISUAL_SIZE),
+      loopLowerY: Math.round(visualSize * 62 / NODE_VISUAL_SIZE)
+    };
+  }
+
   function position(value, fallback) {
     return modules.normalizePosition(value, fallback);
   }
@@ -778,7 +818,7 @@
     return `unassigned:node:${nodeId}`;
   }
 
-  function createStepNode(step, index) {
+  function createStepNode(step, index, metrics) {
     const stepId = String(step?.step_id || "").trim();
     if (!stepId) return null;
     const fallback = {
@@ -788,16 +828,22 @@
     const nodeType = String(step?.node_type || "task").trim() || "task";
     const anchors = nodeType === "loop"
       ? {
-          enter: { x: NODE_VISUAL_OFFSET_X, y: 26 },
-          return: { x: NODE_VISUAL_OFFSET_X, y: 62 },
-          done: { x: NODE_VISUAL_OFFSET_X + NODE_VISUAL_SIZE, y: 26 },
-          loop: { x: NODE_VISUAL_OFFSET_X + NODE_VISUAL_SIZE, y: 62 }
+          enter: { x: metrics.visualOffsetX, y: metrics.loopUpperY },
+          return: { x: metrics.visualOffsetX, y: metrics.loopLowerY },
+          done: {
+            x: metrics.visualOffsetX + metrics.visualSize,
+            y: metrics.loopUpperY
+          },
+          loop: {
+            x: metrics.visualOffsetX + metrics.visualSize,
+            y: metrics.loopLowerY
+          }
         }
       : {
-          in: { x: NODE_VISUAL_OFFSET_X, y: NODE_VISUAL_SIZE / 2 },
+          in: { x: metrics.visualOffsetX, y: metrics.visualSize / 2 },
           out: {
-            x: NODE_VISUAL_OFFSET_X + NODE_VISUAL_SIZE,
-            y: NODE_VISUAL_SIZE / 2
+            x: metrics.visualOffsetX + metrics.visualSize,
+            y: metrics.visualSize / 2
           }
         };
     return {
@@ -809,14 +855,14 @@
       step,
       x: position(step?.ui_position, fallback).x,
       y: position(step?.ui_position, fallback).y,
-      width: NODE_WIDTH,
-      height: NODE_HEIGHT,
+      width: metrics.width,
+      height: metrics.height,
       anchors,
       documentPath: ["steps", index, "ui_position"]
     };
   }
 
-  function createTerminalNode(flowId, flow, nodeId, flowIndex) {
+  function createTerminalNode(flowId, flow, nodeId, flowIndex, metrics) {
     const isStart = nodeId === "START";
     const fallback = {
       x: isStart ? 72 : 900,
@@ -833,11 +879,21 @@
       ref: { node_id: nodeId, flow_id: flowId },
       x: point.x,
       y: point.y,
-      width: TERMINAL_WIDTH,
-      height: TERMINAL_HEIGHT,
+      width: metrics.width,
+      height: metrics.height,
       anchors: isStart
-        ? { out: { x: NODE_VISUAL_OFFSET_X + NODE_VISUAL_SIZE, y: NODE_VISUAL_SIZE / 2 } }
-        : { in: { x: NODE_VISUAL_OFFSET_X, y: NODE_VISUAL_SIZE / 2 } },
+        ? {
+            out: {
+              x: metrics.visualOffsetX + metrics.visualSize,
+              y: metrics.visualSize / 2
+            }
+          }
+        : {
+            in: {
+              x: metrics.visualOffsetX,
+              y: metrics.visualSize / 2
+            }
+          },
       documentPath: ["flows", flowId, field, "ui_position"]
     };
   }
@@ -1038,18 +1094,25 @@
     };
   }
 
-  function buildGraphModel(document) {
+  function buildGraphModel(document, options = {}) {
     const nodes = [];
     const nodeByKey = new Map();
+    const nodeMetrics = normalizeNodeMetrics(options.nodeMetrics);
     Object.entries(document?.flows || {}).forEach(([flowId, flow], index) => {
       ["START", "END"].forEach((nodeId) => {
-        const node = createTerminalNode(flowId, flow, nodeId, index);
+        const node = createTerminalNode(
+          flowId,
+          flow,
+          nodeId,
+          index,
+          nodeMetrics
+        );
         nodes.push(node);
         nodeByKey.set(node.key, node);
       });
     });
     (Array.isArray(document?.steps) ? document.steps : []).forEach((step, index) => {
-      const node = createStepNode(step, index);
+      const node = createStepNode(step, index, nodeMetrics);
       if (!node) return;
       nodes.push(node);
       nodeByKey.set(node.key, node);
@@ -1340,6 +1403,7 @@
   }
 
   modules.buildWorkflowGraphModel = buildGraphModel;
+  modules.normalizeWorkflowNodeMetrics = normalizeNodeMetrics;
   modules.workflowStepKey = stepKey;
   modules.workflowFlowNodeKey = flowNodeKey;
   modules.workflowGraphScopeForNode = graphScopeForNode;
@@ -1973,11 +2037,13 @@
       "↶",
       commandLabels.undo || "Undo"
     ));
-    toolbar.appendChild(toolbarButton(
-      "annotation.add",
-      "▤",
-      commandLabels.addNote || "Add sticky note"
-    ));
+    const annotationModeButton = toolbarButton(
+      "annotation.mode-toggle",
+      "✎",
+      commandLabels.annotationMode || "Annotation mode"
+    );
+    annotationModeButton.setAttribute("aria-pressed", "false");
+    toolbar.appendChild(annotationModeButton);
     toolbar.appendChild(toolbarButton(
       "workflow.run",
       "▶",
@@ -1998,14 +2064,14 @@
     const defs = svgElement("defs");
     const marker = svgElement("marker", "", {
       id: `zwd-arrow-${Math.random().toString(36).slice(2)}`,
-      markerWidth: "8",
-      markerHeight: "8",
-      refX: "7",
-      refY: "4",
+      markerWidth: "6.4",
+      markerHeight: "6.4",
+      refX: "5.6",
+      refY: "3.2",
       orient: "auto",
       markerUnits: "strokeWidth"
     });
-    marker.appendChild(svgElement("path", "zwd-arrow", { d: "M0,0 L8,4 L0,8 Z" }));
+    marker.appendChild(svgElement("path", "zwd-arrow", { d: "M0,0 L6.4,3.2 L0,6.4 Z" }));
     defs.appendChild(marker);
     edges.appendChild(defs);
     edges.dataset.markerId = marker.id;
@@ -2236,7 +2302,7 @@
 
   function appendTextWithLinks(container, text) {
     const value = String(text || "");
-    const pattern = /https:\/\/[^\s<>"']+/g;
+    const pattern = /https?:\/\/[^\s<>"']+/g;
     let cursor = 0;
     let match = pattern.exec(value);
     while (match) {
@@ -2346,6 +2412,11 @@
           }
         );
         button.textContent = String(item.label || item.commandId);
+        if (item.value !== undefined && item.value !== null) {
+          const value = String(item.value);
+          button.setAttribute("data-context-value", value);
+          button.style.setProperty("--zwd-context-value", value);
+        }
         shell.menu.appendChild(button);
       });
       shell.menu.style.left = `${point.x}px`;
@@ -2691,6 +2762,7 @@
       renderNotes(options.readonly);
       applySelection(options.selection);
       applyStatus(options.status);
+      applyAnnotationMode(options.annotationMode);
     }
 
     function applySelection(selection) {
@@ -2745,6 +2817,24 @@
       const value = modules.normalizeViewport(viewport);
       shell.world.style.transform =
         `translate(${value.x}px, ${value.y}px) scale(${value.zoom})`;
+    }
+
+    function applyAnnotationMode(active) {
+      const enabled = !!active;
+      if (shell.shell?.dataset) {
+        shell.shell.dataset.annotationMode = enabled ? "active" : "inactive";
+      }
+      const toggle = shell.toolbar?.querySelector?.(
+        '[data-zwd-command="annotation.mode-toggle"]'
+      );
+      toggle?.setAttribute("aria-pressed", enabled ? "true" : "false");
+      const noteControls = shell.noteLayer?.querySelectorAll?.(
+        "[data-note-color], [data-note-resize]"
+      ) || [];
+      noteControls.forEach((control) => {
+        control.disabled = !enabled;
+        control.setAttribute("aria-disabled", enabled ? "false" : "true");
+      });
     }
 
     function nodeCenter(nodeKey, port = "out") {
@@ -2912,6 +3002,7 @@
       applySelection,
       applyStatus,
       applyViewport,
+      applyAnnotationMode,
       showConnection,
       hideConnection,
       setPreviewTransform,
@@ -2952,6 +3043,10 @@
     };
   }
 
+  function noteColorOperations(document, note, value) {
+    return [operationFor(document, note.colorPath, String(value || ""))];
+  }
+
   function createNoteEditor(renderer, controller) {
     let active = null;
 
@@ -2975,7 +3070,7 @@
     }
 
     function begin(noteId, body) {
-      if (controller.isReadonly()) return;
+      if (controller.isReadonly() || !controller.getAnnotationMode()) return;
       close();
       const note = renderer.getModel()?.notes
         .find((item) => item.noteId === String(noteId || ""));
@@ -3008,18 +3103,20 @@
     }
 
     function setColor(noteId, value) {
-      if (controller.isReadonly()) return;
+      if (controller.isReadonly() || !controller.getAnnotationMode()) return;
       const note = renderer.getModel()?.notes
         .find((item) => item.noteId === String(noteId || ""));
       if (!note) return;
-      controller.commit([
-        operationFor(controller.getDocument(), note.colorPath, String(value || ""))
-      ], "annotation.color");
+      controller.commit(
+        noteColorOperations(controller.getDocument(), note, value),
+        "annotation.color"
+      );
     }
 
     return Object.freeze({ begin, close, setColor });
   }
 
+  modules.workflowNoteColorOperations = noteColorOperations;
   modules.createWorkflowNoteEditor = createNoteEditor;
 })(window);
 
@@ -3040,7 +3137,28 @@
       cleanup.push(() => target.removeEventListener(eventName, handler, options));
     }
 
+    function annotationItems(target) {
+      const labels = controller.getCommandLabels();
+      if (controller.isReadonly()) return [];
+      if (target?.kind === "note") {
+        return controller.getNoteColors().map((color) => ({
+          commandId: "annotation.color",
+          label: color,
+          value: color
+        }));
+      }
+      return [{
+        commandId: "annotation.add",
+        label: labels.addNote || "Add sticky note"
+      }];
+    }
+
     function contextItems(target) {
+      // Annotation mode is note-edit only, so it owns the whole menu and does
+      // not consult the host's node-oriented context actions.
+      if (controller.getAnnotationMode()) return annotationItems(target);
+      const configured = controller.getContextActions?.(target);
+      if (configured !== null && configured !== undefined) return configured;
       const labels = controller.getCommandLabels();
       if (target?.kind === "selection") {
         return controller.isReadonly() ? [] : [
@@ -3064,14 +3182,9 @@
         );
         return items;
       }
-      if (target?.kind === "note") {
-        return controller.isReadonly()
-          ? []
-          : [{ commandId: "selection.delete", label: labels.delete || "Delete" }];
-      }
+      if (target?.kind === "note") return [];
       return controller.isReadonly() ? [] : [
         { commandId: "node.add", label: labels.addNode || "Add node" },
-        { commandId: "annotation.add", label: labels.addNote || "Add sticky note" },
         { commandId: "workflow.run", label: labels.runWorkflow || "Run workflow" }
       ];
     }
@@ -3087,9 +3200,19 @@
 
     function onContextMenu(event) {
       event.preventDefault();
-      const nodeElement = event.target.closest("[data-node-key]");
-      const noteElement = event.target.closest("[data-note-id]");
-      const edgeElement = event.target.closest("[data-edge-key]");
+      const annotationMode = controller.getAnnotationMode();
+      // While annotation mode is ON, nodes and edges are inert: a right-click
+      // on them falls through to the canvas so the note lands under the
+      // pointer.
+      const nodeElement = annotationMode
+        ? null
+        : event.target.closest("[data-node-key]");
+      const noteElement = annotationMode
+        ? event.target.closest("[data-note-id]")
+        : null;
+      const edgeElement = annotationMode
+        ? null
+        : event.target.closest("[data-edge-key]");
 
       if (nodeElement) {
         const node = renderer.getModel()?.nodeByKey.get(nodeElement.dataset.nodeKey);
@@ -3153,8 +3276,22 @@
       const key = event.key.toLowerCase();
       if (event.key === "Escape") {
         event.preventDefault();
+        if (controller.getAnnotationMode?.()) {
+          controller.changeAnnotationMode(false, "escape");
+        }
         controller.select({ nodes: [], edges: [], annotation_ids: [] }, "escape");
-      } else if (event.key === "Delete" || event.key === "Backspace") {
+        return;
+      }
+      if (controller.getAnnotationMode()) {
+        // Note-edit only: Delete removes the selected note, node-editing
+        // shortcuts stay silent.
+        if (event.key === "Delete" || event.key === "Backspace") {
+          event.preventDefault();
+          controller.executeCommand("selection.delete");
+        }
+        return;
+      }
+      if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault();
         controller.executeCommand("selection.delete");
       } else if ((event.ctrlKey || event.metaKey) && key === "d") {
@@ -3249,6 +3386,13 @@
         : null;
     }
 
+    function edgeFromElement(element) {
+      const key = element?.dataset?.edgeKey;
+      return key
+        ? renderer.getModel()?.edges.find((item) => item.key === key) || null
+        : null;
+    }
+
     function selectedNodeKeys() {
       return new Set(controller.getSelection().nodes.map(modules.nodeRefKey));
     }
@@ -3295,7 +3439,9 @@
 
     function beginLeftGesture(event, targets) {
       const model = renderer.getModel();
+      const annotationMode = controller.getAnnotationMode();
       if (targets.noteElement) {
+        if (!annotationMode) return;
         const note = noteFromElement(targets.noteElement);
         if (!note) return;
         if (event.target.closest("[data-note-resize]")) {
@@ -3307,6 +3453,9 @@
         }
         return;
       }
+      // Annotation mode is note-edit only: nodes and edges are inert, while a
+      // blank-canvas drag still pans the viewport.
+      if (annotationMode && (targets.nodeElement || targets.edgeElement)) return;
       if (targets.nodeElement) {
         const node = nodeFromElement(targets.nodeElement);
         if (!node) return;
@@ -3347,9 +3496,21 @@
 
     function beginRightGesture(event, targets) {
       suppressContextMenu = false;
+      if (controller.getAnnotationMode()) {
+        // Note-edit only: no connection gesture and no node box selection.
+        gesture = {
+          kind: "right-noop",
+          button: 2,
+          pointerId: event.pointerId,
+          startClient: clientPoint(event),
+          activated: false
+        };
+        return;
+      }
       if (targets.nodeElement) {
         const node = nodeFromElement(targets.nodeElement);
         if (!node) return;
+        if (controller.isReadonly()) return;
         const selectedPort = String(
           targets.portElement?.dataset?.zwdPortRole || ""
         );
@@ -3505,6 +3666,7 @@
     }
 
     function finishConnect(event, current) {
+      if (controller.isReadonly()) return;
       const snapped = controller.findConnectionTarget(
         clientPoint(event),
         current.source
@@ -3516,7 +3678,19 @@
       const targetElement = document.elementFromPoint(event.clientX, event.clientY)
         ?.closest?.("[data-node-key]");
       const target = nodeFromElement(targetElement);
-      if (target) controller.requestConnect(current.source, target);
+      if (target) {
+        controller.requestConnect(current.source, target);
+        return;
+      }
+      const edgeElement = document.elementFromPoint(event.clientX, event.clientY)
+        ?.closest?.("[data-edge-key]");
+      const edge = edgeFromElement(edgeElement);
+      const drop = {
+        kind: edge ? "edge" : "canvas",
+        position: worldPoint(event)
+      };
+      if (edge) drop.edge_ref = modules.cloneValue(edge.ref);
+      controller.requestConnectDrop(current.source, drop);
     }
 
     function rectangleNodes(current) {
@@ -3590,20 +3764,23 @@
         controller.executeCommand(command, null, worldPoint(event));
         return;
       }
-      const contextCommand = event.target.closest("[data-context-command]")
-        ?.dataset.contextCommand;
-      if (contextCommand) {
+      const contextItem = event.target.closest("[data-context-command]");
+      if (contextItem) {
         renderer.hideContextMenu();
         controller.executeCommand(
-          contextCommand,
+          contextItem.dataset.contextCommand,
           commandInteraction.getContextTarget(),
-          worldPoint(event)
+          worldPoint(event),
+          contextItem.dataset.contextValue
         );
         return;
       }
       const external = event.target.closest("[data-external-url]")?.dataset.externalUrl;
       if (external) {
         event.preventDefault();
+        // Annotation mode is note-edit only, so note editing takes priority
+        // over following a link.
+        if (controller.getAnnotationMode()) return;
         controller.emit("external-link:open-request", { url: external });
       }
     }
@@ -3721,6 +3898,34 @@
       : "graph";
   }
 
+  function normalizeContextActions(value) {
+    if (!Array.isArray(value)) return null;
+    const actions = value.map((item) => {
+      const commandId = String(item?.commandId || "").trim();
+      const label = String(item?.label || "").trim();
+      if (!commandId || !label) return null;
+      const action = { commandId, label };
+      if (["string", "number"].includes(typeof item.value)) {
+        action.value = String(item.value);
+      }
+      return action;
+    }).filter(Boolean);
+    return actions.length || value.length === 0 ? actions : null;
+  }
+
+  const DEFAULT_NOTE_COLORS = Object.freeze([
+    "#fff2a8",
+    "#dff7e8",
+    "#e7edff"
+  ]);
+
+  function normalizeNoteColors(value) {
+    const colors = (Array.isArray(value) ? value : [])
+      .map((item) => String(item || "").trim())
+      .filter(Boolean);
+    return colors.length ? colors : [...DEFAULT_NOTE_COLORS];
+  }
+
   function createWorkflowDesigner(options = {}) {
     const rootElement = options.root;
     if (!(rootElement instanceof HTMLElement)) {
@@ -3738,6 +3943,10 @@
     let viewport = modules.normalizeViewport(options.viewport);
     let status = modules.normalizeStatus(options.status);
     let readonly = !!options.readonly;
+    let annotationMode = !readonly && !!options.annotationMode;
+    selection = annotationMode
+      ? { ...selection, nodes: [], edges: [] }
+      : { ...selection, annotation_ids: [] };
     let nodeRenderers = normalizeRenderers(options.nodeRenderers);
     let mounted = false;
     let shell = null;
@@ -3750,8 +3959,10 @@
       documentSnapshot
     );
     const commandLabels = options.commandLabels || {};
+    const noteColors = normalizeNoteColors(options.noteColors);
     const graphMode = normalizeGraphMode(options.graphMode);
     const nodeGrid = modules.normalizeWorkflowGrid(options.nodeGrid);
+    const nodeMetrics = modules.normalizeWorkflowNodeMetrics(options.nodeMetrics);
     const connectionSnapDistance = Math.max(
       0,
       modules.asFiniteNumber(options.connectionSnapDistance, 0)
@@ -3759,6 +3970,11 @@
     const graphConstraints = typeof options.graphConstraints === "function"
       ? options.graphConstraints
       : null;
+    if (options.contextActions !== undefined &&
+        typeof options.contextActions !== "function") {
+      throw new TypeError("contextActions must be a function");
+    }
+    const contextActions = options.contextActions || null;
 
     function cycleValidationKey(scope, nodeId) {
       const id = String(nodeId || "");
@@ -3805,10 +4021,13 @@
 
     function renderDocument() {
       if (!mounted) return;
-      const model = modules.buildWorkflowGraphModel(documentSnapshot);
+      const model = modules.buildWorkflowGraphModel(documentSnapshot, {
+        nodeMetrics
+      });
       renderer.renderDocument(model, {
         nodeRenderers,
         readonly,
+        annotationMode,
         selection,
         status: effectiveStatus()
       });
@@ -3858,6 +4077,20 @@
       });
     }
 
+    function changeAnnotationModeFromUi(value, reason) {
+      const next = !readonly && !!value;
+      if (annotationMode === next) return;
+      annotationMode = next;
+      renderer?.applyAnnotationMode(annotationMode);
+      emitter.emit("annotation:mode-change", {
+        active: next,
+        reason: String(reason || "ui")
+      });
+      selectFromUi(next
+        ? { ...selection, nodes: [], edges: [] }
+        : { ...selection, annotation_ids: [] }, "annotation.mode-change");
+    }
+
     function zoomBy(factor) {
       if (!mounted) return;
       const rect = shell.viewport.getBoundingClientRect();
@@ -3876,11 +4109,8 @@
     }
 
     function addNote(point) {
-      if (readonly) return null;
+      if (readonly || !annotationMode) return null;
       const noteId = idManager.allocate("note", 1, documentSnapshot)[0];
-      const tokenColor = window.getComputedStyle(rootElement)
-        .getPropertyValue("--surface-hover")
-        .trim();
       const location = modules.normalizePosition(point, {
         x: 320,
         y: 240
@@ -3893,7 +4123,7 @@
         },
         size: { width: 240, height: 144 },
         text: "",
-        color: String(options.noteColors?.[0] || tokenColor)
+        color: noteColors[0]
       };
       const notes = Array.isArray(documentSnapshot.notes)
         ? documentSnapshot.notes
@@ -3910,15 +4140,32 @@
       return result;
     }
 
+    function setNoteColor(noteId, value) {
+      if (readonly || !annotationMode) return null;
+      const color = String(value ?? "").trim();
+      if (!color) return null;
+      const note = renderer?.getModel()?.notes.find(
+        (item) => item.noteId === String(noteId || "")
+      );
+      if (!note) return null;
+      return commit(
+        modules.workflowNoteColorOperations(documentSnapshot, note, color),
+        "annotation.color"
+      );
+    }
+
     function copy(value = selection) {
       return modules.copyWorkflowSelection(documentSnapshot, value);
     }
 
     function cloneFromFragment(fragment, mode) {
       if (readonly) return null;
+      // Notes may only ever be created via "annotation.add". Duplicate and
+      // paste can still clone workflow nodes, but never sticky notes.
+      const sanitizedFragment = { ...fragment, notes: [] };
       const result = modules.cloneWorkflowFragment(
         documentSnapshot,
-        fragment,
+        sanitizedFragment,
         {
           mode,
           sourceDocument: fragment.source_document || documentSnapshot,
@@ -4014,6 +4261,26 @@
       return true;
     }
 
+    function requestConnectDrop(source, drop) {
+      const sourceNodeRef = modules.normalizeNodeRef(source?.ref);
+      if (!sourceNodeRef) return false;
+      const edgeRef = modules.normalizeEdgeRef(drop?.edge_ref);
+      const kind = drop?.kind === "edge" && edgeRef ? "edge" : "canvas";
+      const payload = {
+        source_node_ref: modules.cloneValue(sourceNodeRef),
+        drop: {
+          kind,
+          position: modules.normalizePosition(drop?.position)
+        }
+      };
+      if (source?.connectionPort) {
+        payload.source_port = String(source.connectionPort);
+      }
+      if (kind === "edge") payload.drop.edge_ref = modules.cloneValue(edgeRef);
+      emitter.emit("connect:drop-request", modules.cloneValue(payload));
+      return true;
+    }
+
     function currentNodeTarget(target) {
       if (target?.kind === "node") return target.node;
       const selected = selection.nodes[0];
@@ -4023,39 +4290,100 @@
       ) || null;
     }
 
+    // Each mode owns exactly one kind of target: OFF edits nodes and edges,
+    // ON edits notes. Public callers can still supply a mixed selection, so
+    // every generic command path drops the part the current mode must not touch.
+    function withAnnotationModeGate(value) {
+      return annotationMode
+        ? { nodes: [], edges: [], annotation_ids: value.annotation_ids || [] }
+        : { ...value, annotation_ids: [] };
+    }
+
     function targetSelection(target) {
       if (target?.kind === "selection") {
-        return modules.cloneValue(target.selection || selection);
+        return withAnnotationModeGate(
+          modules.cloneValue(target.selection || selection)
+        );
       }
       if (target?.kind === "node") {
-        return {
+        return withAnnotationModeGate({
           nodes: [modules.cloneValue(target.node.ref)],
           edges: [],
           annotation_ids: []
+        });
+      }
+      if (target?.kind === "edge") {
+        return withAnnotationModeGate({
+          nodes: [],
+          edges: [modules.cloneValue(target.edge.ref)],
+          annotation_ids: []
+        });
+      }
+      if (target?.kind === "note") {
+        return withAnnotationModeGate({
+          nodes: [],
+          edges: [],
+          annotation_ids: [String(target.noteId)]
+        });
+      }
+      return withAnnotationModeGate(modules.cloneValue(selection));
+    }
+
+    function publicCommandTarget(target) {
+      if (target?.kind === "node") {
+        return {
+          kind: "node",
+          node_ref: modules.cloneValue(target.node.ref)
+        };
+      }
+      if (target?.kind === "selection") {
+        return {
+          kind: "selection",
+          selection: targetSelection(target)
         };
       }
       if (target?.kind === "edge") {
         return {
-          nodes: [],
-          edges: [modules.cloneValue(target.edge.ref)],
-          annotation_ids: []
+          kind: "edge",
+          edge_ref: modules.cloneValue(target.edge.ref)
         };
       }
       if (target?.kind === "note") {
         return {
-          nodes: [],
-          edges: [],
-          annotation_ids: [String(target.noteId)]
+          kind: "annotation",
+          annotation_id: String(target.noteId)
         };
       }
-      return modules.cloneValue(selection);
+      if (target?.kind === "canvas") {
+        return {
+          kind: "canvas",
+          position: modules.normalizePosition(target.point)
+        };
+      }
+      return null;
     }
 
-    function executeCommand(commandId, target, point) {
+    function getContextActions(target) {
+      if (!contextActions) return null;
+      try {
+        const configured = contextActions({
+          target: modules.cloneValue(publicCommandTarget(target)),
+          readonly
+        });
+        if (configured && typeof configured.then === "function") return null;
+        return normalizeContextActions(configured);
+      } catch (_error) {
+        return null;
+      }
+    }
+
+    function executeCommand(commandId, target, point, value) {
       const command = String(commandId || "").trim();
       const editCommands = new Set([
         "node.add",
+        "annotation.mode-toggle",
         "annotation.add",
+        "annotation.color",
         "selection.delete",
         "selection.duplicate",
         "selection.paste"
@@ -4063,6 +4391,9 @@
       if (readonly && editCommands.has(command)) return;
       if (command === "viewport.zoom-in") zoomBy(1.15);
       else if (command === "viewport.zoom-out") zoomBy(1 / 1.15);
+      else if (command === "annotation.mode-toggle") {
+        changeAnnotationModeFromUi(!annotationMode, "toolbar");
+      }
       else if (command === "node.add") {
         const location = modules.normalizePosition(target?.point || point, {
           x: 0,
@@ -4074,7 +4405,14 @@
           position: modules.snapWorkflowPosition(location, nodeGrid)
         });
       }
-      else if (command === "annotation.add") addNote(point);
+      else if (command === "annotation.add") {
+        // The note lands where the menu was opened, not where the menu item
+        // happened to be clicked.
+        addNote(target?.point || point);
+      }
+      else if (command === "annotation.color") {
+        if (target?.kind === "note") setNoteColor(target.noteId, value);
+      }
       else if (command === "workflow.run") {
         emitter.emit("run:request", { mode: "workflow" });
       }
@@ -4099,34 +4437,12 @@
           });
         }
       }
-      let publicTarget = null;
-      if (target?.kind === "node") {
-        publicTarget = {
-          kind: "node",
-          node_ref: modules.cloneValue(target.node.ref)
-        };
-      } else if (target?.kind === "selection") {
-        publicTarget = {
-          kind: "selection",
-          selection: targetSelection(target)
-        };
-      } else if (target?.kind === "edge") {
-        publicTarget = {
-          kind: "edge",
-          edge_ref: modules.cloneValue(target.edge.ref)
-        };
-      } else if (target?.kind === "note") {
-        publicTarget = {
-          kind: "annotation",
-          annotation_id: String(target.noteId)
-        };
-      } else if (target?.kind === "canvas") {
-        publicTarget = { kind: "canvas" };
-      }
-      emitter.emit("command:execute", {
+      const executed = {
         commandId: command,
-        target: publicTarget
-      });
+        target: publicCommandTarget(target)
+      };
+      if (value !== undefined && value !== null) executed.value = String(value);
+      emitter.emit("command:execute", executed);
     }
 
     const controller = Object.freeze({
@@ -4134,18 +4450,23 @@
       getSelection: () => selection,
       getViewport: () => viewport,
       getCommandLabels: () => commandLabels,
+      getContextActions,
+      getNoteColors: () => [...noteColors],
+      getAnnotationMode: () => annotationMode,
       isReadonly: () => readonly,
       snapNodePosition: (value) => modules.snapWorkflowPosition(value, nodeGrid),
       snapNodeDelta: (value) => modules.snapWorkflowDelta(value, nodeGrid),
       findConnectionTarget,
       select: selectFromUi,
       changeViewport: changeViewportFromUi,
+      changeAnnotationMode: changeAnnotationModeFromUi,
       commit,
       emit: emitter.emit,
       addNote,
       duplicate,
       executeCommand,
       requestConnect,
+      requestConnectDrop,
       refresh: renderDocument
     });
 
@@ -4154,6 +4475,35 @@
       shell = modules.createWorkflowDesignerShell(rootElement, commandLabels);
       shell.shell.dataset.nodeGrid = nodeGrid.enabled ? "enabled" : "disabled";
       shell.shell.style.setProperty("--zwd-grid-size", `${nodeGrid.size}px`);
+      const gridOrigin = modules.normalizePosition(nodeGrid.origin);
+      shell.shell.style.setProperty("--zwd-grid-origin-x", `${gridOrigin.x}px`);
+      shell.shell.style.setProperty("--zwd-grid-origin-y", `${gridOrigin.y}px`);
+      shell.shell.style.setProperty("--zwd-node-width", `${nodeMetrics.width}px`);
+      shell.shell.style.setProperty("--zwd-node-height", `${nodeMetrics.height}px`);
+      shell.shell.style.setProperty(
+        "--zwd-node-visual-size",
+        `${nodeMetrics.visualSize}px`
+      );
+      shell.shell.style.setProperty(
+        "--zwd-node-visual-offset-x",
+        `${nodeMetrics.visualOffsetX}px`
+      );
+      shell.shell.style.setProperty(
+        "--zwd-node-visual-center-y",
+        `${nodeMetrics.visualSize / 2}px`
+      );
+      shell.shell.style.setProperty(
+        "--zwd-node-icon-size",
+        `${nodeMetrics.iconSize}px`
+      );
+      shell.shell.style.setProperty(
+        "--zwd-node-loop-upper-y",
+        `${nodeMetrics.loopUpperY}px`
+      );
+      shell.shell.style.setProperty(
+        "--zwd-node-loop-lower-y",
+        `${nodeMetrics.loopLowerY}px`
+      );
       Object.entries(normalizeTheme(options.theme)).forEach(([key, value]) => {
         shell.shell.style.setProperty(key, String(value));
       });
@@ -4217,7 +4567,22 @@
       },
       setReadonly(value) {
         readonly = !!value;
+        if (readonly) annotationMode = false;
+        selection = annotationMode
+          ? { ...selection, nodes: [], edges: [] }
+          : { ...selection, annotation_ids: [] };
         renderDocument();
+      },
+      setAnnotationMode(value) {
+        annotationMode = !readonly && !!value;
+        renderer?.applyAnnotationMode(annotationMode);
+        selection = annotationMode
+          ? { ...selection, nodes: [], edges: [] }
+          : { ...selection, annotation_ids: [] };
+        renderer?.applySelection(selection);
+      },
+      getAnnotationMode() {
+        return annotationMode;
       },
       setNodeRenderers(value) {
         nodeRenderers = normalizeRenderers(value);
