@@ -57,7 +57,7 @@ class CSVConnector(BaseConnector):
         if chunk_size < 0:
             raise ValueError("chunk_size は 0 以上で指定してください。")
         return chunk_size
-    
+
     def execute(self, action: str, params: dict[str, Any], context: dict[str, Any]) -> Any:
         if action == "read_csv":
             file_path = params.get('file_path')
@@ -83,7 +83,7 @@ class CSVConnector(BaseConnector):
                 raise ValueError("output_path は必須です。")
             return self.write_csv(
                 str(input_data),
-                str(output_path), 
+                str(output_path),
                 str(params.get('encoding', 'utf-8-sig')),
                 str(params.get('delimiter', ',')),
                 context,

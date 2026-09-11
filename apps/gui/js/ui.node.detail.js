@@ -1092,4 +1092,3 @@
   const uiOut = packagesOut.ui = packagesOut.ui || {};
   uiOut.nodeDetail = nodeDetail;
 })();
-

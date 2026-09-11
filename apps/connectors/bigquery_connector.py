@@ -528,7 +528,7 @@ class BQConnector(BaseConnector):
                 # dict_row[key] = format_date(dict_row[key]) 
                 
             results.append(dict_row)
-        
+
         statement_type = str(getattr(query_job, "statement_type", "") or "").strip().upper()
         has_schema = bool(getattr(query_job, "schema", None))
         if self._is_non_tabular_statement(statement_type) and not has_schema and not results:

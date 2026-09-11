@@ -2308,4 +2308,3 @@
   const uiFields = { renderField, getFieldReferenceWarnings, isFieldVisibleForNode };
   window.uiFields = uiFields;
 })();
-
