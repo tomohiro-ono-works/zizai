@@ -351,6 +351,7 @@
 }
 
 .zwd-tool {
+  position: relative;
   display: inline-grid;
   width: 34px;
   height: 34px;
@@ -364,6 +365,31 @@
   font-size: 17px;
   line-height: 1;
   cursor: pointer;
+}
+
+.zwd-tool::after {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 1;
+  visibility: hidden;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: #263142;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  content: attr(data-zwd-tooltip);
+}
+
+.zwd-tool:hover::after,
+.zwd-tool:focus-visible::after {
+  visibility: visible;
+  opacity: 1;
 }
 
 .zwd-tool:hover,

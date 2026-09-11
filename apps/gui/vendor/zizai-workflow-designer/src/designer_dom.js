@@ -31,7 +31,7 @@
       type: "button",
       "data-zwd-command": command,
       "aria-label": label,
-      title: label
+      "data-zwd-tooltip": label
     });
     button.textContent = text;
     return button;

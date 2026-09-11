@@ -566,6 +566,59 @@ test("WorkflowDesignerだけをinteractive canvasとしてmountする", async ({
 });
 
 
+test("右端のworkflow実行tooltipはdesigner枠内でhoverとfocusのたびに表示される", async ({ page }) => {
+  await mountFlow(page, {
+    metadata: { mode: "dataflow", name: "Toolbar tooltip contract" },
+    variables: { start: [] },
+    steps: [taskStep("step1", 140, 40)],
+    flows: {
+      edges: [{ from: "START", to: "step1", order: 1, kind: "primary" }],
+    },
+    notes: [],
+  });
+
+  const designer = page.locator("#flowchart > .zwd");
+  const runButton = page.locator('[data-zwd-command="workflow.run"]');
+
+  await expect(runButton).toHaveAttribute("aria-label", "実行");
+  await expect(runButton).not.toHaveAttribute("title", /.+/);
+  await expect(runButton).toHaveAttribute("data-zwd-tooltip", "実行");
+
+  const tooltipStyle = () => runButton.evaluate((button) => {
+    const style = getComputedStyle(button, "::after");
+    return {
+      content: style.content,
+      position: style.position,
+      right: style.right,
+      visibility: style.visibility,
+    };
+  });
+  expect(await tooltipStyle()).toEqual({
+    content: '"実行"',
+    position: "absolute",
+    right: "0px",
+    visibility: "hidden",
+  });
+
+  await runButton.hover();
+  await expect.poll(async () => (await tooltipStyle()).visibility).toBe("visible");
+  const runButtonBox = await runButton.boundingBox();
+  const designerBox = await designer.boundingBox();
+  expect(runButtonBox.x + runButtonBox.width).toBeLessThanOrEqual(designerBox.x + designerBox.width);
+
+  await page.locator(".zwd-viewport").hover({ position: { x: 8, y: 100 } });
+  await expect.poll(async () => (await tooltipStyle()).visibility).toBe("hidden");
+  await runButton.hover();
+  await expect.poll(async () => (await tooltipStyle()).visibility).toBe("visible");
+
+  await page.locator(".zwd-viewport").hover({ position: { x: 8, y: 100 } });
+  await page.locator(".zwd-viewport").focus();
+  await expect.poll(async () => (await tooltipStyle()).visibility).toBe("hidden");
+  await runButton.focus();
+  await expect.poll(async () => (await tooltipStyle()).visibility).toBe("visible");
+});
+
+
 test("1.1倍node metricsでSTART・step・ENDを112px間隔に整列しconnector iconを表示する", async ({ page }) => {
   await mountFlow(page, {
     metadata: { mode: "dataflow", name: "Geometry and icon contract" },

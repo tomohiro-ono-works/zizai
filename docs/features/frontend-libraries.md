@@ -143,6 +143,9 @@ Applicationはlibraryごとの差をAdapter内へ閉じ込め、page codeから�
 - 付箋モードは既定OFFとする。OFFはnode編集モードとしてnodeの選択、詳細表示、移動、接続、context actionを許可する一方、付箋をnode／edgeの背面へ置き、作成・本文編集・移動・resize・色変更・削除を禁止する。OFF時に付箋本文の`http://`／`https://` linkをclickした場合だけ`external-link:open-request`を発火し、Application Adapterのsecurity boundaryを通してOS browserへ委譲する。
 - 付箋モードONは付箋編集専用とし、nodeの選択、詳細表示、移動、接続、追加、削除、copy／paste、実行context actionを禁止する。canvasまたはnodeの右click menuは`annotation.add`だけを表示し、その位置へ新規付箋を作成する。付箋の右click menuはlibraryの`noteColors`候補だけを表示し、本文編集・移動・resize・色変更・削除を許可する。ON時の付箋link clickは外部遷移を発火せず本文編集を優先する。
 - toolbarには付箋モード切替だけを置き、`annotation.add` buttonを表示しない。新規付箋はON時の右click menuだけで作成し、空白canvas click、duplicate、pasteでは作成しない。候補色の初期値はlibrary既存sampleの黄・緑・青を使用し、Application固有の色変更UIを重複実装しない。
+- toolbarの各icon説明はWebEngine標準`title` tooltipへ依存せず、library内のtooltipとして表示する。右端の実行buttonを含めてdesigner表示枠内へ収め、hover／keyboard focusのたびに再表示できること、`aria-label`を維持することを公開UI contractとする。
+- Project ownerは2026-09-08にviewport wheel操作を承認した。通常wheelは縦pan、Shift+wheelは横pan、Ctrl+wheelはポインタ位置をanchorにした既存zoomとし、Ctrl+Shift+wheelもzoomを優先する。toolbarの`viewport.zoom-in`／`viewport.zoom-out`は既存挙動を維持する。
+- この変更ではAdapter、Bridge、CSS、保存schemaを変更しない。
 
 ### WP-10 CatalogPanel
 

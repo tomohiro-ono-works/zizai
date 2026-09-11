@@ -1990,7 +1990,7 @@
       type: "button",
       "data-zwd-command": command,
       "aria-label": label,
-      title: label
+      "data-zwd-tooltip": label
     });
     button.textContent = text;
     return button;
@@ -3253,6 +3253,13 @@
     function onWheel(event) {
       event.preventDefault();
       const viewport = controller.getViewport();
+      if (!(event.ctrlKey || event.metaKey)) {
+        const panDelta = event.deltaY;
+        controller.changeViewport(event.shiftKey
+          ? { x: viewport.x - panDelta, y: viewport.y, zoom: viewport.zoom }
+          : { x: viewport.x, y: viewport.y - panDelta, zoom: viewport.zoom });
+        return;
+      }
       const rect = shell.viewport.getBoundingClientRect();
       const anchor = {
         x: event.clientX - rect.left,

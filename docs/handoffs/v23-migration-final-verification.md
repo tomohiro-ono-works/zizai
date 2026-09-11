@@ -96,8 +96,10 @@ Status: PASS
 
 ## WP-EXEC Release workflow execution gate
 
-Status: FAIL — UI不具合を検出、表示対象の特定待ち
+Status: In Progress — tooltip修正済み、Windows実画面再確認待ち
 
-- 2026-09-08のProject owner手動確認で、workflow実行時に表示されるmenuが右端で見切れ、2回目以降は表示されない事象を確認した。
-- 現時点では対象がnode context menuか実行完了dialogかを確定できていないため、製品コードを推測修正せず、画面または操作手順を照合してから責務箇所を特定する。
-- 未実施をPASS扱いにせず、dataflow／workflowの完走確認は本事象の解消後に再実施する。
+- 2026-09-08のProject owner手動確認で、workflow実行buttonのWebEngine標準`title` tooltipが右端で見切れ、2回目以降の表示が安定しない不具合を検出した。
+- 原因は右端buttonでnative tooltipへ依存していたことだった。WorkflowDesigner libraryへ右揃えの内部tooltipを追加し、native `title`を除去した。Application実行処理、Bridge、`.zizd`は変更していない。
+- TDD再現Testは`title="実行"`を検出してRED、修正後GREEN。WorkflowDesigner Adapter／baseline `44 passed`、vendor static `50 passed`、変更JavaScript構文、diff checkがPASSした。
+- 回帰実行で既存付箋TestのDelete直前focusが`BODY`になる不安定性を確認した。製品仕様を変更せず、keyboard操作の前提であるdesigner focusをTestへ明示し、単独および関連44件でPASSした。
+- 未実施をPASS扱いにせず、Windows実画面でtooltipとdataflow／workflow完走を再確認する。

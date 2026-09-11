@@ -599,6 +599,7 @@ test("付箋モードで付箋の作成・編集・移動・リサイズ・色�
   expect(afterAdd.notes).toHaveLength(2);
 
   const created = afterAdd.notes.find((note) => note.id !== "note-1");
+  await page.locator(".zwd").focus();
   await page.keyboard.press("Delete");
   const afterDeleteCreated = await readSavedFlow(page);
   expect(afterDeleteCreated.notes.map((note) => note.id)).toEqual(["note-1"]);
@@ -653,6 +654,7 @@ test("付箋モードで付箋の作成・編集・移動・リサイズ・色�
 
   // 削除
   await page.locator('[data-note-id="note-1"]').click();
+  await page.locator(".zwd").focus();
   await page.keyboard.press("Delete");
   const afterDelete = await readSavedFlow(page);
   expect(afterDelete.notes).toHaveLength(0);
@@ -752,7 +754,7 @@ test("ステップ実行状態はノード詳細の実行状態表示へ反映�
 });
 
 
-test("空白の左ドラッグとホイールでキャンバスをスクロールできる", async ({ page }) => {
+test("空白の左ドラッグでキャンバスをパンできる", async ({ page }) => {
   const flow = linearFlowDocument();
   const geometry = await mountFlow(page, flow);
 
@@ -772,7 +774,59 @@ test("空白の左ドラッグとホイールでキャンバスをスクロー�
   const saved = await readSavedFlow(page);
   expect(findStep(saved, "step1").ui_position).toEqual(flow.steps[0].ui_position);
 
+});
+
+
+test("ホイールはmodifierに応じてviewportをpanまたはzoomする", async ({ page }) => {
+  const geometry = await mountFlow(page, linearFlowDocument());
+  const readViewport = () => page.evaluate(() => {
+    const runtime = document.getElementById("flowchart")?.__workflowDesignerAdapterRuntime;
+    return runtime?.instance?.getViewport();
+  });
+
   await page.mouse.move(geometry.left + 200, geometry.top + 100);
+
+  const initial = await readViewport();
+  await page.mouse.wheel(0, 120);
+  await expect.poll(readViewport).toMatchObject({
+    x: initial.x,
+    zoom: initial.zoom
+  });
+  const afterVerticalPan = await readViewport();
+  expect(afterVerticalPan.y).not.toBe(initial.y);
+
+  await page.keyboard.down("Shift");
+  await page.mouse.wheel(0, 120);
+  await page.keyboard.up("Shift");
+  await expect.poll(readViewport).toMatchObject({
+    y: afterVerticalPan.y,
+    zoom: afterVerticalPan.zoom
+  });
+  const afterHorizontalPan = await readViewport();
+  expect(afterHorizontalPan.x).not.toBe(afterVerticalPan.x);
+
+  await page.keyboard.down("Control");
   await page.mouse.wheel(0, -120);
-  await expect.poll(async () => (await readViewport()).zoom).toBeGreaterThan(afterPan.zoom);
+  await page.keyboard.up("Control");
+  await expect.poll(async () => (await readViewport()).zoom)
+    .toBeGreaterThan(afterHorizontalPan.zoom);
+  const afterCtrlZoom = await readViewport();
+
+  await page.keyboard.down("Control");
+  await page.keyboard.down("Shift");
+  await page.mouse.wheel(0, -120);
+  await page.keyboard.up("Shift");
+  await page.keyboard.up("Control");
+  await expect.poll(async () => (await readViewport()).zoom)
+    .toBeGreaterThan(afterCtrlZoom.zoom);
+
+  const beforeToolbarZoomIn = await readViewport();
+  await page.locator('[data-zwd-command="viewport.zoom-in"]').click();
+  await expect.poll(async () => (await readViewport()).zoom)
+    .toBeGreaterThan(beforeToolbarZoomIn.zoom);
+
+  const beforeToolbarZoomOut = await readViewport();
+  await page.locator('[data-zwd-command="viewport.zoom-out"]').click();
+  await expect.poll(async () => (await readViewport()).zoom)
+    .toBeLessThan(beforeToolbarZoomOut.zoom);
 });

@@ -262,12 +262,78 @@ Tests:
 Codex Verification:
 - 実行flow、時刻、run ID、結果、UI観測、log保存先をEvidenceへ記録し、Project owner確認と照合する。
 
+Work Package: WP-EXEC-FIX Workflow toolbar tooltip containment
+
+Owner: Codex
+
+Assignment Reason: WP-EXEC中にProject ownerが検出した限定的なlibrary UI不具合で、原因・期待挙動・検証範囲が確定しているため。
+
+Task: WorkflowDesigner toolbarのWebEngine標準`title` tooltipをlibrary所有のtooltipへ置換し、右端の実行buttonでも表示枠内へ収めて繰り返し表示できるようにする。
+
+Dependencies:
+- Project ownerが2026-09-08に、見切れないtooltipへの変更方針を承認している。
+
+Read Scope:
+- `AGENTS.md`、`docs/features/frontend-libraries.md`、本Task、WorkflowDesigner vendor source、関連Playwright Test。
+
+Edit Scope:
+- `docs/features/frontend-libraries.md`、本Task、`docs/handoffs/v23-migration-final-verification.md`、WorkflowDesigner vendor source、関連Playwright Test。
+
+Acceptance Criteria:
+- toolbarの実行button tooltipがdesigner枠内へ表示され、hover／focusを繰り返しても再表示される。
+- native `title`へ依存せず、既存`aria-label`、button command、Application実行処理を維持する。
+
+Constraints:
+- Bridge、`.zizd`、実行command／payload、Application Adapterの責務を変更しない。
+
+Tests:
+- tooltipの存在、枠内bounds、hover／focus再表示、既存WorkflowDesigner Playwright回帰。
+
+Codex Verification:
+- TestのRED／GREEN、変更source、実行command不変、diff checkを独立確認する。
+
+Work Package: WP-WHEEL-INPUT WorkflowDesigner wheel viewport controls
+
+Owner: Codex
+
+Implementation: Terra
+
+Assignment Reason: Solが承認済み仕様を設計済みであり、Adapter／Bridge／CSS／保存schemaに触れない局所的な入力処理と回帰TestをTerraが実装する。最終統合判断はCodexが保持する。
+
+Task: 通常wheelを縦pan、Shift+wheelを横pan、Ctrlを含むwheelをポインタ中心zoomとして実装し、toolbar zoomを維持する。
+
+Dependencies:
+- Project owner approval and Sol design.
+
+Read Scope:
+- `AGENTS.md`、`docs/features/frontend-libraries.md`、本Task、`apps/gui/vendor/zizai-workflow-designer/src/designer_commands.js`、`apps/gui/vendor/zizai-workflow-designer/src/workflow_designer.js`、`tests/playwright/specs/workflow-designer-baseline.spec.js`。
+
+Edit Scope:
+- `docs/features/frontend-libraries.md`、本Task、上記split source／bundle、対象Playwright spec。
+
+Acceptance Criteria:
+- 通常wheelはzoomを変えず縦viewport位置だけを変更する。
+- Shift+wheelはzoomを変えず横viewport位置だけを変更する。
+- Ctrl+wheelおよびCtrl+Shift+wheelはポインタ中心zoomを維持する。
+- toolbar zoom、Adapter、Bridge、CSS、保存schemaは変更しない。
+
+Constraints:
+- branch切替、commit、push、外部clone／downloadを行わない。既存dirty差分（tooltip／annotationを含む）を落とさない。
+
+Tests:
+- targeted Playwright、`node --check`、可能ならFrontend vendor static contract。
+
+Codex Verification:
+- RED/GREENの対象結果、split sourceとbundle同期、変更scope、未解決のvendor直接patchリスクを確認する。
+
 ## Completed
 
 - Task Decompositionが承認され、本Task定義を作成した。
 - WP-AUDITで全27 Taskの配置、Status、Evidence、Remaining、Exact next action、採用済みTask graphを照合した。実作業の未完は検出せず、後続決定の反映漏れを文書欠陥として補正した。
 - WP-STATIC／WP-IGNOREで検出した未追跡Source、承認済み削除のindex残り、過剰なignore ruleをProject owner判断どおり解消し、初期release候補をGit indexへ再現可能な状態で固定した。
 - WP-AUTOでcanonical `required`／`e2e` Gateを再実行し、全自動検証をPASSした。
+- WP-EXEC-FIXでWorkflowDesigner toolbarのnative tooltip見切れをlibrary内部tooltipへ置換した。Application実行処理、Bridge、`.zizd`は変更していない。Windows実画面の再確認はWP-EXECへ残す。
+- WP-WHEEL-INPUTでWorkflowDesignerのwheel viewport操作を実装し、targeted Playwright、JavaScript構文、vendor static contractの自動検証を完了した。Windows実画面での操作確認はWP-EXECへ残す。
 
 ## Evidence
 
@@ -283,15 +349,18 @@ Codex Verification:
 - staging後にcanonical source manifestが新規Test 4件を未掲載として正しくFAILしたため、`tracked-test-sources.json`へ4件を追加し、対象manifest Test `3 passed`を確認した。
 - 管理者PowerShellでcanonical `required` Gateを実行し、static-analysis `113 passed`、unit `98 passed`、integration `46 passed`。symlink security Testを含め失敗・skip 0、既知のPandas deprecated warning 6件のみだった。詳細logは`.tmp/task015-required-admin.log`（SHA-256 `F7EB88D0AFC694AF4FB32CBC1AD6FB756CF9F5F2BFB84BE2619AFF1A7DCECAE4`）。
 - canonical `e2e` GateはPython `4 passed`、Playwright `137 passed`。詳細logは`.tmp/task015-e2e.log`（SHA-256 `F842CEF990E9DB0A9908A9362856EF583DE8E384B475CD47C8FF4B8A1B6331B1`）。BigQuery実資格情報・実query・課金を伴う接続は使用していない。
+- WP-EXEC-FIXの再現Testはnative `title`依存でRED、library内部tooltipへの置換後GREEN。WorkflowDesigner Adapter／baseline `44 passed`、vendor static `50 passed`、変更JavaScript構文、diff checkがPASSした。
+- WP-WHEEL-INPUTで、現worktreeの`src/designer_commands.js`と実行bundle `src/workflow_designer.js`へ同じwheel入力分岐を同期した。対象PlaywrightはRED後GREEN（16 passed）、`node --check` 2件、vendor static contractは50 passedだった。
 
 ## Remaining
 
-- WP-EXECで検出した「workflow実行時menuの右端見切れ／2回目以降の非表示」について、対象UIを確定して責務Taskへ戻すか修正Taskを作る。
-- 上記事象の解消後、代表dataflow／workflowの実行確認を再実施する。
+- Windows実画面でworkflow実行buttonのtooltipが枠内へ毎回表示されることを再確認する。
+- Windows実画面で通常wheelの縦pan、Shift+wheelの横pan、Ctrl+wheelのzoom、toolbar `+`／`-` zoomをProject ownerが確認する。
+- 代表dataflow／workflowの実行確認を再実施する。
 
 ## Exact next action
 
-Project ownerの画面または再現手順から、見切れて再表示されない対象がnode context menuか実行完了dialogかを確定する。原因特定後に修正範囲を提示し、承認後に実装する。
+修正済みApplicationを再起動し、Project ownerがworkflow実行button tooltipの枠内表示・再表示、通常wheelの縦pan、Shift+wheelの横pan、Ctrl+wheelのzoom、toolbar `+`／`-` zoom、および代表dataflow／workflowの完走を確認する。
 
 ## Termination condition
 
