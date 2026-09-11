@@ -33,7 +33,8 @@ except ImportError:  # pragma: no cover
 
 
 class VectorConnector(BaseConnector):
-    DEFAULT_MODEL_NAME = "cl-nagoya/ruri-v3-30m"
+    # DEFAULT_MODEL_NAME = "cl-nagoya/ruri-v3-30m"
+    DEFAULT_MODEL_NAME = "cl-nagoya/ruri-v3-130m"
     _model_cache: dict[str, Any] = {}
 
     def execute(self, action: str, params: dict[str, Any], context: dict[str, Any]) -> pd.DataFrame:
