@@ -49,6 +49,25 @@ def initialize_fixture_repository(root: Path, initial_text: str = "safe\n") -> s
     return run_git(root, "rev-parse", "HEAD")
 
 
+def commit_fixture_file(root: Path, relative_path: str, text: str, message: str) -> str:
+    path = root / relative_path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    run_git(root, "add", relative_path)
+    run_git(
+        root,
+        "-c",
+        "user.name=Remote Safe Gate Fixture",
+        "-c",
+        "user.email=gate@users.noreply.github.com",
+        "commit",
+        "--quiet",
+        "-m",
+        message,
+    )
+    return run_git(root, "rev-parse", "HEAD")
+
+
 def is_ignored(path: str) -> bool:
     result = subprocess.run(
         ["git", "check-ignore", "--quiet", "--no-index", path],
@@ -140,6 +159,120 @@ def test_remote_safe_gate_distinguishes_example_and_non_example_credential_urls(
 
 @pytest.mark.static_analysis
 @pytest.mark.risk_ci_001
+def test_remote_safe_gate_normal_mode_allows_pre_baseline_privacy(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    gate = load_remote_safe_gate()
+    push_base = initialize_fixture_repository(tmp_path)
+    personal_path = "C:" + "\\Users\\historical-user\\workspace"
+    personal_email = "historical-user" + "@" + "sample.invalid"
+    baseline = commit_fixture_file(
+        tmp_path,
+        "historical-path.txt",
+        f"{personal_path}\n{personal_email}\n",
+        "historical privacy",
+    )
+
+    exit_code = gate.main(
+        ["--root", str(tmp_path), "--push-base", push_base, "--baseline", baseline]
+    )
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert "Remote Safe Gate: PASS" in output
+    assert personal_path not in output
+    assert personal_email not in output
+
+
+@pytest.mark.static_analysis
+@pytest.mark.risk_ci_001
+def test_remote_safe_gate_normal_mode_rejects_pre_baseline_credentials_after_removal(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    gate = load_remote_safe_gate()
+    push_base = initialize_fixture_repository(tmp_path)
+    credential = "gh" + "p_" + "A" * 36
+    baseline = commit_fixture_file(
+        tmp_path,
+        "historical-secret.txt",
+        credential,
+        "historical credential",
+    )
+    run_git(tmp_path, "rm", "historical-secret.txt")
+    run_git(
+        tmp_path,
+        "-c",
+        "user.name=Remote Safe Gate Fixture",
+        "-c",
+        "user.email=gate@users.noreply.github.com",
+        "commit",
+        "--quiet",
+        "-m",
+        "remove historical credential",
+    )
+
+    exit_code = gate.main(
+        ["--root", str(tmp_path), "--push-base", push_base, "--baseline", baseline]
+    )
+    output = capsys.readouterr().out
+
+    assert exit_code == 1
+    assert "credential" in output
+    assert credential not in output
+
+
+@pytest.mark.static_analysis
+@pytest.mark.risk_ci_001
+def test_remote_safe_gate_normal_mode_rejects_post_baseline_privacy(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    gate = load_remote_safe_gate()
+    baseline = initialize_fixture_repository(tmp_path)
+    personal_path = "C:" + "\\Users\\new-user\\workspace"
+    commit_fixture_file(tmp_path, "new-path.txt", personal_path, "new privacy")
+
+    exit_code = gate.main(
+        ["--root", str(tmp_path), "--push-base", baseline, "--baseline", baseline]
+    )
+    output = capsys.readouterr().out
+
+    assert exit_code == 1
+    assert "personal-path" in output
+    assert "push:" in output
+    assert personal_path not in output
+
+
+@pytest.mark.static_analysis
+@pytest.mark.risk_ci_001
+def test_remote_safe_gate_normal_mode_fails_when_baseline_cannot_be_resolved(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    gate = load_remote_safe_gate()
+    push_base = initialize_fixture_repository(tmp_path)
+
+    exit_code = gate.main(
+        [
+            "--root",
+            str(tmp_path),
+            "--push-base",
+            push_base,
+            "--baseline",
+            "baseline-does-not-exist",
+        ]
+    )
+    output = capsys.readouterr().out
+
+    assert exit_code == 1
+    assert "gate-error" in output
+    assert "baseline-does-not-exist" not in output
+
+
+@pytest.mark.static_analysis
+@pytest.mark.risk_ci_001
 def test_remote_safe_gate_normal_mode_covers_working_staged_untracked_and_push(
     tmp_path: Path,
 ) -> None:
@@ -154,7 +287,7 @@ def test_remote_safe_gate_normal_mode_covers_working_staged_untracked_and_push(
     run_git(tmp_path, "add", "staged.txt")
     (tmp_path / "untracked.txt").write_text(credential, encoding="utf-8")
 
-    findings = gate.run_normal(tmp_path, baseline)
+    findings = gate.run_normal(tmp_path, baseline, baseline)
     sources = {finding.source.split(":", 1)[0] for finding in findings}
     assert {"working-tree", "staged", "untracked"}.issubset(sources)
     assert gate.classify_findings(findings) == "FAIL"
@@ -171,7 +304,7 @@ def test_remote_safe_gate_normal_mode_covers_working_staged_untracked_and_push(
         "-m",
         "push candidate",
     )
-    findings = gate.run_normal(tmp_path, baseline)
+    findings = gate.run_normal(tmp_path, baseline, baseline)
     assert any(finding.source.startswith("push:") for finding in findings)
 
 

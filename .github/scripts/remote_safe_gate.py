@@ -239,7 +239,22 @@ def _resolve_push_base(root: Path, explicit_base: str | None) -> str | None:
     return _git(root, "merge-base", upstream, "HEAD").strip()
 
 
-def run_normal(root: Path, push_base: str | None) -> list[Finding]:
+def _partition_push_commits(
+    root: Path,
+    commits: Sequence[str],
+    baseline: str,
+) -> tuple[list[str], list[str]]:
+    resolved_baseline = _git(root, "rev-parse", "--verify", f"{baseline}^{{commit}}").strip()
+    if _git(root, "merge-base", resolved_baseline, "HEAD").strip() != resolved_baseline:
+        raise RuntimeError("historical baseline is not an ancestor of HEAD")
+
+    historical_history = set(_commit_range(root, resolved_baseline))
+    historical = [commit for commit in commits if commit in historical_history]
+    current = [commit for commit in commits if commit not in historical_history]
+    return historical, current
+
+
+def run_normal(root: Path, push_base: str | None, baseline: str) -> list[Finding]:
     findings = _scan_current_tracked_tree(root)
     findings.extend(
         _scan_patch(_git(root, "diff", "--no-ext-diff", "--unified=0"), "working-tree")
@@ -257,10 +272,23 @@ def run_normal(root: Path, push_base: str | None) -> list[Finding]:
         findings.append(Finding("REVIEW", "push-base-unresolved", "git", 0))
     else:
         commits = _commit_range(root, f"{resolved_base}..HEAD")
+        historical_commits, current_commits = _partition_push_commits(
+            root,
+            commits,
+            baseline,
+        )
         findings.extend(
             _scan_commits(
                 root,
-                commits,
+                historical_commits,
+                include_privacy=False,
+                source_prefix="push-historical",
+            )
+        )
+        findings.extend(
+            _scan_commits(
+                root,
+                current_commits,
                 include_privacy=True,
                 source_prefix="push",
             )
@@ -315,7 +343,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         root = _repository_root(arguments.root)
         if arguments.mode == "normal":
-            findings = run_normal(root, arguments.push_base)
+            findings = run_normal(root, arguments.push_base, arguments.baseline)
         else:
             findings = run_audit(
                 root,
