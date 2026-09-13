@@ -63,8 +63,10 @@ function Resolve-UvCommand {
 function Test-UvToolchain {
     param([string]$UvCommand)
 
-    $version = (& $UvCommand --version 2>$null | Select-Object -First 1)
-    if ($LASTEXITCODE -ne 0 -or $version -notmatch "^uv\s+(\S+)") {
+    $versionOutput = & $UvCommand --version 2>$null
+    $versionExitCode = $LASTEXITCODE
+    $version = $versionOutput | Select-Object -First 1
+    if ($versionExitCode -ne 0 -or $version -notmatch "^uv\s+(\S+)") {
         return $false
     }
     return $Matches[1] -eq "0.12.5"
@@ -90,11 +92,16 @@ function Invoke-PytestSelection {
         return 2
     }
 
+    $pytestTempRoot = Join-Path $repositoryRoot ".tmp"
+    New-Item -ItemType Directory -Force -Path $pytestTempRoot | Out-Null
+    $pytestBaseTemp = Join-Path $pytestTempRoot ("pytest-" + [guid]::NewGuid().ToString("N"))
+
     $previousFailOnSkip = $env:ZIZAI_FAIL_ON_REQUIRED_SKIP
     try {
         $env:ZIZAI_FAIL_ON_REQUIRED_SKIP = "1"
         $pytestExitCode = Invoke-UvPython -Arguments @(
-            "-m", "pytest", "--strict-markers", "-m", $MarkerExpression, "tests"
+            "-m", "pytest", "--strict-markers", "-m", $MarkerExpression, "tests",
+            "--basetemp", $pytestBaseTemp
         )
     }
     finally {

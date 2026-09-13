@@ -1,5 +1,7 @@
 # TASK-015 Verify v23 Migration Completion
 
+> **Legacy execution record:** 実行済みのWork Package、Owner、Assignment、Agent分割、Completed、Evidenceは旧Agent運用時の履歴であり、原文を維持する。今後の作業には下記`Current Remaining Work`だけを適用し、旧計画は必要なEvidenceを確認するときだけ参照する。
+
 ## Status
 
 In Progress — WP-AUTO完了、WP-EXEC待ち
@@ -26,6 +28,17 @@ Target tree、例外、imports、entrypoints、config、toolchain、Docs、Harne
 ## Dependencies
 
 TASK-001～014、TASK-016～019、およびv23 Migration Investigationから初回release条件として追加されたTask。初回release後へ延期したProduct enhancement／investigation／別実装／運用Task（TASK-020～TASK-026）は含めない。TASK-027は本Task完了後に費用条件を別承認して行うBigQuery実接続検証であり、本Taskの依存条件ではない。RISK-FS-001はTASK-014の管理者PowerShell実行でPASS済みとし、release candidateで当該境界に変更があった場合だけ再実行する。
+
+## Current Remaining Work
+
+### Subtask: Windows release verification
+
+- **Outcome:** 修正済みApplicationのWindows実画面確認と、代表dataflow／workflowの完走確認を完了する。
+- **References:** 本Taskの`Acceptance criteria`、`Test plan`、`Remaining`、`Exact next action`、および`docs/handoffs/v23-migration-final-verification.md`。
+- **Acceptance Criteria:** `Remaining`の3項目がPASSし、観測結果とEvidence保存先が記録される。またはFAIL内容と責務Taskが記録される。
+- **Tests:** `Exact next action`に記載したWindows Desktop確認。BigQuery実接続／実queryは含めない。
+
+以下の`Final verification plan`とWork Package本文は旧運用時の実行計画・履歴であり、このSubtaskのOwnerまたはAgent割当を定義しない。
 
 ## Expected change area
 

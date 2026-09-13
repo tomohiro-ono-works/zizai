@@ -66,6 +66,24 @@ def test_browser_and_webengine_jobs_are_deterministic_and_local_only() -> None:
     assert "secrets." not in source
 
 
+def test_remote_safe_gate_scans_the_exact_push_range_without_project_secrets() -> None:
+    source = WORKFLOW_PATH.read_text(encoding="utf-8")
+    workflow = yaml.safe_load(source)
+    job = workflow["jobs"]["remote-safe"]
+    checkout = next(
+        step for step in job["steps"] if str(step.get("uses", "")).startswith("actions/checkout@")
+    )
+    commands = run_commands(job)
+
+    assert job["runs-on"] == "windows-latest"
+    assert checkout["with"]["fetch-depth"] == 0
+    assert any(".github/scripts/remote_safe_gate.py" in command for command in commands)
+    assert any("--push-base $env:ZIZAI_PUSH_BASE" in command for command in commands)
+    assert "github.event.pull_request.base.sha" in source
+    assert "github.event.before" in source
+    assert "secrets." not in source
+
+
 @pytest.mark.parametrize(
     "relative_path",
     [

@@ -1,81 +1,9 @@
-﻿# AGENTS.md
+# ZizAI Agent Router
 
-## 目的
-
-- このリポジトリで作業するエージェント向けの共通ルールを定義する。
-- 迷った場合は「既存挙動を壊さない」「設計意図を優先」を基本方針とする。
-
-## 参照先（規約の置き場）
-
-- 設計思想の正本は `docs/features/architecture.md` を参照する。
-- 実装・検証規約の正本は `docs/features/coding-rules.md` を参照する。
-- 削除・整理・責務分離の方針は `docs/features/refactor-policy.md` を参照する。
-- 進行中の作業指示は `docs/tasks/active/`、完了記録は `docs/tasks/done/` を参照する。
-- 承認済み判断は `docs/decisions/`、調査結果・引継ぎ資料は `docs/handoffs/` を参照する。
-- 再利用する作業手順は `.agents/skills/` を参照する。
-- AGENTS.md には運用ルールのみを記載し、設計規約の詳細は書かない。
-
-## 読む順番
-
-1. `docs/README.md`
-2. `docs/features/architecture.md`
-3. `docs/features/coding-rules.md`
-4. `docs/features/refactor-policy.md`
-5. 対象作業が決まっている場合は `docs/tasks/active/<task>.md`
-6. 必要に応じて `docs/decisions/` と `docs/handoffs/`
-
-## 基本方針
-
-- 変更は最小限にし、依頼範囲に集中する。
-- 依頼範囲を勝手に拡張しない。
-- 調査前にタスクの難易度を推論し、その難易度に応じて必要最小限の調査量を決める。
-- 「実装してください」は、直前に合意した範囲だけを実装する指示と解釈する。
-- 既存データの変換・正規化・仕様記録・テスト追加は、依頼に明記がない限り実装前に確認する。
-- 既存の命名・構造・UIパターンを尊重する。
-- 破壊的変更を行う前に、必ず意図を確認する。
-- 参照した規約/要件と矛盾する変更を行わない。必要なら差分理由を明示する。
-- 実装仕様は `docs/features/` の正本と実コードを優先する。
-- `docs/handoffs/` は調査結果・引継ぎ資料であり、単独では現行仕様として扱わない。
-
-## 実装前レビュー
-
-- いきなり改修せず、作業認識・変更方針・影響範囲をユーザーに提示してレビューを受ける。
-- 実装計画を作成または更新するときは、`.agents/skills/implementation-planning/SKILL.md` を使用し、計画作成時の1回で全Work Package（1件の場合を含む）へ `Owner: Codex` または `Owner: claude-assist` を割り当てる。
-- 実装前に `docs/features/architecture.md` と `docs/features/coding-rules.md` を確認し、システム設計・コーディング規約に合っているか確認する。
-- 要件や期待挙動に不明点がある場合は、実装前にユーザーへ質問する。
-- ユーザーが実装着手を明示した後に、コード変更を行う。
-
-## 仕様・方針の記録
-
-- 会話で仕様・方針・判断が決まった場合は、実装前に該当する `.md` へ反映する。
-- 思想/全体方針は `docs/features/architecture.md`、実装/検証ルールは `docs/features/coding-rules.md`、削除/整理判断は `docs/features/refactor-policy.md` に反映する。
-- 責務範囲ごとの仕様は `docs/features/<area>.md` に反映する。
-- 承認済み判断は `docs/decisions/`、調査結果や未確定メモは `docs/handoffs/` に残す。
-- 作業状態は `docs/tasks/active/` と `docs/tasks/done/` のどちらか一方で管理する。
-- 反映先が曖昧な場合は、先に保存場所を提案して確認する。
-- 実装だけを行い、対応する仕様・方針の記録を抜かさない。
-
-## 削除・整理判断
-
-- 削除判断は「未使用」「旧仕様」「重複」「責務混在」「判断保留」を分ける。
-- 判断が曖昧なものは削除候補にしない。
-- 多くのファイルを広く読む必要がある場合は、目的と範囲を明示してから進める。
-- 情報を移動・統合する場合は、統合元の情報が失われていないことを確認する。
-
-## 変更時の確認
-
-- 変更内容は、影響範囲と意図が分かるように要点を共有する。
-- 実行環境制約で確認できない項目（例: ブラウザ表示確認）は、その旨を明記する。
-- パス変更・ファイル移動を行った場合は、関連ドキュメント参照の更新有無を確認する。
-- 単体テスト・結合テストは実装時に実行し、会話には成功/失敗の要約のみを書く。
-- 検証環境テストは事前定義したテストケースに基づいて実装後に行う。
-- E2E テストの詳細結果はファイルに保存し、会話には保存先と要約のみを書く。
-
-## 禁止・注意事項
-
-- ユーザーが戻した変更を勝手に再適用しない。
-- 関連のないファイルを巻き込んで修正しない。
-- 未確認の推測で仕様を固定しない。必要なら確認する。
-- 調査履歴を現行仕様として扱わない。
-- 旧仕様互換を勝手に復活させない。
-- 秘密情報、API キー、個人情報をコミットしない。
+- Start with [docs/README.md](docs/README.md), then read the assigned file under `docs/tasks/active/`.
+- Read the Task's `References` before opening unrelated documentation. Load only the sections needed for the current decision.
+- Current Specifications are under `docs/features/`; repository architecture is defined in `docs/features/architecture.md`.
+- Implementation and verification rules are defined in `docs/features/coding-rules.md`; cleanup and responsibility changes use `docs/features/refactor-policy.md`.
+- `docs/decisions/` records approved long-term decisions. `docs/handoffs/` and `docs/tasks/done/` are historical evidence and are not Current Specifications by themselves.
+- Task authority is limited to its explicit Goal, Scope, Constraints, and Acceptance Criteria. General directions such as "continue" or "implement" do not authorize changes to Current Specifications or existing constraints.
+- Project work must be understandable and verifiable from tracked Project assets. Local-only `.agents/` and `.codex/` resources may assist execution but are never required Project references.

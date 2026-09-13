@@ -50,6 +50,20 @@ slack_client.py
 /.codex/
 /.docs/
 
+# Local assistant and editor state (shareable settings remain visible)
+/.claude/settings.local.json
+/.obsidian/workspace*.json
+/.playwright-mcp/
+
+# Local environment files; example templates remain trackable
+/.env
+/.env.*
+!/.env.example
+!/.env.*.example
+
+# Local Git inspection output
+/tmp_staged_files_*.txt
+
 # App-specific generated files
 .ziz
 

@@ -13,6 +13,25 @@ env:
   PYTHONUTF8: "1"
 
 jobs:
+  remote-safe:
+    runs-on: windows-latest
+    env:
+      ZIZAI_PUSH_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run Remote Safe Gate for the push range
+        shell: powershell
+        run: |
+          if ($env:ZIZAI_PUSH_BASE -eq ("0" * 40)) {
+            $env:ZIZAI_PUSH_BASE = "8b66fe6"
+          }
+          python .github/scripts/remote_safe_gate.py --push-base $env:ZIZAI_PUSH_BASE
+
   static-analysis:
     runs-on: windows-latest
     steps:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -107,6 +108,35 @@ def test_runner_uses_frozen_uv_for_python(tmp_path: Path) -> None:
 
     assert result.returncode == 0
     assert "run --frozen python -m pytest" in log.read_text(encoding="utf-8")
+
+
+def test_runner_uses_a_unique_repository_local_pytest_basetemp(tmp_path: Path) -> None:
+    log = tmp_path / "uv.log"
+    write_fake_uv(tmp_path)
+    environment = {"PATH": str(tmp_path), "ZIZAI_TEST_UV_LOG": str(log)}
+
+    results = [
+        run_runner("-RiskId", "RISK-ENTRY-001", environment=environment),
+        run_runner("-RiskId", "RISK-ENTRY-001", environment=environment),
+    ]
+
+    assert all(result.returncode == 0 for result in results)
+    pytest_commands = [
+        line
+        for line in log.read_text(encoding="utf-8").splitlines()
+        if "run --frozen python -m pytest" in line
+    ]
+    matches = [
+        re.search(r'--basetemp\s+(?:"([^"]+)"|(\S+))', command)
+        for command in pytest_commands
+    ]
+    assert len(matches) == 2
+    assert all(match is not None for match in matches)
+
+    base_temps = [Path((match.group(1) or match.group(2))) for match in matches if match]
+    assert len(set(base_temps)) == 2
+    assert all(path.parent == REPOSITORY_ROOT / ".tmp" for path in base_temps)
+    assert all(path.name.startswith("pytest-") for path in base_temps)
 
 
 def test_wrong_uv_version_is_blocked(tmp_path: Path) -> None:

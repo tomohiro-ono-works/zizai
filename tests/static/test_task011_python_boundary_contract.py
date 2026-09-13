@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -41,10 +42,20 @@ def test_old_application_package_sources_are_absent_after_relocation(retired_pac
 
     python_sources = sorted(
         path.relative_to(REPOSITORY_ROOT)
-        for pattern in ("*.py", "*.pyc")
-        for path in old_path.rglob(pattern)
+        for path in old_path.rglob("*.py")
     )
     assert python_sources == [], f"retired package still has Python sources: {python_sources}"
+
+    tracked_output = subprocess.run(
+        ["git", "ls-files", "-z", "--", retired_package],
+        cwd=REPOSITORY_ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=True,
+    ).stdout
+    tracked_files = sorted(Path(path) for path in tracked_output.split("\0") if path)
+    assert tracked_files == [], f"retired package still has tracked project assets: {tracked_files}"
 
 
 @pytest.mark.risk_conn_002
