@@ -27,7 +27,7 @@ Target tree、例外、imports、entrypoints、config、toolchain、Docs、Harne
 
 ## Dependencies
 
-TASK-001～014、TASK-016～019、およびv23 Migration Investigationから初回release条件として追加されたTask。初回release後へ延期したProduct enhancement／investigation／別実装／運用Task（TASK-020～TASK-026）は含めない。TASK-027は本Task完了後に費用条件を別承認して行うBigQuery実接続検証であり、本Taskの依存条件ではない。RISK-FS-001はTASK-014の管理者PowerShell実行でPASS済みとし、release candidateで当該境界に変更があった場合だけ再実行する。
+TASK-001～014、TASK-016～019、およびv23 Migration Investigationから初回release条件として追加されたTask。初回release後へ延期したProduct enhancement／investigation／別実装／運用Task（TASK-020～TASK-026）は含めない。TASK-027は本Task完了後に費用条件を別承認して行うBigQuery実接続検証であり、本Taskの依存条件ではない。RISK-FS-001はTASK-014の管理者PowerShell実行でPASS済みとし、release candidateで当該境界に変更があった場合だけ再実行する。TASK-032（Python→DuckDBの通常flowが実際に失敗する不具合）は初回releaseのblocker候補であり、final release decisionの前にTASK-032の解決を確認する。TASK-033とTASK-034はKnown Issueとして扱い、release blockerとは決めていない。
 
 ## Current Remaining Work
 
@@ -37,6 +37,7 @@ TASK-001～014、TASK-016～019、およびv23 Migration Investigationから初�
 - **References:** 本Taskの`Acceptance criteria`、`Test plan`、`Remaining`、`Exact next action`、および`docs/handoffs/v23-migration-final-verification.md`。
 - **Acceptance Criteria:** `Remaining`の3項目がPASSし、観測結果とEvidence保存先が記録される。またはFAIL内容と責務Taskが記録される。
 - **Tests:** `Exact next action`に記載したWindows Desktop確認。BigQuery実接続／実queryは含めない。
+- **Status（2026-09-15）:** tooltipとwheel／toolbarの操作は、Desktop実画面の自動操作で確認した。Project ownerが指定する代表dataflow／workflowによる実画面での完走確認は未完了である。final release decisionの前にTASK-032の解決を確認する（`Remaining`参照）。
 
 以下の`Final verification plan`とWork Package本文は旧運用時の実行計画・履歴であり、このSubtaskのOwnerまたはAgent割当を定義しない。
 
@@ -364,6 +365,29 @@ Codex Verification:
 - canonical `e2e` GateはPython `4 passed`、Playwright `137 passed`。詳細logは`.tmp/task015-e2e.log`（SHA-256 `F842CEF990E9DB0A9908A9362856EF583DE8E384B475CD47C8FF4B8A1B6331B1`）。BigQuery実資格情報・実query・課金を伴う接続は使用していない。
 - WP-EXEC-FIXの再現Testはnative `title`依存でRED、library内部tooltipへの置換後GREEN。WorkflowDesigner Adapter／baseline `44 passed`、vendor static `50 passed`、変更JavaScript構文、diff checkがPASSした。
 - WP-WHEEL-INPUTで、現worktreeの`src/designer_commands.js`と実行bundle `src/workflow_designer.js`へ同じwheel入力分岐を同期した。対象PlaywrightはRED後GREEN（16 passed）、`node --check` 2件、vendor static contractは50 passedだった。
+- 2026-09-14〜15に、BigQuery以外を対象とした検証を実施した。Source code、Test code、Configは変更していない。BigQuery関連Test（pytest 5件、Playwright 10件）を除外し、BigQuery Connectorの実行、BigQuery APIの呼出、認証情報へのアクセスは行っていない。除外したTestの一覧はTASK-036に記録した。
+- 上記の除外以外はcanonical runnerと同じ条件で実行し、static-analysis `133 passed`、unit `120 passed`、integration `43 passed`、e2e（Python）`3 passed`、Playwright `129 passed`だった。
+- BigQuery以外の11 Connectorを一時dataで実行した86 caseのうち、79 caseがPASSした。PASSしなかった7 caseの内訳は次のとおり。
+  - TASK-032の不具合1件と、その連鎖3件
+  - TASK-034の設定誤記1件
+  - Test側の期待値の誤り1件（Python Connectorのdict戻り値は1行DataFrameとして返る仕様）
+  - TASK-037で調査するShell出力のencoding 1件
+- `bin\ziz.bat`による一時flow 7本のheadless実行は、すべて想定どおりだった。loop、DAGの並列実行、Vector、Seleniumのstep間session参照、error時の停止、Python→DuckDBの失敗の再現を含む。
+- production hostを一時repository rootで起動し、Desktop実画面をQt eventで自動操作して22件PASSした。
+  - 確認した操作: Explorerからflowを開く、workflow実行buttonのtooltipの枠内表示と再表示、通常wheelの縦pan、Shift+wheelの横pan、Ctrl+wheel／Ctrl+Shift+wheelのzoom、toolbar `+`／`-`のzoom、一時flow（dataflowと、loopを含むworkflow）の実行と完了通知
+  - screenshotで、tooltipの位置と実行ログの表示を確認した。
+  - 使用した一時flowは、Project ownerが指定した代表flowではない。
+- WindowsConnectorのOS入力（`mouse_click`、`input_text`、`send_keys`）を専用test windowへ実行し、PASSした。ChromeConnectorの`open_in_chrome`による実起動もPASSした。
+- SeleniumConnectorは、headlessで`https://github.com/`を開いた（Selenium Managerがchromedriverを取得した）。VectorConnectorは、cache済みmodelをofflineで使った。
+- 一時test dataはrepository外に置いた。利用者の`config/`と`workflows/`が変更されていないことを更新日時で確認した。検証用scriptはrepositoryに含めていない。
+- 見つかった問題は、次の担当Taskへ移した。
+  - DataFrame→DuckDB型変換の不具合: TASK-032
+  - step参照の形式とValidationの不整合: TASK-033
+  - Web allowlistの誤記と正規化: TASK-034
+  - Vector modelの既定値不一致とmodel設定: TASK-028
+  - DuckDBの非query SQLの戻り値、Shell出力のencoding、clipboard、UI表示2件の仕様調査: TASK-037
+  - 検証Harnessの設計: TASK-036
+- 未割当のArchitecture concern（Task未作成）: WorkflowEngineは、class名とmodule名が一致しないConnector（例: `DuckConnector`）を探索するときに全Connector moduleをimportし、`bigquery_connector`もimportされる。API呼出と認証情報へのアクセスはない。
 
 ## Remaining
 
@@ -371,9 +395,15 @@ Codex Verification:
 - Windows実画面で通常wheelの縦pan、Shift+wheelの横pan、Ctrl+wheelのzoom、toolbar `+`／`-` zoomをProject ownerが確認する。
 - 代表dataflow／workflowの実行確認を再実施する。
 
+2026-09-15時点の状況:
+
+- tooltipの枠内表示と再表示、通常wheel／Shift+wheel／Ctrl+wheelとtoolbar `+`／`-`によるpan・zoomは、Desktop実画面の自動操作で確認した（`Evidence`参照）。
+- 代表dataflow／workflowの実行確認は未完了である。自動操作で使った一時flowはProject ownerが指定した代表flowではないため、本条件を満たした扱いにしない。
+- final release decisionの前に、release blocker候補であるTASK-032の解決を確認する。
+
 ## Exact next action
 
-修正済みApplicationを再起動し、Project ownerがworkflow実行button tooltipの枠内表示・再表示、通常wheelの縦pan、Shift+wheelの横pan、Ctrl+wheelのzoom、toolbar `+`／`-` zoom、および代表dataflow／workflowの完走を確認する。
+Project ownerが代表dataflow／workflowを指定し、修正済みApplicationのWindows実画面で完走を確認する（tooltipとwheel／toolbarの操作は、2026-09-15の自動実画面テストで確認済み）。final release decisionの前に、TASK-032の解決を確認する。
 
 ## Termination condition
 
