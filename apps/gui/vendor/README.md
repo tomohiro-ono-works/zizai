@@ -3,7 +3,7 @@
 - Status: Current Specification
 - Contract: `docs/features/frontend-libraries.md`
 - Decision: `docs/decisions/ADR-frontend-library-vendoring.md`
-- Task: `docs/tasks/active/TASK-016-adopt-approved-frontend-libraries.md`
+- Task: `docs/tasks/done/TASK-016-adopt-approved-frontend-libraries.md`
 
 ## Purpose
 

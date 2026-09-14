@@ -12,7 +12,7 @@
 - 現行仕様: [architecture.md](docs/features/architecture.md), [coding-rules.md](docs/features/coding-rules.md), [refactor-policy.md](docs/features/refactor-policy.md)
 - 作業状態: `docs/tasks/active/`, `docs/tasks/done/`
 - 承認済み判断・引継ぎ: `docs/decisions/`, `docs/handoffs/`
-- 再利用手順: `.agents/skills/`
+- 再利用手順（local-only補助。正本ではない）: `.agents/skills/`
 
 ## 概要
 
@@ -201,7 +201,7 @@ RENAME リストから列名を一括変更するためのサンプル CSV で�
 ## 依存ライブラリ
 
 Python 依存の正本は [pyproject.toml](pyproject.toml) と lockfile [uv.lock](uv.lock) です。
-外部ライブラリと JS ベンダーの簡易一覧は [THIRD_PARTY_INVENTORY.md](THIRD_PARTY_INVENTORY.md) にまとめています。
+同梱 Frontend library の取得元・commit・license は [apps/gui/vendor/README.md](apps/gui/vendor/README.md) に記録しています。
 
 ## ライセンス補足
 

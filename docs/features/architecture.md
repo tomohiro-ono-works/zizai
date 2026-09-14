@@ -26,7 +26,7 @@
 | `apps/connectors/` | 外部System、file format、OS操作のAdapter |
 | `apps/common/contracts/bridge/` | 言語中立なBridge Protocol contract |
 | `apps/gui/` | Desktop同梱Frontend |
-| `config/` | Source設定とlocal runtime state。両者を同一扱いしない |
+| `config/` | local Runtime/User state。Source設定は`apps/common/config/`に置き、両者を同一扱いしない |
 
 ## Dependency boundaries
 
