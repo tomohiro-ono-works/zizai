@@ -362,8 +362,8 @@ class SeleniumConnector(BaseConnector):
     def _ensure_runtime(self, params: dict, context: dict) -> dict:
         if webdriver is None:
             raise ImportError(
-                "selenium がインストールされていません。"
-                " `pip install selenium` を実行してください。"
+                "Project の正式依存 selenium が実行環境に見つかりません。"
+                " Repository root で `uv sync --frozen` を実行し、依存環境を uv.lock に同期してください。"
             )
 
         runtime = context.get(self.RUNTIME_KEY)

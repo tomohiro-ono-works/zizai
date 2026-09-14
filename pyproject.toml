@@ -77,6 +77,7 @@ dependencies = [
   "requests==2.32.5",
   "requests-oauthlib==2.0.0",
   "rsa==4.9.1",
+  "selenium==4.43.0",
   "sentence-transformers==5.6.0",
   "shiboken6==6.11.0",
   "simplejson==3.20.2",

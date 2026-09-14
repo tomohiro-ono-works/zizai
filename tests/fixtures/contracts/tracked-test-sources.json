@@ -79,6 +79,7 @@
     "tests/unit/test_repository_layout.py",
     "tests/unit/test_schema_apply_common.py",
     "tests/unit/test_security_policies.py",
+    "tests/unit/test_selenium_connector_contract.py",
     "tests/unit/test_task010_frontend_source_contract.py",
     "tests/unit/test_task010_path_contract.py",
     "tests/unit/test_workspace_security.py"
