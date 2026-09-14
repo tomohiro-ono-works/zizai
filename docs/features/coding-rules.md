@@ -54,6 +54,12 @@ Taskの変更権限は、明示されたGoal、Scope、Constraints、Acceptance 
 - 共有可能な設定はsafe exampleとして追跡し、秘密値やPC固有値を含めない。
 - Local-only assetが存在しなくても、clone環境でProject仕様、Build、正式Testを理解・実行できる状態を維持する。
 
+## External dependencies
+
+- 対象は、`pyproject.toml`/`uv.lock`で管理するPython package、`apps/gui/vendor/`等へ同梱するthird-party library、今後追加・更新するその他の外部依存とする。
+- 外部依存を追加・更新する前に、Projectの利用方法で商用利用が可能か、再配布条件を満たせるか、有償licenseや継続費用が発生しないか、既知の脆弱性がSecurity上受容可能かを確認する。
+- 確認結果は、追加・更新を行う対象TaskのEvidenceへ記録する。
+
 ## Verification and evidence
 
 - Python syntaxだけでなく、変更が影響する公開behaviorを検証する。
