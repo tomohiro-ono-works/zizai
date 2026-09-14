@@ -40,4 +40,6 @@
 
 `.codex-harness/orchestration/`、`subagents/`、`scripts/`、legacy reports、`.docs/`はTASK-006で削除していない。これらはCurrent Specificationではなく、別cleanup Taskで参照・Disposition・削除Gateを満たすまでlocal historyとして保持する。
 
+2026-09-14、残存資産を再照合したうえで`.codex-harness/`と`.docs/`の資産をlocalから削除した。`.docs/areas/backend-tests.md`の必要部分は[Backend Test Plan Handoff](backend-test-plan.md)の付録へ移した。`.codex-harness/`は上表の移管先、現行Source、またはGit履歴（`2e6ab92`）で代替できるため追加移管は不要とし、Vector Connectorの未確認事項だけを[TASK-028](../tasks/active/TASK-028-verify-vector-connector-behavior.md)へ引き継いだ。
+
 `.codex/rules/`と`.codex/hooks.json`はApproved Decisionに従い作成していない。
