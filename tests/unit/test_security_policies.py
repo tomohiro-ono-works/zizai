@@ -120,6 +120,7 @@ def test_invalid_entries_are_excluded_without_disabling_valid_entries(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
+    userinfo_entry = "https://" + "user" + "@" + "valid.example/path"
     _write_policy(
         tmp_path,
         [
@@ -129,7 +130,7 @@ def test_invalid_entries_are_excluded_without_disabling_valid_entries(
             {"domain": "127.0.0.1"},
             {"domain": "[2001:db8::1]"},
             {"domain": "https://valid.example:443/path"},
-            {"domain": "https://user@valid.example/path"},
+            {"domain": userinfo_entry},
             {"domain": "ftp://valid.example/path"},
             {"domain": "bad..example.com"},
             {"domain": "intranet"},

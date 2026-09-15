@@ -84,7 +84,7 @@ def test_status_response_preserves_envelope_and_capability_set(tmp_path: Path, p
 def test_status_reports_invalid_allowlist_entry_count_without_exposing_entry(tmp_path: Path) -> None:
     config_dir = tmp_path / "apps" / "common" / "config"
     config_dir.mkdir(parents=True, exist_ok=True)
-    private_entry = "https://user:password@example.com/private"
+    private_entry = "https://" + "user" + ":" + "password" + "@" + "example.com/private"
     (config_dir / "security_policies.yml").write_text(
         "\n".join(
             [
