@@ -81,6 +81,21 @@ class DuckConnector(BaseConnector):
             raise ValueError("table_name は英数字とアンダースコアのみ使用可能で、先頭は数字不可です。")
         return text
 
+    @staticmethod
+    def _normalize_dataframe_for_duckdb(dataframe: pd.DataFrame) -> pd.DataFrame:
+        string_column_positions = [
+            position
+            for position, dtype in enumerate(dataframe.dtypes)
+            if isinstance(dtype, pd.StringDtype) and str(dtype) == "str"
+        ]
+        if not string_column_positions:
+            return dataframe
+
+        normalized = dataframe.copy(deep=False)
+        for position in string_column_positions:
+            normalized.isetitem(position, dataframe.iloc[:, position].astype("string"))
+        return normalized
+
     def _connect(self, db_file: str):
         normalized = self._normalize_abspath(db_file)
         parent = os.path.dirname(normalized)
@@ -140,14 +155,26 @@ class DuckConnector(BaseConnector):
         if source is None:
             raise ValueError(f"変数 '{input_data}' にデータがありません。")
 
-        dataframe = self.to_dataframe(source)
+        dataframe = source if isinstance(source, pd.DataFrame) else self.to_dataframe(source)
         if dataframe.empty:
             raise ValueError(f"変数 '{input_data}' に有効なデータがありません。")
+
+        dataframe = self._normalize_dataframe_for_duckdb(dataframe)
 
         normalized_table_name = self._validate_table_name(table_name)
         conn, normalized_db_file = self._connect(db_file)
         try:
-            conn.register("_ziz_input_df", dataframe)
+            try:
+                conn.register("_ziz_input_df", dataframe)
+            except Exception as error:
+                dtype_summary = ", ".join(
+                    f"{column}={dtype}"
+                    for column, dtype in zip(dataframe.columns, dataframe.dtypes)
+                )
+                raise ValueError(
+                    "DataFrameのDuckDB登録に失敗しました "
+                    f"(input_data={input_data}, columns=[{dtype_summary}]): {error}"
+                ) from error
             conn.execute(f"CREATE OR REPLACE TABLE \"{normalized_table_name}\" AS SELECT * FROM _ziz_input_df")
             row_count = int(len(dataframe.index))
         finally:

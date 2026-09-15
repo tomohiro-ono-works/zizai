@@ -3,11 +3,11 @@ from datetime import date, datetime, time
 from decimal import Decimal
 import re
 
+import numpy as np
 import pandas as pd
 from pandas.api.types import (
     is_bool_dtype,
     is_datetime64_any_dtype,
-    is_datetime64tz_dtype,
     is_float_dtype,
     is_integer_dtype,
     is_timedelta64_dtype,
@@ -58,6 +58,8 @@ def get_scalar_type_spec(ziz_datatype: str) -> TypeSpec:
 
 def resolve_pandas_type(ziz_datatype: str) -> str:
     normalized = str(ziz_datatype or "").strip()
+    if normalized in CONTAINER_TYPE_SPECS:
+        return CONTAINER_TYPE_SPECS[normalized].pandas_type
     if normalized.startswith("ARRAY<") and normalized.endswith(">"):
         return CONTAINER_TYPE_SPECS["ARRAY"].pandas_type
     if normalized.startswith("STRUCT<") and normalized.endswith(">"):
@@ -67,6 +69,8 @@ def resolve_pandas_type(ziz_datatype: str) -> str:
 
 def resolve_bigquery_type(ziz_datatype: str) -> str:
     normalized = str(ziz_datatype or "").strip()
+    if normalized in CONTAINER_TYPE_SPECS:
+        return CONTAINER_TYPE_SPECS[normalized].bigquery_type
     if normalized.startswith("ARRAY<") and normalized.endswith(">"):
         inner = normalized[len("ARRAY<"):-1].strip()
         return f"ARRAY<{resolve_bigquery_type(inner)}>"
@@ -97,7 +101,11 @@ def infer_ziz_datatype_from_series(series: pd.Series) -> str:
     if non_null.empty:
         return "STRING"
 
-    sample_values = [value for value in non_null.head(100).tolist() if value != ""]
+    sample_values = [
+        value
+        for value in non_null.head(100).tolist()
+        if not (isinstance(value, str) and value == "")
+    ]
     if not sample_values:
         return "STRING"
 
@@ -109,7 +117,7 @@ def infer_ziz_datatype_from_series(series: pd.Series) -> str:
         return "FLOAT64"
     if is_timedelta64_dtype(series):
         return "INTERVAL"
-    if is_datetime64tz_dtype(series):
+    if isinstance(series.dtype, pd.DatetimeTZDtype):
         return "TIMESTAMP"
     if is_datetime64_any_dtype(series):
         return _infer_datetime_family(sample_values)
@@ -122,6 +130,8 @@ def infer_ziz_datatype_from_series(series: pd.Series) -> str:
         return "BYTES"
     if all(isinstance(value, time) and not isinstance(value, datetime) for value in sample_values):
         return "TIME"
+    if all(isinstance(value, np.ndarray) for value in sample_values):
+        return "ARRAY"
     if all(isinstance(value, list) for value in sample_values):
         return "ARRAY<STRING>"
     if all(isinstance(value, dict) for value in sample_values):
