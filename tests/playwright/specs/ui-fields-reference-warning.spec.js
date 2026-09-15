@@ -22,3 +22,38 @@ test("field reference warnings distinguish supported and unknown variables", asy
   expect(warnings.unknown.length).toBeGreaterThan(0);
   expect(warnings.japaneseName).toEqual([]);
 });
+
+
+test("reference-only warnings accept only canonical bare keys", async ({ page }) => {
+  await page.goto("/gui/dataflow.html");
+
+  const warnings = await page.evaluate(() => {
+    const getWarnings = window.zizPackages.ui.fields.getFieldReferenceWarnings;
+    const context = {
+      upstreamSteps: ["step1"],
+      availableVariableNames: ["step1", "customer_name"],
+    };
+    const check = (key, value) => getWarnings({
+      node: { form: { [key]: value } },
+      field: { key, kind: "text", allowVars: true },
+      ...context,
+    });
+    return {
+      sourceBare: check("source_step_id", "step1"),
+      sourceWrapped: check("source_step_id", "{{step1}}"),
+      sourceNested: check("source_step_id", "{{step1.customer_id}}"),
+      valueBare: check("value_ref", "customer_name"),
+      valueWrapped: check("value_ref", "{{customer_name}}"),
+      valueUnknown: check("value_ref", "missing_name"),
+      valueNested: check("value_ref", "{{step1.customer_id}}"),
+    };
+  });
+
+  expect(warnings.sourceBare).toEqual([]);
+  expect(warnings.sourceWrapped.length).toBeGreaterThan(0);
+  expect(warnings.sourceNested.length).toBeGreaterThan(0);
+  expect(warnings.valueBare).toEqual([]);
+  expect(warnings.valueWrapped.length).toBeGreaterThan(0);
+  expect(warnings.valueUnknown.length).toBeGreaterThan(0);
+  expect(warnings.valueNested.length).toBeGreaterThan(0);
+});

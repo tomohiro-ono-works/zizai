@@ -6,6 +6,11 @@
   const INDENT_TEXT = "  ";
   const SUGGEST_INDEX_CACHE = new Map();
   const SUGGEST_INDEX_LOADING = new Map();
+  const TEMPLATE_NAME_CHARS = "a-zA-Z0-9_\\u3040-\\u309F\\u30A0-\\u30FF\\u3400-\\u4DBF\\u4E00-\\u9FFF\\u3005";
+  const TEMPLATE_NAME_PATTERN = new RegExp(`^[${TEMPLATE_NAME_CHARS}]+$`);
+  const TEMPLATE_ROOT_PREFIX_PATTERN = new RegExp(`\\{\\{\\s*([${TEMPLATE_NAME_CHARS}]*)$`);
+  const TEMPLATE_NESTED_PREFIX_PATTERN = new RegExp(`\\{\\{\\s*([${TEMPLATE_NAME_CHARS}]+)\\.([${TEMPLATE_NAME_CHARS}]*)$`);
+  const TEMPLATE_COMPLETE_ROOT_PATTERN = new RegExp(`\\{\\{\\s*([${TEMPLATE_NAME_CHARS}]+)\\s*\\}\\}$`);
 
   function getShellApi() {
     return window.zizShell || {};
@@ -182,13 +187,32 @@
     input.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
-  function getCompletionContext(input, variableNames, suggestEntries, options = {}) {
+  async function getCompletionContext(input, variableNames, suggestEntries, options = {}) {
     const includeIndexSuggest = !!options.includeIndexSuggest;
     const text = String(input.value || "");
     const caret = input.selectionStart || 0;
     const left = text.slice(0, caret);
 
-    const variableMatch = left.match(/\{\{\s*([a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\u3005]*)$/);
+    const nestedMatch = left.match(TEMPLATE_NESTED_PREFIX_PATTERN);
+    const completeRootMatch = nestedMatch ? null : left.match(TEMPLATE_COMPLETE_ROOT_PATTERN);
+    if (nestedMatch || completeRootMatch) {
+      const match = nestedMatch || completeRootMatch;
+      const rootName = String(match[1] || "");
+      const upstreamSet = new Set((options.upstreamSteps || []).map((name) => String(name || "").trim()).filter(Boolean));
+      if (!upstreamSet.has(rootName) || typeof options.resolveTemplateReferenceFields !== "function") return null;
+      const fieldPrefix = nestedMatch ? String(nestedMatch[2] || "") : "";
+      const loweredPrefix = fieldPrefix.toLowerCase();
+      const fieldNames = await options.resolveTemplateReferenceFields(rootName);
+      const items = Array.from(new Set((fieldNames || []).map((name) => String(name || "").trim())))
+        .filter((name) => TEMPLATE_NAME_PATTERN.test(name) && name.toLowerCase().startsWith(loweredPrefix))
+        .map((name) => ({
+          label: `{{${rootName}.${name}}}`,
+          insertText: `{{${rootName}.${name}}}`
+        }));
+      return { from: match.index, to: caret, items };
+    }
+
+    const variableMatch = left.match(TEMPLATE_ROOT_PREFIX_PATTERN);
     if (variableMatch) {
       const prefix = variableMatch[1] || "";
       const loweredPrefix = prefix.toLowerCase();
@@ -217,7 +241,14 @@
     };
   }
 
-  function createCompletionController({ input, host, variableNames, connectorId }) {
+  function createCompletionController({
+    input,
+    host,
+    variableNames,
+    connectorId,
+    upstreamSteps,
+    resolveTemplateReferenceFields
+  }) {
     const list = document.createElement("div");
     list.className = "suggest-list is-code-editor is-floating";
     document.body.appendChild(list);
@@ -227,9 +258,11 @@
     let activeIndex = 0;
     let positionFrameId = 0;
     let connectorSuggestEntries = [];
+    let refreshSequence = 0;
     const normalizedConnectorId = String(connectorId || "").trim();
 
     function hide() {
+      refreshSequence += 1;
       if (positionFrameId) {
         window.cancelAnimationFrame(positionFrameId);
         positionFrameId = 0;
@@ -344,13 +377,19 @@
       positionList();
     }
 
-    function refresh(options = {}) {
-      const nextContext = getCompletionContext(
+    async function refresh(options = {}) {
+      const requestId = ++refreshSequence;
+      const nextContext = await getCompletionContext(
         input,
         variableNames,
         connectorSuggestEntries,
-        { includeIndexSuggest: !!options.includeIndexSuggest }
+        {
+          includeIndexSuggest: !!options.includeIndexSuggest,
+          upstreamSteps,
+          resolveTemplateReferenceFields
+        }
       );
+      if (requestId !== refreshSequence) return false;
       if (!nextContext || !Array.isArray(nextContext.items) || !nextContext.items.length) {
         hide();
         return false;
@@ -370,7 +409,7 @@
 
     function scheduleRefresh() {
       window.requestAnimationFrame(() => {
-        refresh({ includeIndexSuggest: false });
+        void refresh({ includeIndexSuggest: false });
       });
     }
 
@@ -596,7 +635,18 @@
     return { gutter, inner, render, syncScroll };
   }
 
-  function mountCodeEditor({ input, value, language, sqlDialect, connectorId, variableNames, suggestionHost, onCommitChanged }) {
+  function mountCodeEditor({
+    input,
+    value,
+    language,
+    sqlDialect,
+    connectorId,
+    variableNames,
+    upstreamSteps,
+    resolveTemplateReferenceFields,
+    suggestionHost,
+    onCommitChanged
+  }) {
     if (!input || !suggestionHost) {
       return Promise.reject(new Error("Textarea host is not available"));
     }
@@ -640,7 +690,9 @@
           input,
           host: suggestionHost,
           connectorId,
-          variableNames
+          variableNames,
+          upstreamSteps,
+          resolveTemplateReferenceFields
         });
 
         if (typeof onCommitChanged === "function") {

@@ -30,6 +30,7 @@
     "tests/integration/test_python_duckdb_workflow.py",
     "tests/integration/test_qwebchannel_signal_contract.py",
     "tests/integration/test_repository_layout_process.py",
+    "tests/integration/test_step_reference_workflow.py",
     "tests/integration/test_suggest_index_contract.py",
     "tests/integration/test_task010_bridge_config_contract.py",
     "tests/integration/test_task010_rename_contract.py",
@@ -84,6 +85,7 @@
     "tests/unit/test_selenium_connector_contract.py",
     "tests/unit/test_task010_frontend_source_contract.py",
     "tests/unit/test_task010_path_contract.py",
+    "tests/unit/test_workflow_reference_contract.py",
     "tests/unit/test_workspace_security.py"
   ],
   "generated_path_fragments": [

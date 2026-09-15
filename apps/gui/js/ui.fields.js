@@ -680,6 +680,46 @@
     return names;
   }
 
+  function createTemplateReferenceFieldResolver({ state, upstreamSteps }) {
+    const allowedSteps = new Set((upstreamSteps || []).map((name) => String(name || "").trim()).filter(Boolean));
+    const fieldCache = new Map();
+
+    return async function resolveTemplateReferenceFields(stepName) {
+      const normalizedStepName = String(stepName || "").trim();
+      if (!allowedSteps.has(normalizedStepName)) return [];
+      if (fieldCache.has(normalizedStepName)) return fieldCache.get(normalizedStepName);
+
+      const pending = (async () => {
+        const sourceNode = findNodeByStepName(state, normalizedStepName);
+        if (!sourceNode) return [];
+
+        const localSchemaValues = [
+          sourceNode?.form?.schema_add_description,
+          sourceNode?.form?.schema
+        ];
+        for (const schemaValue of localSchemaValues) {
+          const localFields = extractSchemaFieldNames(schemaValue || "");
+          if (localFields.length) return localFields;
+        }
+
+        const activeBridge = resolveActiveBridgeApi();
+        if (!activeBridge?.call) return [];
+        try {
+          const schemaDto = await activeBridge.call("result.getSchema", {
+            mode: String(state?.appMode || ""),
+            step_id: normalizedStepName
+          });
+          return extractSchemaFieldNames(Array.isArray(schemaDto?.columns) ? schemaDto.columns : []);
+        } catch (_) {
+          return [];
+        }
+      })();
+
+      fieldCache.set(normalizedStepName, pending);
+      return pending;
+    };
+  }
+
   async function resolveFilterFieldOptions({ node, state }) {
     const stepRef = normalizeInputDataReference(node?.form?.input_data || "");
     if (!stepRef) return [];
@@ -1525,7 +1565,16 @@
     return { input: textarea, wrapper, skipVarSuggest: true };
   }
 
-  function renderCodeTextarea({ node, field, current, availableVariableNames, onInputChanged, onCommitChanged }) {
+  function renderCodeTextarea({
+    node,
+    field,
+    current,
+    availableVariableNames,
+    upstreamSteps,
+    resolveTemplateReferenceFields,
+    onInputChanged,
+    onCommitChanged
+  }) {
     const language = getCodeLanguageClass(field);
     const textarea = el("textarea", {
       class: "code-editor-fallback",
@@ -1560,6 +1609,8 @@
           language,
           connectorId: String(node?.connector || ""),
           variableNames: availableVariableNames || [],
+          upstreamSteps: upstreamSteps || [],
+          resolveTemplateReferenceFields,
           suggestionHost: wrapper,
           onInputChanged: (value) => {
             node.form[field.key] = value;
@@ -1680,13 +1731,7 @@
   }
 
   function normalizeInputDataReference(value) {
-    const text = String(value || "").trim();
-    if (!text) return "";
-    const doubleBraceMatch = text.match(/^\{\{\s*([a-zA-Z0-9_]+)\s*\}\}$/);
-    if (doubleBraceMatch) return doubleBraceMatch[1];
-    const braceMatch = text.match(/^\$?\{([a-zA-Z0-9_]+)(?:[^}]*)\}$/);
-    if (braceMatch) return braceMatch[1];
-    return text;
+    return String(value || "").trim();
   }
 
   function findNodeByStepName(state, stepName) {
@@ -1754,6 +1799,16 @@
       return [`参照先 ${ref} は上流に存在しません。`];
     }
 
+    if (field.key === "value_ref") {
+      const ref = normalizeInputDataReference(value);
+      if (!ref) return [];
+      if (!VARIABLE_NAME_PATTERN.test(ref)) {
+        return [`参照変数は brace なしの変数名で指定してください。nested reference は使用できません。`];
+      }
+      if (variableSet.has(ref) || upstreamSet.has(ref)) return [];
+      return [`参照変数 ${ref} は定義されていません。`];
+    }
+
     if (!supportsVars) return [];
 
     const isHiddenRefName = (ref) => String(ref || "").startsWith("hidden.");
@@ -1810,6 +1865,7 @@
     }
 
     const current = getFieldCurrentValue(node, field);
+    const resolveTemplateReferenceFields = createTemplateReferenceFieldResolver({ state, upstreamSteps });
 
     let inputEl = null;
     let wrapper = null;
@@ -1888,6 +1944,8 @@
           field,
           current,
           availableVariableNames,
+          upstreamSteps,
+          resolveTemplateReferenceFields,
           onInputChanged: notifyLocalChanged,
           onCommitChanged: notifyCommitted
         });
@@ -2095,6 +2153,21 @@
       });
       inputEl = r.input;
       wrapper = r.wrapper;
+    } else if (field.key === "value_ref") {
+      const r = renderComboInput({
+        node,
+        field: {
+          ...field,
+          options: Array.from(new Set((availableVariableNames || []).filter(Boolean))),
+          allowCustom: true
+        },
+        current,
+        onInputChanged: notifyLocalChanged,
+        onCommitChanged: notifyCommitted
+      });
+      inputEl = r.input;
+      wrapper = r.wrapper;
+      field.__skipVarSuggest = true;
     } else if (field.kind === "combo") {
       const comboCurrent =
         node.form && Object.prototype.hasOwnProperty.call(node.form, field.key)
@@ -2242,7 +2315,13 @@
     if (supportsVars && inputEl && inputEl.tagName !== "SELECT" && !field.__skipVarSuggest) {
       const suggestApi = getUiSuggestApi();
       if (suggestApi && typeof suggestApi.wrapWithVarSuggest === "function") {
-        wrapper = suggestApi.wrapWithVarSuggest(inputEl, availableVariableNames || [], onStateChanged, wrapper);
+        wrapper = suggestApi.wrapWithVarSuggest(
+          inputEl,
+          availableVariableNames || [],
+          onStateChanged,
+          wrapper,
+          { upstreamSteps: upstreamSteps || [], resolveTemplateReferenceFields }
+        );
       } else {
         ensureUiSuggestApi()
           .then((lazySuggestApi) => {

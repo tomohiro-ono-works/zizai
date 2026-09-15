@@ -2043,13 +2043,7 @@
   }
 
   function normalizeInputDataReference(value) {
-    const text = String(value || "").trim();
-    if (!text) return "";
-    const doubleBraceMatch = text.match(/^\{\{\s*([a-zA-Z0-9_]+)\s*\}\}$/);
-    if (doubleBraceMatch) return doubleBraceMatch[1];
-    const braceMatch = text.match(/^\$?\{([a-zA-Z0-9_]+)(?:[^}]*)\}$/);
-    if (braceMatch) return braceMatch[1];
-    return text;
+    return String(value || "").trim();
   }
 
   function isFieldVisibleForNode(node, field) {

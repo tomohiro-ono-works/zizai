@@ -503,7 +503,7 @@ test("ループノードのコンテキスト操作でループ内とループ�
       taskStep("step2", 236, 40, {
         node_type: "loop",
         action: "loop_tasks",
-        params: { source_step_id: "{{step1}}", max_iterations: 30 },
+        params: { source_step_id: "step1", max_iterations: 30 },
       }),
       taskStep("step3", 332, 40, { loop_owner_id: "step2" }),
     ],

@@ -29,7 +29,12 @@ class WorkflowEngine:
         self.connector_classes = {}  # 必要になった時点で遅延ロード
         self._connector_lock = threading.Lock()
         self._cancel_event = None
-        self._context_ref_param_keys = {"input_data", "input_data_rename"}
+        self._context_ref_param_keys = {
+            "input_data",
+            "input_data_rename",
+            "source_step_id",
+            "value_ref",
+        }
         self._loop_children_by_owner = {}
         self._inline_loop_children_enabled = False
 
@@ -115,15 +120,16 @@ class WorkflowEngine:
         connector_class = self._get_connector_class(conn_name)
         return connector_class()
 
-    def _normalize_context_ref(self, value):
-        text = str(value or "").strip()
-        if not text:
+    def _normalize_reference_only_param(self, value, key: str) -> str:
+        ref_name = str(value or "").strip()
+        if not ref_name:
             return ""
-        double_brace_match = re.match(rf"^\{{\{{\s*([{self.VARIABLE_NAME_CHAR_CLASS}]+)\s*\}}\}}$", text)
-        if double_brace_match:
-            return double_brace_match.group(1).strip()
-        match = re.match(r"^\$?\{([^}]+)\}$", text)
-        return match.group(1).strip() if match else text
+        if re.fullmatch(rf"[{self.VARIABLE_NAME_CHAR_CLASS}]+", ref_name):
+            return ref_name
+        raise ValueError(
+            f"{key} は brace なしの context key で指定してください。"
+            "nested reference は使用できません。"
+        )
 
     def _load_start_variables(self, config):
         variables = config.get("variables", {}) or {}
@@ -223,9 +229,8 @@ class WorkflowEngine:
 
     def _resolve_template_string(self, value: str, key: str | None = None):
         text = str(value)
-        ref_name = self._normalize_context_ref(text)
         if key in self._context_ref_param_keys:
-            return ref_name
+            return self._normalize_reference_only_param(text, key)
 
         exact_match = re.fullmatch(rf"\{{\{{\s*({self.TEMPLATE_REF_PATTERN})\s*\}}\}}", text.strip())
         if exact_match:
@@ -624,9 +629,7 @@ class WorkflowEngine:
             refs = self._collect_step_context_refs(params)
             action = str(step.get("action") or "").strip()
             if action == "loop_tasks":
-                source_ref = self._normalize_context_ref(
-                    (params.get("source_step_id") or params.get("input_data"))
-                )
+                source_ref = str(params.get("source_step_id") or params.get("input_data") or "").strip()
                 if source_ref:
                     refs.add(str(source_ref).split(".")[0].strip())
             for ref_root in refs:
@@ -713,7 +716,7 @@ class WorkflowEngine:
         params = self._resolve_step_params(step.get("params", {}) or {})
 
         if action == "loop_tasks":
-            ref_key = self._normalize_context_ref(params.get("source_step_id") or params.get("input_data"))
+            ref_key = str(params.get("source_step_id") or params.get("input_data") or "").strip()
             if not ref_key:
                 raise ValueError("source_step_id は必須です。")
             source_value = context.get(ref_key)

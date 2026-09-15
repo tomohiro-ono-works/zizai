@@ -347,7 +347,7 @@ const CONFIG = {
     ],
 
     "WindowsConnector.loop_tasks": [
-      { key:"source_step_id", label:"繰り返しデータ", kind:"text", required:true, allowVars:true, placeholder:"例: {{step1}}" },
+      { key:"source_step_id", label:"繰り返しデータ", kind:"text", required:true, allowVars:true, placeholder:"例: step1" },
       { key:"max_iterations", label:"最大反復数", kind:"number", required:false, default:30, min:1 }
     ],
 

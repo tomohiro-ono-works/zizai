@@ -528,7 +528,7 @@ test("WorkflowDesignerだけをinteractive canvasとしてmountする", async ({
       taskStep("step2", 236, 40, {
         node_type: "loop",
         action: "loop_tasks",
-        params: { max_iterations: 30, source_step_id: "{{step1}}" },
+        params: { max_iterations: 30, source_step_id: "step1" },
       }),
       taskStep("step3", 332, 40, { loop_owner_id: "step2" }),
     ],

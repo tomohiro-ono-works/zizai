@@ -1,7 +1,7 @@
 # Embedded Frontend Contract
 
 - Status: Current Specification
-- Last verified: 2026-08-23
+- Last verified: 2026-09-15
 - Target migration: TASK-012、TASK-016、TASK-018、TASK-019
 
 ## Current pages and runtime
@@ -19,6 +19,13 @@
 - Preview/schemaの正本はbackendのlatest resultで、Frontend cacheは表示高速化だけに使う。
 - `input_data`選択はUI stateを先に更新し、schema補完は非同期で後追いする。
 - Cacheは`flowScopeKey::step_id`で分離し、flow/config変更時に破棄する。
+
+## Reference input and Suggest
+
+- reference-only parameterの選択・Suggestはbraceなしのcontext key／step IDだけを有効として保存し、wrapper形式はValidation errorにする。通常のtemplate入力における`{{...}}`補完と混在させない。
+- template入力で`{{`を入力した場合は参照可能な上流stepを候補に含め、`{{step1.`または完成済みの`{{step1}}`から、そのstepのschema metadataに存在するfieldをnested候補として表示する。
+- nested候補はFrontendに宣言済みのschemaまたはBridgeの`result.getSchema`で取得したlatest result metadataから構築する。field情報がない場合は候補を推測せず、Data行を走査しない。
+- Suggestの選択はpointerに加えて既存code editorと同じ`ArrowUp`／`ArrowDown`、`Enter`／`Tab`、`Escape`操作を使用する。
 
 ## Styling
 

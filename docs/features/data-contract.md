@@ -1,8 +1,8 @@
 # Data and Flow Contract
 
 - Status: Current Specification
-- Last verified: 2026-08-24
-- Decision: [ADR Rename List Path Compatibility](../decisions/ADR-rename-list-path-compatibility.md)
+- Last verified: 2026-09-15
+- Decisions: [ADR Rename List Path Compatibility](../decisions/ADR-rename-list-path-compatibility.md)、[ADR Step Reference Canonical Format](../decisions/ADR-step-reference-canonical-format.md)
 
 ## Flow file
 
@@ -11,6 +11,14 @@
 - `metadata.mode`は`dataflow`、開始変数は`variables.start`、Connector入力は`steps[].params`、DAGは`flows.edges`へ保存する。
 - Repository移行で保存schemaを暗黙変換しない。Breaking changeは専用Decision、明示的な互換方針、回帰Testを必要とし、versioning／migrationの要否もDecisionで決定する。
 - `rename_list_path: config\rename.csv`の旧既定値はTASK-010で後方互換を終了する。既存`.zizd`は自動変換せず、新Source pathへの暗黙fallbackも行わない。
+
+## Reference expressions
+
+- reference-only parameter（`input_data`、`input_data_rename`、`source_step_id`、`value_ref`）は、braceなしのcontext key／step ID（例: `step2`）をCanonical形式とする。
+- reference-only parameterで`{{step2}}`、`${step2}`、`{step2}`等のwrapper形式を受理せず、WorkflowEngineも実行時互換変換を行わない。現行schemaのflowはCanonical形式で保存する。
+- reference-only parameterでnested referenceを受理しない。`{{step1.field}}`はtemplate入力で値を展開または文字列へ埋め込む形式であり、braceなしのstep IDとは別の意味として扱う。
+- template入力のstep候補は実際の上流stepだけから取得する。nested field候補は宣言schemaまたはlatest resultのschema metadataに存在するfieldだけを使用し、実Data行の走査や値からの推測を行わない。
+- `.zizd`の`schema_version`と旧versionから現行versionへのmigration frameworkは未導入である。将来のmigrationはreference-only parameterだけを明示的に変換し、通常templateの`{{step1.field}}`等を変換対象に含めない。
 
 ## Schema item
 

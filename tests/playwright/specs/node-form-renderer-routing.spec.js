@@ -101,6 +101,263 @@ test("real SeleniumConnector.dom_action: generic combo/checkbox/number fields mo
 });
 
 
+test("reference-only controls save bare keys and keep source steps upstream-only", async ({ page }) => {
+  await page.goto("/gui/dataflow.html");
+
+  const priorNodes = [{
+    id: "n0",
+    stepName: "step1",
+    connector: "CSVConnector",
+    action: "read_csv",
+    description: "",
+    descriptionAuto: true,
+    nodeType: "task",
+    form: { schema: "" },
+    parentId: null,
+    mergeParentIds: [],
+    parallelOf: null,
+    parallelOrder: 1,
+  }, {
+    id: "n9",
+    stepName: "step9",
+    connector: "CSVConnector",
+    action: "read_csv",
+    description: "",
+    descriptionAuto: true,
+    nodeType: "task",
+    form: { schema: JSON.stringify([{ origin_name: "unrelated", new_name: "unrelated" }]) },
+    parentId: null,
+    mergeParentIds: [],
+    parallelOf: null,
+    parallelOrder: 1,
+  }];
+  const node = {
+    id: "n1",
+    stepName: "step2",
+    connector: "SeleniumConnector",
+    action: "dom_action",
+    description: "",
+    descriptionAuto: true,
+    nodeType: "task",
+    form: { operation: "input", selector_type: "css", selector: "#name", value: "" },
+    parentId: "n0",
+    mergeParentIds: [],
+    parallelOf: null,
+    parallelOrder: 1,
+  };
+  await mountRealAction(page, { node, priorNodes });
+
+  const sourceOptions = await page.locator('[data-field-key="source_step_id"] select option').allTextContents();
+  expect(sourceOptions).toEqual(["選択してください", "step1"]);
+  await page.locator('[data-field-key="source_step_id"] select').selectOption("step1");
+  expect(await page.evaluate(() => window.__renderState.nodes[2].form.source_step_id)).toBe("step1");
+
+  const valueRef = page.locator('[data-field-key="value_ref"] .combo-input');
+  await expect(valueRef).toBeVisible();
+  await valueRef.click();
+  await page.locator('[data-field-key="value_ref"] .combo-item', { hasText: "step1" }).click();
+  expect(await page.evaluate(() => window.__renderState.nodes[2].form.value_ref)).toBe("step1");
+});
+
+
+test("template suggest completes upstream schema fields with keyboard and replaces a completed token", async ({ page }) => {
+  await page.goto("/gui/dataflow.html");
+
+  const priorNodes = [{
+    id: "n0",
+    stepName: "step1",
+    connector: "CSVConnector",
+    action: "read_csv",
+    description: "",
+    descriptionAuto: true,
+    nodeType: "task",
+    form: {
+      schema: JSON.stringify([
+        { origin_name: "customer_id", new_name: "customer_id", ziz_datatype: "INT64" },
+        { origin_name: "customer_name", new_name: "customer_name", ziz_datatype: "STRING" },
+        { origin_name: "sales", new_name: "sales", ziz_datatype: "FLOAT64" },
+      ]),
+    },
+    parentId: null,
+    mergeParentIds: [],
+    parallelOf: null,
+    parallelOrder: 1,
+  }, {
+    id: "n9",
+    stepName: "step9",
+    connector: "CSVConnector",
+    action: "read_csv",
+    description: "",
+    descriptionAuto: true,
+    nodeType: "task",
+    form: { schema: JSON.stringify([{ origin_name: "unrelated", new_name: "unrelated" }]) },
+    parentId: null,
+    mergeParentIds: [],
+    parallelOf: null,
+    parallelOrder: 1,
+  }];
+  const node = {
+    id: "n1",
+    stepName: "step2",
+    connector: "SeleniumConnector",
+    action: "dom_action",
+    description: "",
+    descriptionAuto: true,
+    nodeType: "task",
+    form: { operation: "input", selector_type: "css", selector: "#name", value: "" },
+    parentId: "n0",
+    mergeParentIds: [],
+    parallelOf: null,
+    parallelOrder: 1,
+  };
+  await mountRealAction(page, { node, priorNodes });
+
+  const valueInput = page.locator('[data-field-key="value"] input');
+  await valueInput.fill("{{");
+  await expect(page.locator('[data-field-key="value"] .suggest-item', { hasText: "{{step1}}" })).toBeVisible();
+  await expect(page.locator('[data-field-key="value"] .suggest-item', { hasText: "{{step9}}" })).toHaveCount(0);
+  await valueInput.fill("{{step");
+  await expect(page.locator('[data-field-key="value"] .suggest-item')).toHaveText(["{{step1}}"]);
+  await valueInput.press("Enter");
+  await expect(valueInput).toHaveValue("{{step1}}");
+
+  await valueInput.focus();
+  await valueInput.press("End");
+  await expect(page.locator('[data-field-key="value"] .suggest-item')).toHaveText([
+    "{{step1.customer_id}}",
+    "{{step1.customer_name}}",
+    "{{step1.sales}}",
+  ]);
+  await valueInput.press("ArrowDown");
+  await valueInput.press("Enter");
+  await expect(valueInput).toHaveValue("{{step1.customer_name}}");
+
+  await valueInput.fill("{{step9.");
+  await page.waitForTimeout(100);
+  await expect(page.locator('[data-field-key="value"] .suggest-item')).toHaveCount(0);
+});
+
+
+test("template suggest uses latest schema metadata and does not invent unknown fields", async ({ page }) => {
+  await page.goto("/gui/dataflow.html");
+  await page.evaluate(() => {
+    window.__task033SchemaCalls = 0;
+    const bridgeApi = {
+      available() { return true; },
+      call(type, payload) {
+        if (type === "result.getSchema" && payload.step_id === "step1") {
+          window.__task033SchemaCalls += 1;
+          return Promise.resolve({
+            columns: [
+              { origin_name: "invoice_id", new_name: "invoice_id", ziz_datatype: "STRING" },
+              { origin_name: "total", new_name: "total", ziz_datatype: "FLOAT64" },
+            ],
+          });
+        }
+        return Promise.reject(new Error("unexpected bridge call"));
+      },
+    };
+    window.zizBridge = bridgeApi;
+  });
+
+  const priorNodes = [{
+    id: "n0",
+    stepName: "step1",
+    connector: "PythonConnector",
+    action: "execute_python",
+    description: "",
+    descriptionAuto: true,
+    nodeType: "task",
+    form: { schema: "" },
+    parentId: null,
+    mergeParentIds: [],
+    parallelOf: null,
+    parallelOrder: 1,
+  }];
+  const node = {
+    id: "n1",
+    stepName: "step2",
+    connector: "SeleniumConnector",
+    action: "dom_action",
+    description: "",
+    descriptionAuto: true,
+    nodeType: "task",
+    form: { operation: "input", selector_type: "css", selector: "#invoice", value: "" },
+    parentId: "n0",
+    mergeParentIds: [],
+    parallelOf: null,
+    parallelOrder: 1,
+  };
+  await mountRealAction(page, { node, priorNodes });
+
+  const valueInput = page.locator('[data-field-key="value"] input');
+  await valueInput.fill("{{step1.");
+  await expect(page.locator('[data-field-key="value"] .suggest-item')).toHaveText([
+    "{{step1.invoice_id}}",
+    "{{step1.total}}",
+  ]);
+  expect(await page.evaluate(() => window.__renderState.nodes[1].form.value)).toBe("{{step1.");
+  await valueInput.fill("{{step1.i");
+  await expect(page.locator('[data-field-key="value"] .suggest-item')).toHaveText(["{{step1.invoice_id}}"]);
+  expect(await page.evaluate(() => window.__task033SchemaCalls)).toBe(1);
+  await page.locator('[data-field-key="value"] .suggest-item', { hasText: "{{step1.invoice_id}}" }).click();
+  await expect(valueInput).toHaveValue("{{step1.invoice_id}}");
+});
+
+
+test("code editor template suggest completes upstream schema fields with keyboard", async ({ page }) => {
+  await page.goto("/gui/dataflow.html");
+
+  const priorNodes = [{
+    id: "n0",
+    stepName: "step1",
+    connector: "CSVConnector",
+    action: "read_csv",
+    description: "",
+    descriptionAuto: true,
+    nodeType: "task",
+    form: {
+      schema: JSON.stringify([
+        { origin_name: "customer_id", new_name: "customer_id", ziz_datatype: "INT64" },
+        { origin_name: "customer_name", new_name: "customer_name", ziz_datatype: "STRING" },
+      ]),
+    },
+    parentId: null,
+    mergeParentIds: [],
+    parallelOf: null,
+    parallelOrder: 1,
+  }];
+  const node = {
+    id: "n1",
+    stepName: "step2",
+    connector: "BQConnector",
+    action: "execute_sql",
+    description: "",
+    descriptionAuto: true,
+    nodeType: "task",
+    form: { project_id: "defult_project1", sql: "", schema: "" },
+    parentId: "n0",
+    mergeParentIds: [],
+    parallelOf: null,
+    parallelOrder: 1,
+  };
+  await mountRealAction(page, { node, priorNodes });
+
+  const sqlInput = page.locator('[data-field-key="sql"] textarea');
+  await expect(sqlInput).toHaveClass(/is-enhanced-code-editor/);
+  await sqlInput.fill("{{step1}}");
+  await sqlInput.focus();
+  await sqlInput.press("End");
+  await expect(page.locator('.suggest-list.is-code-editor .suggest-item')).toHaveText([
+    "{{step1.customer_id}}",
+    "{{step1.customer_name}}",
+  ]);
+  await sqlInput.press("ArrowDown");
+  await sqlInput.press("Enter");
+  await expect(sqlInput).toHaveValue("{{step1.customer_name}}");
+});
+
+
 test("real BQConnector.execute_sql: google-auth-login and codeLanguage stay on the legacy renderer while schema is owned by DataViewer", async ({ page }) => {
   await page.goto("/gui/dataflow.html");
   await installRenderFieldRecorder(page);
