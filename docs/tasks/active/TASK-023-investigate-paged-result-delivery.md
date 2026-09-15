@@ -199,6 +199,7 @@ Codex Verification:
 ## Remaining
 
 - Project ownerがTASK開始を指示するまでWP-1を開始しない。
+- localに、未追跡のTASK-023用Script 2件（`scripts/generate_big_csv.py`、`scripts/csv_to_xlsx_stream.py`）を残している。[TASK-030](../done/TASK-030-formalize-dependency-checks-and-prune-local-assets.md)の記録どおり、本Task開始時にtrack、作り直し、削除のいずれかを再判断する。それまでは変更・削除・commitしない。
 
 ## Exact next action
 

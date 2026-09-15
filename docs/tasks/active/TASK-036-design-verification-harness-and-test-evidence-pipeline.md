@@ -109,6 +109,14 @@ Not Started — 設計Task。Harnessの実装は行わない。推奨実装順�
   - QtWebEngine profileの保存先は、application名を分けることで利用者の実アプリから隔離できた。
   - offscreenではDOMの検証はできるが、screenshotは取得できなかった。
   - GUIからの実行では、step名が`step1`形式へ正規化される。
+- Desktop実画面の自動操作で使った手順とhook（2026-09-15時点。UI変更で変わりうる）:
+  - `run_webview_app`は`app.exec()`でblockするため、`QApplication.exec`を差し替えてevent loop内から操作した。mouse／wheel eventは`QWebEngineView.focusProxy()`へ送った。
+  - 一時repository rootへは`apps/common/config`だけをcopyし、root `config/`と`workflows/`は一時root内に新規作成した。
+  - app logの出力先は`apps/core/logger.py`の`LOG_DIR = Path("logs")`でcwd基準のため、cwdを一時rootへ移し、利用者の`logs/`へ書き込まないようにした。一時rootの`logs/app_*.log`にある`フロー開始: <flow file名>`と`フロー完了`を、完了判定にも使った。
+  - home画面: Explorer activity `[data-activity-id="explorer"]`で`dataflow.html`へ移動し、file行`.workspace-tree-file-name`のclickでflow tab（`iframe.workspace-flow-frame`）を開いた。
+  - flow tabのiframe内: 実行button `[data-zwd-command="workflow.run"]`、zoom `[data-zwd-command="viewport.zoom-in"]`／`[data-zwd-command="viewport.zoom-out"]`を操作した。step nodeの実行状態は`.zwd-node--step`の`data-run-status`、viewportは`#flowchart`要素の`__workflowDesignerAdapterRuntime.instance.getViewport()`で取得した。
+  - 実行ログダイアログは最上位documentではなく、flow tabのiframe内に表示される（最上位documentの`.app-dialog__panel`では検出されなかった）。
+- Vector Connectorを含む実行では`HF_HUB_OFFLINE=1`（CLI実行では`TRANSFORMERS_OFFLINE=1`も）を設定し、cache済みmodelだけを使った。
 - OS入力: 次の安全ガードにより、専用test window以外へ入力を送らなかった。
   - 操作点が専用test windowであることの確認（WindowFromPoint）
   - 前面windowが専用test windowであることの確認

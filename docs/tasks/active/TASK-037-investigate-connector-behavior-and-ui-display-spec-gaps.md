@@ -89,12 +89,12 @@ Not Started — 仕様調査Task。実装は行わない。項目ごとに不具
 
 ## Evidence
 
-2026-09-14〜15の非BigQuery検証（一時scriptによる確認。scriptはrepositoryに含めていない）。
+2026-09-14〜15の非BigQuery検証（一時scriptによる確認。scriptとscreenshotはrepositoryに含めていない）。
 
 1. `execute_sql`で`CREATE OR REPLACE VIEW`を実行すると、status行（`status: executed`）ではなく、0行・列`Count`のDataFrameが返った。VIEW自体は作成された。コード上、status行を返すのは`cursor.description`がNoneのときだけである。
 2. 検証環境（console code page 65001）で、cp932で保存したbatの`echo テスト出力`が文字化けした。bat内で`chcp 932`を指定すると正しく取得でき、`chcp 65001`でUTF-8出力にすると再び文字化けした。
 3. 専用test windowへの日本語`input_text`（追記）は成功し、clipboardのtextは実行前と同じ内容に戻った。text以外の内容が保持されるかは未検証である。コード上は`pyperclip.paste()`で取得したtextだけを戻す。
-4. Desktop実画面の自動操作で、data nodeの下部パネルにtab「帳票」が2つ並んで表示された（screenshotで確認）。source上、「帳票」のlabel定義はDataViewer libraryの`TAB_DEFS`にだけ見つかる。
+4. Desktop実画面の自動操作で、data nodeの下部パネルにtab「帳票」が2つ並んで表示された（screenshotで確認）。Explorerから一時dataflowを開いた直後（実行前。step1の`CSVConnector.read_csv`が選択された状態）で、tabは「帳票」「帳票」「カラム設定」「JSON編集」の順だった。source上、「帳票」のlabel定義はDataViewer libraryの`TAB_DEFS`にだけ見つかる。
 5. flow完了時の実行ログダイアログで、「内容」列の文字列（例: `[step2] DataintegrationConnector / replace_fields_forrenamelist`）が途中で切れ、横スクロールが必要だった（screenshotで確認）。
 
 ## Remaining Work

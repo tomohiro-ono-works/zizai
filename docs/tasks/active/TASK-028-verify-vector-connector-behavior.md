@@ -34,7 +34,7 @@ Deferred — 正常動作未確認 / 改修必要性あり。着手時期はProj
 - 現行action一覧（non-canonical）: [Current Connector and Action Inventory](../../handoffs/current-connector-action-inventory.md)
 - 旧case設計（未承認）: [Backend Test Plan Handoff](../../handoffs/backend-test-plan.md)の付録Aの`Vector`行（VE01〜VE06）と付録Bの`EXT-VE-01`
 - 修正履歴: `071d861`（2026-06 release）、`2e6ab92`（202607 WIP、`origin/release/202607`）、`1f85aa6`（`apps/connectors/`へ移設）、`701e6c5`（既定modelを`cl-nagoya/ruri-v3-130m`へ変更）
-- 旧資料（Current Specificationではない。Git履歴にのみ存在）: `git show 2e6ab92:.docs/areas/vector-connector.md`、`git show 2e6ab92:tests/python/test_vector_connector.py`
+- 旧資料（Current Specificationではない。Git履歴にのみ存在）: `git show 2e6ab92:.docs/areas/vector-connector.md`、`git show 2e6ab92:tests/python/test_vector_connector.py`（`2e6ab92`は`main`から到達できず、`release/202607`のlocal／origin branchだけが保持している）
 
 ## Constraints
 

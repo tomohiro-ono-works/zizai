@@ -37,7 +37,7 @@ TASK-001～014、TASK-016～019、およびv23 Migration Investigationから初�
 - **References:** 本Taskの`Acceptance criteria`、`Test plan`、`Remaining`、`Exact next action`、および`docs/handoffs/v23-migration-final-verification.md`。
 - **Acceptance Criteria:** `Remaining`の3項目がPASSし、観測結果とEvidence保存先が記録される。またはFAIL内容と責務Taskが記録される。
 - **Tests:** `Exact next action`に記載したWindows Desktop確認。BigQuery実接続／実queryは含めない。
-- **Status（2026-09-15）:** tooltipとwheel／toolbarの操作は、Desktop実画面の自動操作で確認した。Project ownerが指定する代表dataflow／workflowによる実画面での完走確認は未完了である。final release decisionの前にTASK-032の解決を確認する（`Remaining`参照）。
+- **Status（2026-09-15）:** tooltipとwheel／toolbarの操作は、Desktop実画面の自動操作で確認した。Project ownerが指定する代表dataflow／workflowによる実画面での完走確認は未完了である。final release decisionの前に、TASK-032の解決と既知のCI失敗の扱いを確認する（`Remaining`参照）。
 
 以下の`Final verification plan`とWork Package本文は旧運用時の実行計画・履歴であり、このSubtaskのOwnerまたはAgent割当を定義しない。
 
@@ -388,6 +388,9 @@ Codex Verification:
   - DuckDBの非query SQLの戻り値、Shell出力のencoding、clipboard、UI表示2件の仕様調査: TASK-037
   - 検証Harnessの設計: TASK-036
 - 未割当のArchitecture concern（Task未作成）: WorkflowEngineは、class名とmodule名が一致しないConnector（例: `DuckConnector`）を探索するときに全Connector moduleをimportし、`bigquery_connector`もimportされる。API呼出と認証情報へのアクセスはない。
+- GitHub Actions `Migration Verification`は、2026-09-15時点で記録のある全7 run（2026-09-13の`ccfc768`から2026-09-14の`406b279`まで）で、同じ3 jobが失敗している。static-analysis、unit、remote-safeはPASSした。修正を担当するTaskは未割当である。
+  - integration: `tests/integration/test_task010_bridge_config_contract.py::test_generic_config_scope_cannot_list_source_configuration_assets`が、`E_NOT_FOUND`（`対象が見つかりません: D:\a\zizai\zizai\config`）で失敗する。clean checkoutにignore対象のroot `config/`が存在しないためと推定する。root `config/`があるlocalではPASSする。
+  - webengine、browser-only: step `Install browser test dependencies`の`npm ci`（`tests/playwright`）が、`npm error Invalid Version:`で失敗する。原因は未調査である（CIのNodeはv24.20.0）。`tests/run-verification.ps1`は`npm ci`を実行しないため、localのPASSからは再現の有無を判断できない。
 
 ## Remaining
 
@@ -400,10 +403,11 @@ Codex Verification:
 - tooltipの枠内表示と再表示、通常wheel／Shift+wheel／Ctrl+wheelとtoolbar `+`／`-`によるpan・zoomは、Desktop実画面の自動操作で確認した（`Evidence`参照）。
 - 代表dataflow／workflowの実行確認は未完了である。自動操作で使った一時flowはProject ownerが指定した代表flowではないため、本条件を満たした扱いにしない。
 - final release decisionの前に、release blocker候補であるTASK-032の解決を確認する。
+- 既知のCI失敗3 job（`Evidence`参照）が残っており、Acceptance criteriaの「cleanなuv環境で全Test/CIがPASSする」を満たしていない。release判定での扱いは決まっていない。
 
 ## Exact next action
 
-Project ownerが代表dataflow／workflowを指定し、修正済みApplicationのWindows実画面で完走を確認する（tooltipとwheel／toolbarの操作は、2026-09-15の自動実画面テストで確認済み）。final release decisionの前に、TASK-032の解決を確認する。
+Project ownerが代表dataflow／workflowを指定し、修正済みApplicationのWindows実画面で完走を確認する（tooltipとwheel／toolbarの操作は、2026-09-15の自動実画面テストで確認済み）。final release decisionの前に、TASK-032の解決と既知のCI失敗の扱いを確認する。
 
 ## Termination condition
 
