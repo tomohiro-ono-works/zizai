@@ -1,8 +1,8 @@
 # Architecture
 
 - Status: Current Specification
-- Last verified: 2026-08-24
-- Decisions: [ADR-v23 Application Topology](../decisions/ADR-v23-application-topology.md)、[ADR Source, Runtime, and Workspace Boundary](../decisions/ADR-source-runtime-workspace-boundary.md)
+- Last verified: 2026-09-15
+- Decisions: [ADR-v23 Application Topology](../decisions/ADR-v23-application-topology.md)、[ADR Source, Runtime, and Workspace Boundary](../decisions/ADR-source-runtime-workspace-boundary.md)、[ADR Web Allowlist Canonicalization](../decisions/ADR-web-allowlist-canonicalization.md)
 
 ## Runtime topology
 
@@ -12,6 +12,15 @@
 - 内蔵WebViewは同梱Frontend専用とし、外部Pageや外部配信JavaScriptをBridge到達可能なContextへ入れない。
 - 外部URLはAllowlistで検証し、許可時だけOS browserへ委譲する。
 - 同梱`dataflow.html`を表示する内部frame contractは、QWebChannel contractと分離する。
+
+## Web allowlist boundary
+
+- allowlist entryはURL全体ではなくdomain／hostを表す。http／https URLで入力された場合はhostだけを抽出し、scheme、path、query、fragmentを保存しない。
+- hostはlowercase、末尾のslash／DNS root dot除去、IDNからASCII punycodeへの変換を行ってCanonical形式にする。明示port、userinfo、`localhost`、単一label host、IPv4、IPv6、不正なDNS labelは受理しない。
+- `example.com`はexact hostだけに一致し、subdomainへ許可を広げない。`*.example.com`はexactに1階層下のsubdomainだけに一致し、apexと多階層subdomainには一致しない。
+- target URLのschemeはhttp／httpsだけを受理する。portは現行どおりallowlistの判定要素に含めず、port単位の許可は提供しない。pathの許可範囲は既存の`path_prefixes`で判定する。
+- Canonical domainが重複するentryは統合し、`path_prefixes`を重複排除する。不正entryはそのentryだけを除外してwarningと非機密な件数statusを残し、正常entryの判定は維持する。
+- `path_prefixes`を省略したentryは既定で`/`を許可する。`path_prefixes`を明示した場合にlistでない、空list、null、非文字列要素、空文字列要素のいずれかに該当するentryは、`["/"]`へfallbackさせずentry全体を除外する。
 
 ## Current responsibility map
 

@@ -30,6 +30,6 @@ web:
     - domain: "github.com"
       path_prefixes:
         - /
-    - domain: "note.com/"
+    - domain: "note.com"
       path_prefixes:
         - /

@@ -335,6 +335,9 @@ class BridgeRuntime:
                 "path": "",
                 "api_profile_count": len(policies.get("apis", {}).get("profiles", {})),
                 "web_allowlist_count": len(policies.get("web", {}).get("allowlist", [])),
+                "web_allowlist_invalid_entry_count": int(
+                    policies.get("web", {}).get("invalid_entry_count", 0)
+                ),
             },
             "file_icon_map": self._load_file_icon_map(),
             "runtime_context_defaults": self._build_runtime_context_defaults(),

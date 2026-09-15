@@ -29,7 +29,7 @@
 
 ### Source config access
 
-- `security_policies.yml`はPython内部だけで読み、判定結果と非機密statusだけを返す。mtime/sizeを含む変更検知付きprocess cacheを許可し、missing/invalid時はallowlist空としてfail-closedにする。
+- `security_policies.yml`はPython内部だけで読み、判定結果と非機密statusだけを返す。mtime/sizeを含む変更検知付きprocess cacheを許可する。file missingまたはYAML／top-level contractがinvalidな場合はallowlist空としてfail-closedにする。個々のWeb allowlist entryがinvalidな場合は、[ADR Web Allowlist Canonicalization](ADR-web-allowlist-canonicalization.md)に従い当該entryだけを除外する。
 - `rename.csv`はWorkflow実行時にPythonだけが読み、contentをBridgeへ送らない。旧`config\rename.csv`との互換方針は`ADR-rename-list-path-compatibility.md`を正とする。
 - `suggest_index/`は既存`app.getSuggestIndex`を使用する。Application AdapterはConnector利用前に取得して保持し、取得失敗を空cacheとして固定せず次回利用時に再試行する。旧direct fetch fallbackは廃止する。
 - `file_icon_map.json`をWebViewの相対file URLで直接読ませない。Hostの許可root/file例外は増やさず、既存`app.getStatus`の追加payloadで検証済みmapを1回渡す。値は同梱page基準の表示用relative asset URLであり、Application Adapterが解決してFrontendへ渡す。

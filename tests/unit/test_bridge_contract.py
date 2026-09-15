@@ -81,6 +81,31 @@ def test_status_response_preserves_envelope_and_capability_set(tmp_path: Path, p
     assert len(response["payload"]["capabilities"]) == 31
 
 
+def test_status_reports_invalid_allowlist_entry_count_without_exposing_entry(tmp_path: Path) -> None:
+    config_dir = tmp_path / "apps" / "common" / "config"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    private_entry = "https://user:password@example.com/private"
+    (config_dir / "security_policies.yml").write_text(
+        "\n".join(
+            [
+                "version: 1",
+                "web:",
+                "  allowlist:",
+                "    - domain: valid.example",
+                "      path_prefixes: [/allowed/]",
+                f"    - domain: {private_entry}",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    response = BridgeRuntime(tmp_path).handle_message(command("app.getStatus"))
+
+    assert response["payload"]["security_policies"]["web_allowlist_count"] == 1
+    assert response["payload"]["security_policies"]["web_allowlist_invalid_entry_count"] == 1
+    assert private_entry not in json.dumps(response, ensure_ascii=False)
+
+
 @pytest.mark.parametrize(
     ("raw_message", "expected_code"),
     [
