@@ -27,7 +27,7 @@ Target tree、例外、imports、entrypoints、config、toolchain、Docs、Harne
 
 ## Dependencies
 
-TASK-001～014、TASK-016～019、およびv23 Migration Investigationから初回release条件として追加されたTask。初回release後へ延期したProduct enhancement／investigation／別実装／運用Task（TASK-020～TASK-026）は含めない。TASK-027は本Task完了後に費用条件を別承認して行うBigQuery実接続検証であり、本Taskの依存条件ではない。RISK-FS-001はTASK-014の管理者PowerShell実行でPASS済みとし、release candidateで当該境界に変更があった場合だけ再実行する。TASK-032（Python→DuckDBの通常flowが実際に失敗する不具合）は初回releaseのblocker候補であり、final release decisionの前にTASK-032の解決を確認する。TASK-033とTASK-034はKnown Issueとして扱い、release blockerとは決めていない。
+TASK-001～014、TASK-016～019、およびv23 Migration Investigationから初回release条件として追加されたTask。初回release後へ延期したProduct enhancement／investigation／別実装／運用Task（TASK-020～TASK-026）は含めない。TASK-027は本Task完了後に費用条件を別承認して行うBigQuery実接続検証であり、本Taskの依存条件ではない。RISK-FS-001はTASK-014の管理者PowerShell実行でPASS済みとし、release candidateで当該境界に変更があった場合だけ再実行する。TASK-032（Python→DuckDBの通常flowが実際に失敗する不具合）はcommit `819122d`で解消済みである。TASK-033とTASK-034はKnown Issueとして扱い、release blockerとは決めていない。
 
 ## Current Remaining Work
 
@@ -37,7 +37,7 @@ TASK-001～014、TASK-016～019、およびv23 Migration Investigationから初�
 - **References:** 本Taskの`Acceptance criteria`、`Test plan`、`Remaining`、`Exact next action`、および`docs/handoffs/v23-migration-final-verification.md`。
 - **Acceptance Criteria:** `Remaining`の3項目がPASSし、観測結果とEvidence保存先が記録される。またはFAIL内容と責務Taskが記録される。
 - **Tests:** `Exact next action`に記載したWindows Desktop確認。BigQuery実接続／実queryは含めない。
-- **Status（2026-09-15）:** tooltipとwheel／toolbarの操作は、Desktop実画面の自動操作で確認した。Project ownerが指定する代表dataflow／workflowによる実画面での完走確認は未完了である。final release decisionの前に、TASK-032の解決と既知のCI失敗の扱いを確認する（`Remaining`参照）。
+- **Status（2026-09-15）:** tooltipとwheel／toolbarの操作は、Desktop実画面の自動操作で確認した。Project ownerが指定する代表dataflow／workflowによる実画面での完走確認は未完了である。TASK-032はcommit `819122d`で解消済みであり、final release decisionの前に既知のCI失敗の扱いを確認する（`Remaining`参照）。
 
 以下の`Final verification plan`とWork Package本文は旧運用時の実行計画・履歴であり、このSubtaskのOwnerまたはAgent割当を定義しない。
 
@@ -402,12 +402,12 @@ Codex Verification:
 
 - tooltipの枠内表示と再表示、通常wheel／Shift+wheel／Ctrl+wheelとtoolbar `+`／`-`によるpan・zoomは、Desktop実画面の自動操作で確認した（`Evidence`参照）。
 - 代表dataflow／workflowの実行確認は未完了である。自動操作で使った一時flowはProject ownerが指定した代表flowではないため、本条件を満たした扱いにしない。
-- final release decisionの前に、release blocker候補であるTASK-032の解決を確認する。
+- release blocker候補だったTASK-032はcommit `819122d`で解消済みである。
 - 既知のCI失敗3 job（`Evidence`参照）が残っており、Acceptance criteriaの「cleanなuv環境で全Test/CIがPASSする」を満たしていない。release判定での扱いは決まっていない。
 
 ## Exact next action
 
-Project ownerが代表dataflow／workflowを指定し、修正済みApplicationのWindows実画面で完走を確認する（tooltipとwheel／toolbarの操作は、2026-09-15の自動実画面テストで確認済み）。final release decisionの前に、TASK-032の解決と既知のCI失敗の扱いを確認する。
+Project ownerが代表dataflow／workflowを指定し、修正済みApplicationのWindows実画面で完走を確認する（tooltipとwheel／toolbarの操作は、2026-09-15の自動実画面テストで確認済み）。final release decisionの前に、既知のCI失敗の扱いを確認する。
 
 ## Termination condition
 
