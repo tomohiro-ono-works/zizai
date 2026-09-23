@@ -1,14 +1,25 @@
 # TASK-039 Current State
 
-- Status: Current-State Handoff — not Current Specification
+- Status: Closure / successor-task handoff — not Current Specification
 - Updated: 2026-09-23
-- Canonical detail / history: `docs/tasks/active/TASK-039-fix-native-window-resize-and-investigate-blackout.md`（約101KB。詳細Evidenceと調査historyはそちらが正本）
-- 役割: 次セッションが最小の読解で現在地を把握するための現状固定。2026-09-22までの詳細は下の既存section、2026-09-23の実Application診断は直後の更新sectionを優先する。過去の「次の判断」はhistoryであり、現在の進行方針は下記「Closure preparation」を優先する。
+- Canonical detail / history: `docs/tasks/done/TASK-039-fix-native-window-resize-and-investigate-blackout.md`（詳細Evidenceと調査historyの正本）
+- 役割: close後に残る事実・Evidence locatorと、localhost移行の別Taskへ渡す未決事項を要約する。blackout修正完了やFull `RISK-UI-001` PASSを示すものではない。Current Specificationではない。
 - Locator表記: `T039 §<section>` = TASK-039本文の該当section見出し。
 
-## 2026-09-23 Update — Read First
+## Closure summary — Read First
 
-**現在の結論:** 起動直後のnative resize不可（H1）は修正済み。実Applicationの長時間blackoutは未解決。Project ownerの実画面観察がblackout／白化のground truthであり、ログだけから各操作の画面色は判定できない。修正候補を採用できるEvidenceはまだ無い。Project ownerはlocalhost方式への移行を次の正式な進行方針とし、TASK-039はblackout未解決を明記してクローズ準備中。移行の仕様変更・設計・実装は別Taskで扱う。
+TASK-039は2026-09-23に、WebView方式の調査・部分改善を終了し、blackout未解決のまま残課題を別Taskへ移管する形でcloseした。これは元Goalの達成やAcceptance PASSではない。
+
+- H1（起動直後のnative resize）は修正済み・manual PASS。
+- 実Application blackoutは未解決。修正後の複数fresh session検証は未実施。
+- Full `RISK-UI-001`は未実施であり、PASS扱いしない。
+- WebView版checkpoint: commit `8639466bcf27f4c8d161c7cd4ce4c97f200486fc`。`main`と`release/202609-webview`が同commitを指す。
+- localhost方式への移行はProject ownerの進行方針だが、blackout解消を保証するものではない。移行の設計、Current Specification／Decision変更、実装は別Taskで扱う。
+- Source／testやCurrent Specificationの変更は本close整理に含めない。本文と過去Evidenceは削除・圧縮せず保持する。
+
+## 2026-09-23 Update — Read First (historical evidence)
+
+**当時の診断結論:** 起動直後のnative resize不可（H1）は修正済み。実Applicationの長時間blackoutは未解決。Project ownerの実画面観察がblackout／白化のground truthであり、ログだけから各操作の画面色は判定できない。修正候補を採用できるEvidenceはまだ無い。close後の正式状態は冒頭のClosure summaryを参照する。
 
 | 実Applicationの試行 | 観測結果 | locator |
 | --- | --- | --- |
@@ -23,17 +34,17 @@
 
 **現時点のfailure boundary:** native resize終了、Qt window/viewの幾何、rendererのJS callback、Qt WebEngineのSharedImage初期化／DXGI import処理のログ、およびgrab経路では正常像が観測された。それでも実画面は黒化・白化する。後続ETLにはDXGI present記録があるが、blackout開始時刻とframe内容との対応はない。最終表示までの正確なfailure pointは未確定。import成功やpresent記録を、blackout中の正常画面表示の証明にしない。特定のQt／Chromium／AMD driver defectとも断定しない。6.11.2更新、`view.update()`、`hide()`→`show()`は修正候補から除外する。
 
-**作業状態:** 6.11.2隔離環境は`.tmp/task039-pyside6112/`（tracked dependencyは未変更）。失敗した`hide()`→`show()`コードは除去済み。その後、一時native-end／update／grab診断コードと診断testを除去し、H1修正とそのtestのみ残した。CSS候補は元に戻し、対のPlaywright testは除去した。詳細は下のClosure preparationを参照。
+**当時の作業状態:** 6.11.2隔離環境は`.tmp/task039-pyside6112/`（tracked dependencyは未変更）。失敗した`hide()`→`show()`コードは除去済み。その後、一時native-end／update／grab診断コードと診断testを除去し、H1修正とそのtestのみ残した。CSS候補は元に戻し、対のPlaywright testは除去した。詳細は後続のclose disposition記録を参照。
 
-**当時の次の判断（history）:** ここまでのEvidenceで新たなDOM/CSS探索や描画強制workaroundを追加しない。実画面へのpresentを観測できる方法を整えるか、得られた再現EvidenceをQt WebEngine／graphics stackの上流調査へ渡すかを決める、という方針だった。後続のWPR取得とProject ownerのlocalhost移行判断を受け、現在の次工程は下記「Closure preparation」を優先する。
+**当時の次の判断（history）:** ここまでのEvidenceで新たなDOM/CSS探索や描画強制workaroundを追加しない。実画面へのpresentを観測できる方法を整えるか、得られた再現EvidenceをQt WebEngine／graphics stackの上流調査へ渡すかを決める、という当時の方針だった。後続のWPR取得とProject ownerのlocalhost移行判断を受け、TASK-039はclose済みである。後続作業の範囲は冒頭のSuccessor Task handoffに集約する。
 
-## 2026-09-23 WPR update and closure preparation — Current
+## 2026-09-23 WPR update and closure disposition
 
 - Project ownerはWindows `GPU`＋`DesktopComposition`のWPR trace記録中に実Applicationの1回目のresizeでBLACKOUTを視認し、直後にtraceを停止した。ETL: `%USERPROFILE%\Desktop\TASK-039-blackout.etl`（2,319,450,112 bytes、repository外）。同一sessionのApplication log: `logs/app_20260923.log` `sid=20260923041142-37484`、04:11:42.695起動、04:11:47.927 `home_ready`。
 - このsessionは`ZIZ_RESIZE_TRACE`無効であり、Application logにはnative resize終了とBLACKOUT開始の正確な時刻がない。PresentMon 2.3.1によるETLのPID 37484抽出ではDXGI presentが18件、`Dropped=0`、`PresentMode=Composed: Flip`。raw CSVの時刻はApplication logより9時間先行表示され、9時間差を補正するとJST 04:11:47.038〜04:12:07.084。画面内容も操作時刻も得ていないため、このpresent記録をblackout中の正常表示や原因特定の証拠にしない。解析CSV: `%TEMP%/TASK-039-presentmon-pid37484-v1.csv`（一時物）。
 - **Closureの分類:** H1は修正・manual PASS。blackoutは未解決、修正候補なし、複数fresh sessionでの修正後確認とFull `RISK-UI-001`は未実施。元Goal達成／PASSとしてはクローズしない。Project ownerは今後の正式な進行方針をlocalhost方式へ切り替えたが、移行は別Taskで設計する。現行`docs/features/architecture.md`／`frontend.md`は`file://`＋QWebChannelをCurrent Specificationとし、localhost APIを許容していないため、別TaskでDecision／仕様変更の承認を得るまで実装しない。
 - **今回のworking-tree整理:** `apps/desktop/host.py`ではH1のresize handle attach順変更のみ残し、環境変数で有効化するnative-end／update／grab診断コードを除去。`tests/unit/test_desktop_host_window_contract.py`はH1契約testのみ残す。`apps/gui/css/12_home.css`の`overflow:auto`削除を戻し、対の未追跡Playwright testを除去。これは失敗したproduction候補の撤収であり、D2 A/B/Aのdiagnostic Evidenceは残す。別Taskのdirty changesには触れない。
-- raw ETL、Application log、temp CSVはGit管理外。Git pushでEvidenceを保全したとはみなさない。H1修正と本handoffは2026-09-23にlocal commitとして記録済み。pushは本更新時点で未実施。
+- raw ETL、Application log、temp CSVはGit管理外。Git pushでEvidenceを保全したとはみなさない。
 
 ## Goal
 
@@ -116,14 +127,16 @@ diagnostic harness上で成立したが、real Applicationへ一般化できな�
 | `tests/unit/test_desktop_host_window_contract.py`（新規） | H1のattach順契約のみ | cleanup後 `1 passed`（2026-09-23） | — | keep。診断flag testは除去済み |
 | `apps/gui/css/12_home.css` | `.home-screen`の`overflow: auto;`宣言を復元 | 過去のD2 A/B/Aとbrowser test結果はhistoryのみ | **FAIL — long再発（R7）** | blackout修正候補の差分は撤収。CSS内容は元に戻した |
 | `tests/playwright/specs/home-scroll-ownership.spec.js`（新規） | 失敗したCSS候補に対するtest | 過去には`1 passed` | — | 除去済み。結果はhistoryに残す |
-| `docs/tasks/active/TASK-039-….md`（untracked） | Task本文＋本handoffへの参照 | — | — | keep |
-| `docs/handoffs/TASK-039-current-state.md`（本file・新規） | current state固定 | — | — | keep |
+| `docs/tasks/done/TASK-039-fix-native-window-resize-and-investigate-blackout.md` | Task本文＋本handoffへの参照 | — | — | close後もEvidence historyを保持 |
+| `docs/handoffs/TASK-039-current-state.md`（本file） | close状態と次Taskへの引継ぎ | — | — | keep。Current Specificationではない |
 
 同じworking treeにあるTASK-039**以外**の変更（本Taskのdisposition対象外）: TASK-038由来（`apps/desktop/bridge.py`、`apps/gui/js/*`、`tests/playwright/specs/{ui-shell, sql-highlighter}.spec.js`、`tests/unit/test_bridge_contract.py`、`docs/features/frontend.md`、TASK-038本文、`tests/manual/`一式）、TASK-015本文、`AGENTS.md`＋`docs/features/coding-rules.md`（attribution未解決）、`scripts/`（無関係・untracked）。
 
-未達のverification: blackout修正候補が無いため、修正後の複数fresh session確認、`tests/run-verification.ps1`各Gate、Full `RISK-UI-001`（T039 §Verification）は未実施。cleanup後のfocused H1 testは`.venv\Scripts\python.exe -m pytest tests/unit/test_desktop_host_window_contract.py -q`で`1 passed`。2026-09-23にlocal checkpoint commit済みで、pushは本更新時点で未実施。
+未達のverification: blackout修正候補が無いため、修正後の複数fresh session確認、`tests/run-verification.ps1`各Gate、Full `RISK-UI-001`（T039 §Verification）は未実施。cleanup後のfocused H1 testは`.venv\Scripts\python.exe -m pytest tests/unit/test_desktop_host_window_contract.py -q`で`1 passed`。WebView版checkpoint commitは`8639466bcf27f4c8d161c7cd4ce4c97f200486fc`で、`main`と`release/202609-webview`が同commitを指す。
 
 ## Genuine Unresolved Questions
+
+以下のU1〜U4はTASK-039終了時点の過去の調査疑問。localhost移行Taskのcurrent scopeではなく、再開する場合は新Evidenceと独立した必要性を確認する。
 
 - **U1（disposition済み）** `.home-screen`のCSS変更はblackout修正として非支持（R7）で撤収。対のbrowser testも除去。nested-scroll-free契約を将来採用するなら、blackoutとは独立した仕様・Taskの根拠が必要。
 - **U2（現調査では追わない）** SharedImage／DXGI import以降の正確なfailure pointは未確定。後続WPRでpresent記録は得たが、blackout開始時刻・frame内容との対応を取れず、原因確定には至らない。移行方針下で新たなpresent追跡をTASK-039の必須工程にしない。
@@ -145,10 +158,21 @@ diagnostic harness上で成立したが、real Applicationへ一般化できな�
 9. `QT_QPA_PLATFORM=offscreen`での結果取得（renderer exit 49でinvalid）。
 10. **新しいCSS single-condition候補の探索**（T039 §Final targeted CSS candidateで探索終了を決定済み。加えてR7でCSS側の最有力候補がproduction FAIL）。
 
-## Current Decision Point
+## Successor Task handoff — consolidated inputs
 
-次のreviewer／Project ownerが判断すべき問い。実装案はここでは提示しない。
+localhost移行の別Taskでは、以下を一つの設計・承認・検証計画として扱う。ここではTaskを新設せず、実装にも着手しない。
 
-1. 変更整理とfocused H1 verificationを確認し、TASK-039を「H1完了・blackout未解決・元Goal未達のまま別方針へ移管」としてどう記録上クローズするかを決める。blackout修正済み／Full `RISK-UI-001` PASSにはしない。
-2. localhost移行は別Taskでarchitecture／security／dirty data／close・reload／performance／verificationを設計し、Current SpecificationとDecisionの更新を承認してから実装する。TASK-039のEdit Scopeに混ぜない。
-3. raw ETL（repository外）とlocal logの保全先を、Gitとは別にProject ownerが決める。Qt／Chromium／AMDの責務を現Evidenceだけで断定しない。
+1. **Architecture／security gate:** 現行`file://`＋QWebChannel仕様との差分、localhost serverのbind範囲・origin／request境界・認可・lifecycleを設計し、必要なDecisionとCurrent Specification変更の承認を得る。移行方式だけでblackoutが解消すると仮定しない。
+2. **Behavior preservation contract:** page state、dirty data、save／close／reload/cancel、scroll／focus、error handlingを現行仕様と照合し、失ってはならない挙動を明示する。
+3. **Performance／verification plan:** 起動・初回表示・代表操作の遅延を測る基準と、移行後に実施するautomated／manual Gateを先に定義する。Full `RISK-UI-001`が未実施である事実も引き継ぐ。
+4. **Blackout disposition:** blackoutは未解決のまま記録する。内部root cause追跡やTASK-039のD3〜D11等は、新Evidenceで新Taskが必要と判断しない限り再開しない。ETL／local logの保全先も必要なら別途決め、既存raw evidenceがGit管理外であることを前提にする。
+
+これらは重複する個別Taskではなく、後続Taskの一つの設計範囲とAcceptanceへ統合する入力である。新TaskのGoal／Scope／Acceptanceは別途作成・承認する。
+
+## Pre-closure decision point (historical; resolved)
+
+以下はclose前の判断事項であり、現在の状態では解決済みまたは移管済み。
+
+1. TASK-039はblackout未解決・元Goal未達・Full `RISK-UI-001`未実施を明記してcloseした。
+2. localhost移行の設計と実装は別Taskへ移す。統合した入力要件は上の「Successor Task handoff」を参照。
+3. Qt／Chromium／AMDの責務は現Evidenceだけで断定しない。ETLなどのraw evidenceを別の保全先へ複製する作業は本closeに含めない。

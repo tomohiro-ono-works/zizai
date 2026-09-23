@@ -2,7 +2,7 @@
 
 ## Status
 
-Closure preparation（2026-09-23）— H1の起動時resize handle stackingは修正・manual PASS。実Applicationのlong blackoutは未解決で、本Taskの元のGoalとFull `RISK-UI-001` Acceptanceは未達。Project ownerはlocalhost方式への移行を今後の正式な進行方針とした。移行の設計・Current Specification変更・実装は本Taskでは行わず、別Taskで扱う。本Taskを「blackout修正完了」または検証PASSとして閉じない。過去のdiagnostic priorityと候補は下のhistoryに残し、現在の判断には用いない。次セッションは`docs/handoffs/TASK-039-current-state.md`を先に読む。
+Closed — 2026-09-23（WebView方式の調査・部分改善を終了し、残課題を別Taskへ移管）。H1の起動時resize handle stackingは修正・manual PASS。実Applicationのlong blackoutは未解決で、本Taskの元のGoalとFull `RISK-UI-001` Acceptanceは未達である。このcloseはblackout修正完了、元Goal達成、または検証PASSを意味しない。WebView版checkpointはcommit `8639466bcf27f4c8d161c7cd4ce4c97f200486fc`で、`main`および`release/202609-webview`が同commitを指す。Project ownerが選択したlocalhost方式への移行は別Taskで設計する。本TaskではCurrent Specification変更・移行設計・実装を行わない。詳細Evidenceとhistoryは保持し、次工程の整理は`docs/handoffs/TASK-039-current-state.md`を参照する。
 
 ## Goal
 
@@ -26,7 +26,7 @@ Windows 11のreal display上で、ZizAIを起動直後から四辺・四隅でre
 
 ## References
 
-- `docs/handoffs/TASK-039-current-state.md` — 次セッション向けのcurrent-state handoff。本Taskの確定事実、real-Application結果、diagnostic-only結果、failed production-fix candidate、current decision pointを要約する。Current Specificationではなく、詳細Evidenceの正本は本Task本文である。
+- `docs/handoffs/TASK-039-current-state.md` — close後の引継ぎ記録。本Taskの確定事実、real-Application結果、diagnostic-only結果、failed production-fix candidate、次Taskへ移す論点を要約する。Current Specificationではなく、詳細Evidenceの正本は本Task本文である。
 - `docs/features/architecture.md` — `apps/desktop/host.py`はPySide6、QtWebEngine、QWebChannel、local navigation boundaryを所有する。
 - `docs/features/frontend.md` — Windows QtWebEngine／native dialogはManual UI Gateで確認する。
 - `docs/features/coding-rules.md` — Current Specification、source ownership、公開behaviorのVerification。
@@ -39,7 +39,7 @@ Windows 11のreal display上で、ZizAIを起動直後から四辺・四隅でre
 - `tests/manual/result/レコーディング 2026-09-20 094742.mp4` — 起動直後にresizeできず、window state変更後にresize可能になるEvidence。
 - `tests/manual/result/レコーディング 2026-09-20 110816.mp4` — H1修正後は起動直後からresize可能である一方、blackoutは引き続き発生することを確認したEvidence。
 
-## 2026-09-23 closure preparation and evidence update
+## 2026-09-23 closure disposition and evidence update
 
 - **Outcome boundary:** H1は完了。resize後の実画面blackoutは未解決。`.home-screen`の`overflow:auto`削除はD2 diagnostic A/B/Aではstrong trigger／contributorだったが、real Applicationではlong blackoutが再発しproduction fixとしてFAIL。6.11.2、native end後の`view.update()`、`view.hide()`→`view.show()`もreal ApplicationでFAIL。GPU無効化は診断条件であり恒久修正として採用しない。詳細なsession・owner Observationはhandoffの「2026-09-23 Update」を参照する。
 - **WPR取得後の更新:** 先のWPR起動失敗（`0xc5585011`）とは別の試行で、Project ownerがWindows `GPU`＋`DesktopComposition` traceを記録し、実Applicationの1回目のresizeでBLACKOUTを視認して直後に停止した。ETLは`%USERPROFILE%\Desktop\TASK-039-blackout.etl`（2,319,450,112 bytes、repository外）。同一Application sessionは`logs/app_20260923.log`の`sid=20260923041142-37484`、04:11:42.695起動、04:11:47.927 `home_ready`。このsessionでは`ZIZ_RESIZE_TRACE`が無効で、native resize終了やblackout開始の正確な時刻はApplication logにない。
@@ -47,6 +47,8 @@ Windows 11のreal display上で、ZizAIを起動直後から四辺・四隅でre
 - **Cleanup disposition:** H1の`host.py`変更とfocused unit testを残す。一時的なnative-end／update／grab instrumentationとそのtestを除去した。失敗したblackout修正候補である`apps/gui/css/12_home.css`の`overflow:auto`削除を戻し、対の`home-scroll-ownership.spec.js`を除去した。D2 A/B/AのEvidenceと不成立の記録は残す。これらのcleanupはblackoutを直したことを意味しない。
 - **Cleanup verification:** `.venv\Scripts\python.exe -m pytest tests/unit/test_desktop_host_window_contract.py -q`は`1 passed`（2026-09-23）。`git diff --check`はexit 0。ただしこれらはblackout解消の検証ではない。
 - **Next boundary:** localhost方式はProject ownerの進行方針。ただし`docs/features/architecture.md`と`docs/features/frontend.md`は現在も`file://`＋QWebChannelをCurrent Specificationとし、localhost APIの新設を許容していない。別Taskでarchitecture／security／dirty data／browser close・reload／performance／verificationを設計し、必要なDecisionとCurrent Specificationの変更承認を得る。本TaskのScopeで移行を実装しない。
+- **Close decision:** Project ownerは、WebView方式での調査・部分改善を終了し、blackout未解決を明示して残課題を別Taskへ引き継ぐ形で本Taskをcloseする方針を承認した。元GoalのAcceptanceは未達のまま記録し、Full `RISK-UI-001`は未実施のままとする。close前後でsource／testやCurrent Specificationは変更しない。
+- **Checkpoint:** WebView版checkpointはcommit `8639466bcf27f4c8d161c7cd4ce4c97f200486fc`。`main`と`release/202609-webview`はこのcommitを指し、後者は既存の`release/202609`とは別のWebView版識別branchである。新しい実装commitを作ったという意味ではない。
 
 ## Source Evidence and current classification
 
@@ -332,11 +334,11 @@ Claudeのfollow-up reviewは、同一directoryへ置かない場合のrelative r
 - **Strong／adopt:** 現在の最小scriptで再現しない場合、それだけではZizAI HTML原因を証明しない。ZizAIはframeless＋`startSystemResize`、最小scriptはnative frame resizeであり、window pathと初期sizeが未統制だからである。
 - **Moderate／adopt:** 最小script非再現時は`{native frame, frameless startSystemResize} × {minimal HTML, home.html}`の比較へ進む。
 - **Modify:** continuous `requestAnimationFrame`／CSS animationはdamage生成そのものが症状を変える可能性があるため、baseline minimal HTMLへ混ぜず、別診断armとして扱う。
-- **Defer（当時のreview判断）:** PresentMonは当時のhostに存在しなかった。後続のWPR取得後にPresentMon 2.3.1で既存ETLをread-only解析した結果は本Task上部の「2026-09-23 closure preparation and evidence update」を参照する。
+- **Defer（当時のreview判断）:** PresentMonは当時のhostに存在しなかった。後続のWPR取得後にPresentMon 2.3.1で既存ETLをread-only解析した結果は本Task上部の「2026-09-23 closure disposition and evidence update」を参照する。
 
 ## Subtask plan
 
-以下は当時の実行計画の記録。2026-09-23のclosure preparation後、Subtask Bの追加diagnostic／production fix探索をTASK-039で再開しない。
+以下は当時の実行計画の記録。2026-09-23のclose後、Subtask Bの追加diagnostic／production fix探索をTASK-039で再開しない。
 
 ### Subtask A: Startup native resize handle ownership
 
@@ -399,7 +401,7 @@ AIはGUI操作を行わない。必要な再現はProject ownerが行い、各�
 - GREEN: `tests/playwright/node_modules/.bin/playwright.cmd test specs/home-scroll-ownership.spec.js --project=chromium`で`1 passed`（1.5s）。wide／narrow・short、content増加、wheel、focus、横overflowなしを確認した。
 - Remaining: このbrowser TestはQtWebEngine／GPU presentationのlong blackoutを証明しない。次に実Applicationのfresh processでtargeted resizeとHome scroll／responsive behaviorをProject ownerが確認し、PASS後に通常automated verificationとFull `RISK-UI-001`へ進む。
 - Real Application targeted manual result — FAIL (2026-09-22): Project ownerが2026-09-22 17:36以降に、`.home-screen { overflow:auto }`削除済みのfresh normal ZizAI Applicationでtargeted manual確認を実施し、Session 1のresize確認中にlong blackoutが再発した。その時点で確認を停止したためSession 2は未実施、Full `RISK-UI-001`も未実施、commit／pushなし。起動記録は`logs/app_20260922.log`（`sid=20260922173649-24852`、17:36:49開始、`home_ready elapsed_ms=3007.6`、`page_load_failed`／`page_load_timeout`／`render_process_terminated`なし）で、視覚判定はProject owner Observationをground truthとする。screenshot／videoは取得していない。
-- Classification: 上記により、`.home-screen`のnested scroll除去は**D2 diagnosticではstrong trigger／contributor（A/B/A成立）だが、production fixとしては失敗**と分類する。D2のA/B/A Evidence（`### Final targeted CSS candidate: Home nested-scroll ownership`）は有効なdiagnostic結果としてそのまま維持し、削除・書き換えはしない。`.home-screen`をQtWebEngine root causeとする分類、および「overflow変更で修正済み」とする分類は採らない。2026-09-23のclosure preparationで`apps/gui/css/12_home.css`の候補差分を戻し、対の`tests/playwright/specs/home-scroll-ownership.spec.js`を除去した。過去のRED／GREEN結果はdiagnostic historyであり、現行のtest成果として数えない。
+- Classification: 上記により、`.home-screen`のnested scroll除去は**D2 diagnosticではstrong trigger／contributor（A/B/A成立）だが、production fixとしては失敗**と分類する。D2のA/B/A Evidence（`### Final targeted CSS candidate: Home nested-scroll ownership`）は有効なdiagnostic結果としてそのまま維持し、削除・書き換えはしない。`.home-screen`をQtWebEngine root causeとする分類、および「overflow変更で修正済み」とする分類は採らない。2026-09-23のclose整理で`apps/gui/css/12_home.css`の候補差分を戻し、対の`tests/playwright/specs/home-scroll-ownership.spec.js`を除去した。過去のRED／GREEN結果はdiagnostic historyであり、現行のtest成果として数えない。
 
 ## Remaining Project owner decisions (historical; current disposition is above)
 
