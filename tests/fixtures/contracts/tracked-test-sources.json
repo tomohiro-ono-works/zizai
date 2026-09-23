@@ -77,6 +77,7 @@
     "tests/unit/test_bridge_contract.py",
     "tests/unit/test_catalog_samples_source_config.py",
     "tests/unit/test_dataintegration_connector.py",
+    "tests/unit/test_desktop_host_window_contract.py",
     "tests/unit/test_duckdb_connector.py",
     "tests/unit/test_manual_ui_validator.py",
     "tests/unit/test_repository_layout.py",

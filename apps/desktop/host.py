@@ -444,7 +444,6 @@ def run_webview_app(form_html_path, *, repository_root, debug=False):
     startup_placeholder = QWidget(window)
     startup_placeholder.setStyleSheet("background: #0b0f1a;")
     window.setCentralWidget(startup_placeholder)
-    window.install_resize_handles()
     window.show()
     app.processEvents()
     logger.info(
@@ -816,6 +815,7 @@ def run_webview_app(form_html_path, *, repository_root, debug=False):
     load_timeout_timer.timeout.connect(handle_load_timeout)
 
     window.setCentralWidget(view)
+    window.install_resize_handles()
     logger.info(
         "[gui-startup] phase=webview_attached elapsed_ms=%s",
         round((time.perf_counter() - startup_started) * 1000, 1),
